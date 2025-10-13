@@ -239,6 +239,32 @@ func (m *Molecule) GetBondOrder(idx int) int {
 	return m.BondOrders[idx]
 }
 
+// setBondOrderInternal updates bond order and invalidates caches.
+// Internal use to avoid exposing mutability widely.
+func (m *Molecule) setBondOrderInternal(bondIdx int, order int) {
+	if bondIdx < 0 || bondIdx >= len(m.BondOrders) {
+		return
+	}
+	m.BondOrders[bondIdx] = order
+	// invalidate caches for endpoints
+	e := m.Edges[bondIdx]
+	invalidate := func(idx int) {
+		if idx < len(m.Connectivity) {
+			m.Connectivity[idx] = -1
+		}
+		if idx < len(m.ImplicitH) {
+			m.ImplicitH[idx] = -1
+		}
+		if idx < len(m.Aromaticity) {
+			m.Aromaticity[idx] = -1
+		}
+	}
+	invalidate(e.Beg)
+	invalidate(e.End)
+	m.Aromaticity = nil
+	m.Aromatized = false
+}
+
 func (m *Molecule) GetAtomConnectivity(idx int) int {
 	return m.getAtomConnectivityNoImplH(idx) + m.GetImplicitH(idx)
 }
