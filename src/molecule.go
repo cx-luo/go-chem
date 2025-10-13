@@ -3,7 +3,7 @@
 // @Time    : 2025/10/13 15:21
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
-// @File    : molecule.go.go
+// @File    : molecule.go
 // @Software: GoLand
 package src
 
@@ -112,6 +112,71 @@ func (m *Molecule) AddBond(beg, end, order int) int {
 	m.Aromaticity = nil
 	m.Aromatized = false
 	return idx
+}
+
+// FlipBond changes an existing bond connected to atomParent from atomFrom to atomTo,
+// preserving the bond order. Returns an error if no such bond exists.
+func (m *Molecule) FlipBond(atomParent, atomFrom, atomTo int) error {
+	// find existing bond index between atomParent and atomFrom
+	bondIdx := -1
+	for i, e := range m.Edges {
+		if (e.Beg == atomParent && e.End == atomFrom) || (e.Beg == atomFrom && e.End == atomParent) {
+			bondIdx = i
+			break
+		}
+	}
+	if bondIdx == -1 {
+		return fmt.Errorf("no bond between %d and %d", atomParent, atomFrom)
+	}
+
+	// update vertex edge references: remove from old neighbor, add to new neighbor
+	removeEdgeRef := func(vIdx, edgeIdx int) {
+		edges := m.Vertices[vIdx].Edges
+		for i := range edges {
+			if edges[i] == edgeIdx {
+				m.Vertices[vIdx].Edges = append(edges[:i], edges[i+1:]...)
+				return
+			}
+		}
+	}
+
+	e := m.Edges[bondIdx]
+	if e.Beg == atomParent && e.End == atomFrom {
+		// remove reference from atomFrom, add to atomTo
+		removeEdgeRef(atomFrom, bondIdx)
+		m.Vertices[atomTo].Edges = append(m.Vertices[atomTo].Edges, bondIdx)
+		e.End = atomTo
+	} else if e.End == atomParent && e.Beg == atomFrom {
+		removeEdgeRef(atomFrom, bondIdx)
+		m.Vertices[atomTo].Edges = append(m.Vertices[atomTo].Edges, bondIdx)
+		e.Beg = atomTo
+	} else {
+		// should not happen due to the search condition
+		return fmt.Errorf("inconsistent bond endpoints for bond %d", bondIdx)
+	}
+	m.Edges[bondIdx] = e
+
+	// invalidate cached properties for affected atoms
+	invalidate := func(idx int) {
+		if idx < len(m.Connectivity) {
+			m.Connectivity[idx] = -1
+		}
+		if idx < len(m.ImplicitH) {
+			m.ImplicitH[idx] = -1
+		}
+		if idx < len(m.TotalH) {
+			m.TotalH[idx] = -1
+		}
+		if idx < len(m.Aromaticity) {
+			m.Aromaticity[idx] = -1
+		}
+	}
+	invalidate(atomParent)
+	invalidate(atomFrom)
+	invalidate(atomTo)
+	m.Aromaticity = nil
+	m.Aromatized = false
+	return nil
 }
 
 func (m *Molecule) SetAtomCharge(idx int, charge int) {
@@ -306,27 +371,5 @@ func (m *Molecule) GetBondDescription(idx int) string {
 		return "aromatic"
 	default:
 		return "unknown"
-	}
-}
-
-// ElementToString Utility, not from the C++: maps atomic number to element symbol (very partial)
-func ElementToString(number int) string {
-	switch number {
-	case 1:
-		return "H"
-	case 6:
-		return "C"
-	case 7:
-		return "N"
-	case 8:
-		return "O"
-	case ELEM_PSEUDO:
-		return "Pseudo"
-	case ELEM_RSITE:
-		return "RSite"
-	case ELEM_TEMPLATE:
-		return "Template"
-	default:
-		return fmt.Sprintf("Elem%d", number)
 	}
 }
