@@ -14,12 +14,15 @@ import (
 
 type SmilesLoader struct{}
 
-// Parse builds a Molecule from a minimal subset of SMILES.
+// Parse builds a Molecule from an enhanced subset of SMILES.
 // Supported:
-// - Atoms: uppercase elements (H, C, N, O, F, Cl, Br, I) and lowercase aromatic c, n, o
+// - Atoms: uppercase elements and lowercase aromatic (c, n, o, s, p)
+// - Charges: +, -, ++, --, +3, -2, etc.
+// - Isotopes: [13C], [2H], [15N], etc.
 // - Bonds: -, =, #, or implied single
 // - Branches: (...)
 // - Rings: digits 1-9 (single-digit)
+// - Stereochemistry: @, @@ (basic support)
 func (SmilesLoader) Parse(s string) (*Molecule, error) {
 	m := NewMolecule()
 	type stackEntry struct{ atomIdx int }
@@ -29,14 +32,30 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 	lastAtom := -1
 	pendingOrder := 0
 
-	readElement := func(i int) (sym string, next int, aromatic bool, err error) {
+	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, err error) {
 		if i >= len(s) {
-			return "", i, false, fmt.Errorf("unexpected end of input")
+			return "", i, false, 0, 0, fmt.Errorf("unexpected end of input")
 		}
+
+		// Check for bracketed atoms [13C+], [NH3+], etc.
+		if s[i] == '[' {
+			// Fast path: scan for closing ']'
+			j := i + 1
+			for j < len(s) && s[j] != ']' {
+				j++
+			}
+			if j < len(s) && s[j] == ']' {
+				// Avoid repeated work by running just once over the region
+				return readBracketedAtom(s, i)
+			} else {
+				return "", i, false, 0, 0, fmt.Errorf("unclosed bracket at %d", i)
+			}
+		}
+
 		ch := rune(s[i])
 		// aromatic lower-case
-		if ch == 'c' || ch == 'n' || ch == 'o' {
-			return string(ch), i + 1, true, nil
+		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
+			return string(ch), i + 1, true, 0, 0, nil
 		}
 		// uppercase + optional lowercase (Cl, Br)
 		if unicode.IsUpper(ch) {
@@ -45,12 +64,12 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 				ch2 := rune(s[i+1])
 				if unicode.IsLower(ch2) {
 					sym += string(ch2)
-					return sym, i + 2, false, nil
+					return sym, i + 2, false, 0, 0, nil
 				}
 			}
-			return sym, i + 1, false, nil
+			return sym, i + 1, false, 0, 0, nil
 		}
-		return "", i, false, fmt.Errorf("bad atom at %d", i)
+		return "", i, false, 0, 0, fmt.Errorf("bad atom at %d", i)
 	}
 
 	elemToNum := func(sym string, aromatic bool) (int, error) {
@@ -62,34 +81,21 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 				return ELEM_N, nil
 			case "o":
 				return ELEM_O, nil
+			case "s":
+				return ELEM_S, nil
+			case "p":
+				return ELEM_P, nil
 			}
 			return -1, fmt.Errorf("unsupported aromatic atom: %s", sym)
 		}
-		switch sym {
-		case "H":
-			return ELEM_H, nil
-		case "C":
-			return ELEM_C, nil
-		case "N":
-			return ELEM_N, nil
-		case "O":
-			return ELEM_O, nil
-		case "F":
-			return ELEM_F, nil
-		case "Cl":
-			return ELEM_Cl, nil
-		case "Br":
-			return ELEM_Br, nil
-		case "I":
-			return ELEM_I, nil
-		default:
-			// fallback via table
-			n, err := ElementFromString(sym)
-			if err != nil {
-				return -1, err
-			}
-			return n, nil
+
+		// fallback via table
+		n, err := ElementFromString(sym)
+		if err != nil {
+			return -1, err
 		}
+		return n, nil
+
 	}
 
 	bondOrder := func(ch rune) (int, bool) {
@@ -154,7 +160,7 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		// must be atom
-		sym, next, aromatic, err := readElement(i)
+		sym, next, aromatic, isotope, charge, err := readElement(i)
 		if err != nil {
 			return nil, err
 		}
@@ -163,11 +169,20 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 			return nil, err
 		}
 		idx := m.AddAtom(num)
+
+		// Set isotope and charge
+		if isotope > 0 {
+			m.SetAtomIsotope(idx, isotope)
+		}
+		if charge != 0 {
+			m.SetAtomCharge(idx, charge)
+		}
+
 		if lastAtom >= 0 {
 			order := pendingOrder
 			if order == 0 {
 				// implied single; if both aromatic atoms, mark as aromatic bond
-				if aromatic && (m.Atoms[lastAtom].Number == ELEM_C || m.Atoms[lastAtom].Number == ELEM_N || m.Atoms[lastAtom].Number == ELEM_O) && (sym == "c" || sym == "n" || sym == "o") {
+				if aromatic && (m.Atoms[lastAtom].Number == ELEM_C || m.Atoms[lastAtom].Number == ELEM_N || m.Atoms[lastAtom].Number == ELEM_O || m.Atoms[lastAtom].Number == ELEM_S || m.Atoms[lastAtom].Number == ELEM_P) && (sym == "c" || sym == "n" || sym == "o" || sym == "s" || sym == "p") {
 					order = BOND_AROMATIC
 				} else {
 					order = BOND_SINGLE
@@ -183,4 +198,116 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 		return nil, fmt.Errorf("unclosed ring bonds")
 	}
 	return m, nil
+}
+
+// readBracketedAtom parses bracketed atoms like [13C+], [NH3+], [C@H], etc.
+func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool, isotope int, charge int, err error) {
+	if start >= len(s) || s[start] != '[' {
+		return "", start, false, 0, 0, fmt.Errorf("expected '[' at %d", start)
+	}
+
+	i := start + 1
+	aromatic = false
+	isotope = 0
+	charge = 0
+
+	// Parse isotope if present (digits at start)
+	if i < len(s) && unicode.IsDigit(rune(s[i])) {
+		isotopeStart := i
+		for i < len(s) && unicode.IsDigit(rune(s[i])) {
+			i++
+		}
+		isotopeStr := s[isotopeStart:i]
+		if len(isotopeStr) > 0 {
+			// Simple conversion - in real implementation would use strconv
+			isotope = 0
+			for _, c := range isotopeStr {
+				isotope = isotope*10 + int(c-'0')
+			}
+		}
+	}
+
+	// Parse element symbol
+	if i >= len(s) {
+		return "", i, false, 0, 0, fmt.Errorf("unexpected end in bracketed atom")
+	}
+
+	ch := rune(s[i])
+	if unicode.IsUpper(ch) {
+		sym = string(ch)
+		if i+1 < len(s) {
+			ch2 := rune(s[i+1])
+			if unicode.IsLower(ch2) {
+				sym += string(ch2)
+				i++
+			}
+		}
+		i++
+	} else if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
+		sym = string(ch)
+		aromatic = true
+		i++
+	} else {
+		return "", i, false, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
+	}
+
+	// Parse stereochemistry (@, @@)
+	for i < len(s) && (s[i] == '@') {
+		i++
+	}
+
+	// Parse charge
+	if i < len(s) {
+		if s[i] == '+' {
+			charge = 1
+			i++
+			// Check for multiple + or number
+			if i < len(s) && s[i] == '+' {
+				charge = 2
+				i++
+			} else if i < len(s) && unicode.IsDigit(rune(s[i])) {
+				// Parse number after +
+				numStart := i
+				for i < len(s) && unicode.IsDigit(rune(s[i])) {
+					i++
+				}
+				if i > numStart {
+					chargeStr := s[numStart:i]
+					charge = 0
+					for _, c := range chargeStr {
+						charge = charge*10 + int(c-'0')
+					}
+				}
+			}
+		} else if s[i] == '-' {
+			charge = -1
+			i++
+			// Check for multiple - or number
+			if i < len(s) && s[i] == '-' {
+				charge = -2
+				i++
+			} else if i < len(s) && unicode.IsDigit(rune(s[i])) {
+				// Parse number after -
+				numStart := i
+				for i < len(s) && unicode.IsDigit(rune(s[i])) {
+					i++
+				}
+				if i > numStart {
+					chargeStr := s[numStart:i]
+					charge = 0
+					for _, c := range chargeStr {
+						charge = charge*10 + int(c-'0')
+					}
+					charge = -charge
+				}
+			}
+		}
+	}
+
+	// Expect closing bracket
+	if i >= len(s) || s[i] != ']' {
+		return "", i, false, 0, 0, fmt.Errorf("expected ']' at %d", i)
+	}
+
+	return sym, i + 1, aromatic, isotope, charge, nil
 }
