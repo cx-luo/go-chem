@@ -15,7 +15,7 @@ type DearomatizerBase struct{}
 func (d DearomatizerBase) Apply(m *Molecule) {
 	// process six-member cycles first
 	cycles := findSimpleCyclesOfLength(m, 6)
-	used := make([]bool, len(m.Edges))
+	used := make([]bool, len(m.Bonds))
 	for _, cycle := range cycles {
 		eidxs := cycleEdges(m, cycle)
 		ok := true
@@ -53,7 +53,7 @@ func (d DearomatizerBase) Apply(m *Molecule) {
 		}
 	}
 	// any remaining aromatic bonds outside processed cycles → single
-	for i := range m.Edges {
+	for i := range m.Bonds {
 		if m.BondOrders[i] == BOND_AROMATIC && !used[i] {
 			m.setBondOrderInternal(i, BOND_SINGLE)
 		}

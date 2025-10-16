@@ -44,11 +44,15 @@ type Atom struct {
 	TemplateName     string
 }
 
-type Edge struct {
+type Bond struct {
 	Beg   int
 	End   int
 	Order int
-	// Topology, etc.
+	// Bond type (may mirror Order for now)
+	Type int
+	// Direct pointers to endpoint atoms (note: unsafe if atom slice reallocates)
+	Atom1 *Atom
+	Atom2 *Atom
 }
 
 type Vertex struct {
@@ -69,7 +73,7 @@ type Molecule struct {
 	Aromatized       bool
 	IgnoreBadValence bool
 	Vertices         []Vertex
-	Edges            []Edge
+	Bonds            []Bond
 }
 
 func NewMolecule() *Molecule {
@@ -93,7 +97,7 @@ func (m *Molecule) Clear() {
 	m.Aromatized = false
 	m.IgnoreBadValence = false
 	m.Vertices = nil
-	m.Edges = nil
+	m.Bonds = nil
 }
 
 func (m *Molecule) AddAtom(number int) int {
@@ -104,8 +108,8 @@ func (m *Molecule) AddAtom(number int) int {
 }
 
 func (m *Molecule) AddBond(beg, end, order int) int {
-	idx := len(m.Edges)
-	m.Edges = append(m.Edges, Edge{Beg: beg, End: end, Order: order})
+	idx := len(m.Bonds)
+	m.Bonds = append(m.Bonds, Bond{Beg: beg, End: end, Order: order, Type: order, Atom1: &m.Atoms[beg], Atom2: &m.Atoms[end]})
 	m.BondOrders = append(m.BondOrders, order)
 	m.Vertices[beg].Edges = append(m.Vertices[beg].Edges, idx)
 	m.Vertices[end].Edges = append(m.Vertices[end].Edges, idx)
@@ -119,7 +123,7 @@ func (m *Molecule) AddBond(beg, end, order int) int {
 func (m *Molecule) FlipBond(atomParent, atomFrom, atomTo int) error {
 	// find existing bond index between atomParent and atomFrom
 	bondIdx := -1
-	for i, e := range m.Edges {
+	for i, e := range m.Bonds {
 		if (e.Beg == atomParent && e.End == atomFrom) || (e.Beg == atomFrom && e.End == atomParent) {
 			bondIdx = i
 			break
@@ -140,21 +144,23 @@ func (m *Molecule) FlipBond(atomParent, atomFrom, atomTo int) error {
 		}
 	}
 
-	e := m.Edges[bondIdx]
+	e := m.Bonds[bondIdx]
 	if e.Beg == atomParent && e.End == atomFrom {
 		// remove reference from atomFrom, add to atomTo
 		removeEdgeRef(atomFrom, bondIdx)
 		m.Vertices[atomTo].Edges = append(m.Vertices[atomTo].Edges, bondIdx)
 		e.End = atomTo
+		e.Atom2 = &m.Atoms[atomTo]
 	} else if e.End == atomParent && e.Beg == atomFrom {
 		removeEdgeRef(atomFrom, bondIdx)
 		m.Vertices[atomTo].Edges = append(m.Vertices[atomTo].Edges, bondIdx)
 		e.Beg = atomTo
+		e.Atom1 = &m.Atoms[atomTo]
 	} else {
 		// should not happen due to the search condition
 		return fmt.Errorf("inconsistent bond endpoints for bond %d", bondIdx)
 	}
-	m.Edges[bondIdx] = e
+	m.Bonds[bondIdx] = e
 
 	// invalidate cached properties for affected atoms
 	invalidate := func(idx int) {
@@ -247,7 +253,7 @@ func (m *Molecule) setBondOrderInternal(bondIdx int, order int) {
 	}
 	m.BondOrders[bondIdx] = order
 	// invalidate caches for endpoints
-	e := m.Edges[bondIdx]
+	e := m.Bonds[bondIdx]
 	invalidate := func(idx int) {
 		if idx < len(m.Connectivity) {
 			m.Connectivity[idx] = -1

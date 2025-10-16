@@ -9,6 +9,7 @@ package src
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 )
 
@@ -310,4 +311,139 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	}
 
 	return sym, i + 1, aromatic, isotope, charge, nil
+}
+
+// SaveSMILES converts a molecule back to SMILES format
+func (m *Molecule) SaveSMILES() string {
+	if len(m.Atoms) == 0 {
+		return ""
+	}
+
+	// Simple approach: traverse atoms and bonds
+	visited := make([]bool, len(m.Atoms))
+	var result strings.Builder
+	ringBonds := make(map[string]int) // "atom1-atom2" -> ring number
+	nextRingNum := 1
+
+	var dfs func(atomIdx int, parentIdx int)
+	dfs = func(atomIdx int, parentIdx int) {
+		if visited[atomIdx] {
+			return
+		}
+		visited[atomIdx] = true
+
+		// Write atom
+		atom := m.Atoms[atomIdx]
+		aromatic := m.isAromaticAtom(atomIdx)
+
+		// Check if we need brackets
+		needsBrackets := atom.Isotope > 0 || atom.Charge != 0 || !aromatic
+
+		if needsBrackets {
+			result.WriteByte('[')
+			if atom.Isotope > 0 {
+				result.WriteString(fmt.Sprintf("%d", atom.Isotope))
+			}
+		}
+
+		// Write element symbol
+		if aromatic {
+			result.WriteString(m.getAromaticSymbol(atom.Number))
+		} else {
+			result.WriteString(ElementToString(atom.Number))
+		}
+
+		if needsBrackets {
+			// Write charge
+			if atom.Charge > 0 {
+				if atom.Charge == 1 {
+					result.WriteByte('+')
+				} else {
+					result.WriteString(fmt.Sprintf("+%d", atom.Charge))
+				}
+			} else if atom.Charge < 0 {
+				if atom.Charge == -1 {
+					result.WriteByte('-')
+				} else {
+					result.WriteString(fmt.Sprintf("%d", atom.Charge))
+				}
+			}
+			result.WriteByte(']')
+		}
+
+		// Process bonds to neighbors
+		for _, edgeIdx := range m.Vertices[atomIdx].Edges {
+			edge := m.Bonds[edgeIdx]
+			otherIdx := edge.Beg
+			if otherIdx == atomIdx {
+				otherIdx = edge.End
+			}
+
+			// Skip if this is the parent bond
+			if otherIdx == parentIdx {
+				continue
+			}
+
+			// Check if this bond forms a ring
+			ringKey := fmt.Sprintf("%d-%d", atomIdx, otherIdx)
+			if otherRingKey, exists := ringBonds[ringKey]; exists {
+				// This is a ring closure
+				result.WriteString(fmt.Sprintf("%d", otherRingKey))
+				continue
+			}
+
+			// Check if we've already visited this atom (ring opening)
+			if visited[otherIdx] {
+				ringNum := nextRingNum
+				nextRingNum++
+				ringBonds[ringKey] = ringNum
+				result.WriteString(fmt.Sprintf("%d", ringNum))
+				continue
+			}
+
+			// Write bond order
+			bondOrder := m.BondOrders[edgeIdx]
+			if bondOrder == BOND_DOUBLE {
+				result.WriteByte('=')
+			} else if bondOrder == BOND_TRIPLE {
+				result.WriteByte('#')
+			} else if bondOrder == BOND_SINGLE {
+				result.WriteByte('-')
+			}
+			// Aromatic bonds are implied, no symbol needed
+
+			// Recursively visit the neighbor
+			dfs(otherIdx, atomIdx)
+		}
+	}
+
+	// Start DFS from first atom
+	dfs(0, -1)
+
+	return result.String()
+}
+
+// Helper functions for SMILES output
+func (m *Molecule) isAromaticAtom(atomIdx int) bool {
+	if atomIdx >= len(m.Aromaticity) {
+		return false
+	}
+	return m.Aromaticity[atomIdx] == ATOM_AROMATIC
+}
+
+func (m *Molecule) getAromaticSymbol(elementNum int) string {
+	switch elementNum {
+	case ELEM_C:
+		return "c"
+	case ELEM_N:
+		return "n"
+	case ELEM_O:
+		return "o"
+	case ELEM_S:
+		return "s"
+	case ELEM_P:
+		return "p"
+	default:
+		return ElementToString(elementNum)
+	}
 }

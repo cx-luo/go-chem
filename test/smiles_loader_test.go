@@ -1,7 +1,9 @@
 package test
 
 import (
+	"fmt"
 	srcpkg "go-chem/src"
+	"strings"
 	"testing"
 )
 
@@ -10,8 +12,8 @@ func TestSMILES_Ethene(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
-	if len(m.Atoms) != 2 || len(m.Edges) != 1 {
-		t.Fatalf("expected 2 atoms and 1 bond, got %d atoms %d bonds", len(m.Atoms), len(m.Edges))
+	if len(m.Atoms) != 2 || len(m.Bonds) != 1 {
+		t.Fatalf("expected 2 atoms and 1 bond, got %d atoms %d bonds", len(m.Atoms), len(m.Bonds))
 	}
 	if m.GetBondOrder(0) != srcpkg.BOND_DOUBLE {
 		t.Fatalf("expected double bond")
@@ -23,11 +25,11 @@ func TestSMILES_Benzene(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
-	if len(m.Atoms) != 6 || len(m.Edges) != 6 {
-		t.Fatalf("expected 6 atoms and 6 bonds, got %d atoms %d bonds", len(m.Atoms), len(m.Edges))
+	if len(m.Atoms) != 6 || len(m.Bonds) != 6 {
+		t.Fatalf("expected 6 atoms and 6 bonds, got %d atoms %d bonds", len(m.Atoms), len(m.Bonds))
 	}
 	aromatic := 0
-	for i := range m.Edges {
+	for i := range m.Bonds {
 		if m.GetBondOrder(i) == srcpkg.BOND_AROMATIC {
 			aromatic++
 		}
@@ -82,9 +84,13 @@ func TestSMILES_Thiophene(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
-	if len(m.Atoms) != 5 || len(m.Edges) != 5 {
-		t.Fatalf("expected 5 atoms and 5 bonds, got %d atoms %d bonds", len(m.Atoms), len(m.Edges))
+	if len(m.Atoms) != 5 || len(m.Bonds) != 5 {
+		t.Fatalf("expected 5 atoms and 5 bonds, got %d atoms %d bonds", len(m.Atoms), len(m.Bonds))
 	}
+	m.SaveJPEG("./test_mol.jpeg", 512, 50)
+	d := srcpkg.DearomatizerBase{}
+	d.Apply(m)
+	fmt.Println(m.SaveSMILES())
 	// Check that sulfur is present
 	sulfurFound := false
 	for i := range m.Atoms {
@@ -95,5 +101,62 @@ func TestSMILES_Thiophene(t *testing.T) {
 	}
 	if !sulfurFound {
 		t.Fatalf("expected sulfur atom in thiophene")
+	}
+}
+
+func TestSMILES_RoundTrip(t *testing.T) {
+	// Test that parsing and saving gives consistent results
+	testCases := []string{
+		"C=C",
+		"c1ccccc1",
+		"[NH3+]",
+		"[13C]",
+		"c1cscc1",
+	}
+
+	for _, input := range testCases {
+		m, err := (srcpkg.SmilesLoader{}).Parse(input)
+		if err != nil {
+			t.Fatalf("parse failed for %s: %v", input, err)
+		}
+
+		output := m.SaveSMILES()
+		if output == "" {
+			t.Fatalf("SaveSMILES returned empty string for input: %s", input)
+		}
+
+		// Parse the output back to verify it's valid
+		m2, err := (srcpkg.SmilesLoader{}).Parse(output)
+		if err != nil {
+			t.Fatalf("round-trip parse failed for %s -> %s: %v", input, output, err)
+		}
+
+		// Basic structure should be the same
+		if len(m.Atoms) != len(m2.Atoms) {
+			t.Fatalf("atom count mismatch for %s: %d vs %d", input, len(m.Atoms), len(m2.Atoms))
+		}
+		if len(m.Bonds) != len(m2.Bonds) {
+			t.Fatalf("bond count mismatch for %s: %d vs %d", input, len(m.Bonds), len(m2.Bonds))
+		}
+	}
+}
+
+func TestSMILES_Output(t *testing.T) {
+	// Test specific output formatting
+	m, err := (srcpkg.SmilesLoader{}).Parse("C=C")
+	if err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+
+	output := m.SaveSMILES()
+	fmt.Println(m.CalculateMoleculeHash())
+	fmt.Println(output)
+	if output == "" {
+		t.Fatalf("SaveSMILES returned empty string")
+	}
+
+	// Should contain the double bond
+	if !strings.Contains(output, "=") {
+		t.Fatalf("expected double bond in output: %s", output)
 	}
 }

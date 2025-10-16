@@ -61,7 +61,7 @@ func (m *Molecule) SaveSVG(filename string, width int, height int) error {
 		return err
 	}
 	// bonds
-	for i, e := range m.Edges {
+	for i, e := range m.Bonds {
 		if e.Order < 0 {
 			continue
 		}
@@ -105,7 +105,7 @@ func renderMoleculeRaster(m *Molecule, width, height int) image.Image {
 	draw.Draw(bg, bg.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
 	// draw bonds
-	for i, e := range m.Edges {
+	for i, e := range m.Bonds {
 		if e.Order < 0 {
 			continue
 		}

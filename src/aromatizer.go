@@ -30,7 +30,7 @@ func (a AromatizerBase) Aromatize(m *Molecule) {
 
 // Dearomatize converts aromatic bonds back to single bonds (placeholder).
 func (a AromatizerBase) Dearomatize(m *Molecule) {
-	for i := range m.Edges {
+	for i := range m.Bonds {
 		if m.BondOrders[i] == BOND_AROMATIC {
 			m.setBondOrderInternal(i, BOND_SINGLE)
 		}
@@ -57,7 +57,7 @@ func findSimpleCyclesOfLength(m *Molecule, k int) [][]int {
 		}
 		visited[current] = true
 		for _, eidx := range m.Vertices[current].Edges {
-			e := m.Edges[eidx]
+			e := m.Bonds[eidx]
 			next := e.Beg
 			if next == current {
 				next = e.End
@@ -84,7 +84,7 @@ func findSimpleCyclesOfLength(m *Molecule, k int) [][]int {
 
 func areNeighbors(m *Molecule, u, v int) bool {
 	for _, eidx := range m.Vertices[u].Edges {
-		e := m.Edges[eidx]
+		e := m.Bonds[eidx]
 		if (e.Beg == u && e.End == v) || (e.Beg == v && e.End == u) {
 			return true
 		}
@@ -98,7 +98,7 @@ func cycleEdges(m *Molecule, cycle []int) []int {
 		u := cycle[i]
 		v := cycle[(i+1)%len(cycle)]
 		for _, eidx := range m.Vertices[u].Edges {
-			e := m.Edges[eidx]
+			e := m.Bonds[eidx]
 			if (e.Beg == u && e.End == v) || (e.Beg == v && e.End == u) {
 				res = append(res, eidx)
 				break

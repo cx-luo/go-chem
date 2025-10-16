@@ -31,7 +31,7 @@ func TestAromatizerBase_Aromatize_Benzene(t *testing.T) {
 
 	// expect all 6 ring bonds to be aromatic
 	aromatic := 0
-	for i := range m.Edges {
+	for i := range m.Bonds {
 		if m.GetBondOrder(i) == src.BOND_AROMATIC {
 			aromatic++
 		}
@@ -53,7 +53,7 @@ func TestDearomatizerBase_Apply_Benzene(t *testing.T) {
 	single := 0
 	double := 0
 	aromatic := 0
-	for i := range m.Edges {
+	for i := range m.Bonds {
 		switch m.GetBondOrder(i) {
 		case src.BOND_SINGLE:
 			single++

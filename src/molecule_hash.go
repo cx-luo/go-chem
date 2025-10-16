@@ -11,7 +11,7 @@ package src
 // subgraph (all atoms except hydrogen). Bonds to hydrogen are ignored.
 // The hash is insensitive to vertex indexing but sensitive to topology,
 // bond orders, atom numbers, charge and isotope.
-func CalculateMoleculeHash(m *Molecule) uint64 {
+func (m *Molecule) CalculateMoleculeHash() uint64 {
 	// Step 1: build mapping of heavy atoms (non-hydrogen)
 	oldToNew := make(map[int]int, len(m.Atoms))
 	var newToOld []int
@@ -35,7 +35,7 @@ func CalculateMoleculeHash(m *Molecule) uint64 {
 		var code uint64
 		degree := 0
 		for _, eidx := range m.Vertices[oldIdx].Edges {
-			e := m.Edges[eidx]
+			e := m.Bonds[eidx]
 			other := e.Beg
 			if other == oldIdx {
 				other = e.End
@@ -59,7 +59,7 @@ func CalculateMoleculeHash(m *Molecule) uint64 {
 	}
 
 	// Step 3: iterative neighborhood refinement (Weisfeiler-Lehman-style)
-	iterations := (len(m.Edges) + 1) / 2
+	iterations := (len(m.Bonds) + 1) / 2
 	if iterations < 2 {
 		iterations = 2
 	}
@@ -71,7 +71,7 @@ func CalculateMoleculeHash(m *Molecule) uint64 {
 			// collect neighbor pairs (neighborCode, bondOrder)
 			// fold them commutatively
 			for _, eidx := range m.Vertices[oldIdx].Edges {
-				e := m.Edges[eidx]
+				e := m.Bonds[eidx]
 				u := e.Beg
 				v := e.End
 				other := u
