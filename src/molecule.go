@@ -320,6 +320,17 @@ func (m *Molecule) GetImplicitH(idx int) int {
 			implH = 1
 		} else if conn == 2 {
 			implH = 2
+		} else if conn == -1 {
+			// aromatic carbon: approximate H by degree (2 -> CH)
+			deg := 0
+			if idx < len(m.Vertices) {
+				deg = len(m.Vertices[idx].Edges)
+			}
+			if deg == 2 {
+				implH = 1
+			} else {
+				implH = 0
+			}
 		}
 	} else if atom.Number == 7 && atom.Charge == 0 {
 		// nitrogen
@@ -327,6 +338,9 @@ func (m *Molecule) GetImplicitH(idx int) int {
 			implH = 0
 		} else if conn == 2 {
 			implH = 1
+		} else if conn == -1 {
+			// aromatic N (pyridine-like, degree 2) -> no H
+			implH = 0
 		}
 	} else if atom.Number == 8 && atom.Charge == 0 {
 		// oxygen

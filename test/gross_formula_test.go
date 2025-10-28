@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	srcpkg "go-chem/src"
 	"testing"
 )
@@ -12,13 +13,17 @@ func TestGrossFormula_Simple(t *testing.T) {
 	}
 
 	units := srcpkg.CollectGross(m, srcpkg.GrossFormulaOptions{})
+	for _, unit := range units {
+		fmt.Println(unit.Isotopes[0])
+	}
+	fmt.Println(units)
 	if len(units) != 1 {
 		t.Fatalf("expected 1 unit")
 	}
-	got := srcpkg.GrossToString(units[0].Isotopes, false)
+	hill := srcpkg.GrossUnitsToStringHill(units, false)
 	// carbon default valence 4 -> CH4
-	if got != "C H4" && got != "CH4" { // depending on spacing rules
-		t.Fatalf("unexpected gross: %s", got)
+	if hill != "C H4" && hill != "CH4" { // depending on spacing rules
+		t.Fatalf("unexpected gross: %s", hill)
 	}
 }
 

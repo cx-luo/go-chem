@@ -28,7 +28,11 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 	m := NewMolecule()
 	type stackEntry struct{ atomIdx int }
 	var branchStack []stackEntry
-	ringBonds := make(map[rune]int) // digit -> atom index where ring started
+	type ringOpen struct {
+		atom  int
+		order int
+	}
+	ringBonds := make(map[rune]ringOpen) // digit -> opening site and optional bond order
 
 	lastAtom := -1
 	pendingOrder := 0
@@ -141,20 +145,36 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 			i++
 			continue
 		}
+		if ch == '.' { // disconnected component separator
+			lastAtom = -1
+			pendingOrder = 0
+			i++
+			continue
+		}
 		if ch >= '0' && ch <= '9' { // ring closure/opening
 			if lastAtom < 0 {
 				return nil, fmt.Errorf("ring digit without atom at %d", i)
 			}
-			if other, ok := ringBonds[ch]; ok {
+			if open, ok := ringBonds[ch]; ok {
+				// determine bond order: prefer explicit pending, otherwise stored from opening
 				order := pendingOrder
+				if order == 0 {
+					order = open.order
+				}
 				if order == 0 {
 					order = BOND_SINGLE
 				}
-				m.AddBond(other, lastAtom, order)
+				// if both specified and conflict, error
+				if pendingOrder != 0 && open.order != 0 && pendingOrder != open.order {
+					return nil, fmt.Errorf("conflicting ring bond orders on digit %c", ch)
+				}
+				m.AddBond(open.atom, lastAtom, order)
 				delete(ringBonds, ch)
 				pendingOrder = 0
 			} else {
-				ringBonds[ch] = lastAtom
+				// store opening site with any pending order, and clear pending
+				ringBonds[ch] = ringOpen{atom: lastAtom, order: pendingOrder}
+				pendingOrder = 0
 			}
 			i++
 			continue
