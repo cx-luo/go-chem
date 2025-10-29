@@ -1,17 +1,17 @@
 package test
 
 import (
-	"go-chem/src"
+	"go-chem/src/molecule"
 	"testing"
 )
 
 // TestStereocentersBasic tests basic stereocenter operations
 func TestStereocentersBasic(t *testing.T) {
-	stereo := src.NewMoleculeStereocenters()
+	stereo := molecule.NewMoleculeStereocenters()
 
 	// Add a stereocenter
 	pyramid := [4]int{1, 2, 3, -1} // -1 represents implicit hydrogen
-	stereo.Add(0, src.STEREO_ATOM_ABS, 1, pyramid)
+	stereo.Add(0, molecule.STEREO_ATOM_ABS, 1, pyramid)
 
 	if stereo.Size() != 1 {
 		t.Errorf("expected 1 stereocenter, got %d", stereo.Size())
@@ -27,7 +27,7 @@ func TestStereocentersBasic(t *testing.T) {
 		t.Fatalf("error getting stereocenter: %v", err)
 	}
 
-	if center.Type != src.STEREO_ATOM_ABS {
+	if center.Type != molecule.STEREO_ATOM_ABS {
 		t.Error("stereocenter type should be ABS")
 	}
 
@@ -38,10 +38,10 @@ func TestStereocentersBasic(t *testing.T) {
 
 // TestStereocentersPyramid tests pyramid manipulation
 func TestStereocentersPyramid(t *testing.T) {
-	stereo := src.NewMoleculeStereocenters()
+	stereo := molecule.NewMoleculeStereocenters()
 
 	pyramid := [4]int{10, 11, 12, 13}
-	stereo.Add(5, src.STEREO_ATOM_ABS, 1, pyramid)
+	stereo.Add(5, molecule.STEREO_ATOM_ABS, 1, pyramid)
 
 	// Get pyramid
 	p := stereo.GetPyramid(5)
@@ -61,13 +61,13 @@ func TestStereocentersPyramid(t *testing.T) {
 
 // TestStereocenterTypes tests different stereocenter types
 func TestStereocenterTypes(t *testing.T) {
-	stereo := src.NewMoleculeStereocenters()
+	stereo := molecule.NewMoleculeStereocenters()
 
 	// Add different types
 	pyramid := [4]int{1, 2, 3, -1}
-	stereo.Add(0, src.STEREO_ATOM_ABS, 1, pyramid)
-	stereo.Add(1, src.STEREO_ATOM_OR, 2, pyramid)
-	stereo.Add(2, src.STEREO_ATOM_AND, 3, pyramid)
+	stereo.Add(0, molecule.STEREO_ATOM_ABS, 1, pyramid)
+	stereo.Add(1, molecule.STEREO_ATOM_OR, 2, pyramid)
+	stereo.Add(2, molecule.STEREO_ATOM_AND, 3, pyramid)
 
 	// Check ABS atoms
 	absAtoms := stereo.GetAbsAtoms()
@@ -90,20 +90,20 @@ func TestStereocenterTypes(t *testing.T) {
 
 // TestStereocenterDetection tests stereocenter detection
 func TestStereocenterDetection(t *testing.T) {
-	m := src.NewMolecule()
-	stereo := src.NewMoleculeStereocenters()
+	m := molecule.NewMolecule()
+	stereo := molecule.NewMoleculeStereocenters()
 
 	// Create a potential stereocenter: sp3 carbon with 4 different substituents
-	c := m.AddAtom(src.ELEM_C) // Central carbon
-	h := m.AddAtom(src.ELEM_H)
-	o := m.AddAtom(src.ELEM_O)
-	n := m.AddAtom(src.ELEM_N)
-	f := m.AddAtom(src.ELEM_F)
+	c := m.AddAtom(molecule.ELEM_C) // Central carbon
+	h := m.AddAtom(molecule.ELEM_H)
+	o := m.AddAtom(molecule.ELEM_O)
+	n := m.AddAtom(molecule.ELEM_N)
+	f := m.AddAtom(molecule.ELEM_F)
 
-	m.AddBond(c, h, src.BOND_SINGLE)
-	m.AddBond(c, o, src.BOND_SINGLE)
-	m.AddBond(c, n, src.BOND_SINGLE)
-	m.AddBond(c, f, src.BOND_SINGLE)
+	m.AddBond(c, h, molecule.BOND_SINGLE)
+	m.AddBond(c, o, molecule.BOND_SINGLE)
+	m.AddBond(c, n, molecule.BOND_SINGLE)
+	m.AddBond(c, f, molecule.BOND_SINGLE)
 
 	// Check if it's a possible stereocenter
 	isPossible, hasImplH, hasLonePair := stereo.IsPossibleStereocenter(m, c)
@@ -123,15 +123,15 @@ func TestStereocenterDetection(t *testing.T) {
 
 // TestStereocenterFrom3D tests stereocenter detection from 3D coordinates
 func TestStereocenterFrom3D(t *testing.T) {
-	m := src.NewMolecule()
-	stereo := src.NewMoleculeStereocenters()
+	m := molecule.NewMolecule()
+	stereo := molecule.NewMoleculeStereocenters()
 
 	// Create a tetrahedral center with 3D coordinates
-	c := m.AddAtom(src.ELEM_C) // Central carbon
-	h1 := m.AddAtom(src.ELEM_H)
-	h2 := m.AddAtom(src.ELEM_H)
-	h3 := m.AddAtom(src.ELEM_H)
-	h4 := m.AddAtom(src.ELEM_H)
+	c := m.AddAtom(molecule.ELEM_C) // Central carbon
+	h1 := m.AddAtom(molecule.ELEM_H)
+	h2 := m.AddAtom(molecule.ELEM_H)
+	h3 := m.AddAtom(molecule.ELEM_H)
+	h4 := m.AddAtom(molecule.ELEM_H)
 
 	// Set coordinates for a tetrahedral arrangement
 	m.SetAtomXYZ(c, 0, 0, 0)
@@ -140,10 +140,10 @@ func TestStereocenterFrom3D(t *testing.T) {
 	m.SetAtomXYZ(h3, 0, 0, 1)
 	m.SetAtomXYZ(h4, -0.5, -0.5, -0.5)
 
-	m.AddBond(c, h1, src.BOND_SINGLE)
-	m.AddBond(c, h2, src.BOND_SINGLE)
-	m.AddBond(c, h3, src.BOND_SINGLE)
-	m.AddBond(c, h4, src.BOND_SINGLE)
+	m.AddBond(c, h1, molecule.BOND_SINGLE)
+	m.AddBond(c, h2, molecule.BOND_SINGLE)
+	m.AddBond(c, h3, molecule.BOND_SINGLE)
+	m.AddBond(c, h4, molecule.BOND_SINGLE)
 
 	// Build stereocenters from 3D
 	stereo.BuildFrom3DCoordinates(m)
@@ -160,7 +160,7 @@ func TestStereocenterFrom3D(t *testing.T) {
 
 // TestCisTransBasic tests basic cis/trans operations
 func TestCisTransBasic(t *testing.T) {
-	cisTrans := src.NewMoleculeCisTrans()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	// Register a bond
 	cisTrans.RegisterBond(0)
@@ -176,48 +176,48 @@ func TestCisTransBasic(t *testing.T) {
 
 // TestCisTransParity tests parity setting and getting
 func TestCisTransParity(t *testing.T) {
-	cisTrans := src.NewMoleculeCisTrans()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	subst := [4]int{1, 2, 3, 4}
-	cisTrans.Add(0, subst, src.CIS)
+	cisTrans.Add(0, subst, molecule.CIS)
 
 	parity := cisTrans.GetParity(0)
-	if parity != src.CIS {
+	if parity != molecule.CIS {
 		t.Errorf("parity should be CIS, got %d", parity)
 	}
 
 	// Change to TRANS
-	cisTrans.SetParity(0, src.TRANS)
+	cisTrans.SetParity(0, molecule.TRANS)
 	parity = cisTrans.GetParity(0)
-	if parity != src.TRANS {
+	if parity != molecule.TRANS {
 		t.Errorf("parity should be TRANS, got %d", parity)
 	}
 }
 
 // TestCisTransDetection tests cis/trans bond detection
 func TestCisTransDetection(t *testing.T) {
-	m := src.NewMolecule()
-	cisTrans := src.NewMoleculeCisTrans()
+	m := molecule.NewMolecule()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	// Create a double bond: C=C with substituents
 	// Structure: H-C=C-H with different groups
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	h1 := m.AddAtom(src.ELEM_H)
-	h2 := m.AddAtom(src.ELEM_H)
-	o := m.AddAtom(src.ELEM_O)
-	n := m.AddAtom(src.ELEM_N)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	h1 := m.AddAtom(molecule.ELEM_H)
+	h2 := m.AddAtom(molecule.ELEM_H)
+	o := m.AddAtom(molecule.ELEM_O)
+	n := m.AddAtom(molecule.ELEM_N)
 
 	// Double bond between c1 and c2
-	doubleBond := m.AddBond(c1, c2, src.BOND_DOUBLE)
+	doubleBond := m.AddBond(c1, c2, molecule.BOND_DOUBLE)
 
 	// Substituents on c1
-	m.AddBond(c1, h1, src.BOND_SINGLE)
-	m.AddBond(c1, o, src.BOND_SINGLE)
+	m.AddBond(c1, h1, molecule.BOND_SINGLE)
+	m.AddBond(c1, o, molecule.BOND_SINGLE)
 
 	// Substituents on c2
-	m.AddBond(c2, h2, src.BOND_SINGLE)
-	m.AddBond(c2, n, src.BOND_SINGLE)
+	m.AddBond(c2, h2, molecule.BOND_SINGLE)
+	m.AddBond(c2, n, molecule.BOND_SINGLE)
 
 	// Check if this is a geometric stereobond
 	isGeom := cisTrans.IsGeomStereoBond(m, doubleBond)
@@ -229,7 +229,7 @@ func TestCisTransDetection(t *testing.T) {
 
 // TestCisTransIgnore tests ignoring cis/trans configuration
 func TestCisTransIgnore(t *testing.T) {
-	cisTrans := src.NewMoleculeCisTrans()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	cisTrans.RegisterBond(0)
 	cisTrans.Ignore(0)
@@ -241,22 +241,22 @@ func TestCisTransIgnore(t *testing.T) {
 
 // TestCisTransBuild tests building cis/trans from molecule
 func TestCisTransBuild(t *testing.T) {
-	m := src.NewMolecule()
-	cisTrans := src.NewMoleculeCisTrans()
+	m := molecule.NewMolecule()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	// Create ethene (ethylene): H2C=CH2
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	h1 := m.AddAtom(src.ELEM_H)
-	h2 := m.AddAtom(src.ELEM_H)
-	h3 := m.AddAtom(src.ELEM_H)
-	h4 := m.AddAtom(src.ELEM_H)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	h1 := m.AddAtom(molecule.ELEM_H)
+	h2 := m.AddAtom(molecule.ELEM_H)
+	h3 := m.AddAtom(molecule.ELEM_H)
+	h4 := m.AddAtom(molecule.ELEM_H)
 
-	m.AddBond(c1, c2, src.BOND_DOUBLE)
-	m.AddBond(c1, h1, src.BOND_SINGLE)
-	m.AddBond(c1, h2, src.BOND_SINGLE)
-	m.AddBond(c2, h3, src.BOND_SINGLE)
-	m.AddBond(c2, h4, src.BOND_SINGLE)
+	m.AddBond(c1, c2, molecule.BOND_DOUBLE)
+	m.AddBond(c1, h1, molecule.BOND_SINGLE)
+	m.AddBond(c1, h2, molecule.BOND_SINGLE)
+	m.AddBond(c2, h3, molecule.BOND_SINGLE)
+	m.AddBond(c2, h4, molecule.BOND_SINGLE)
 
 	// Build cis/trans info
 	cisTrans.Build(m, nil)
@@ -270,17 +270,17 @@ func TestCisTransBuild(t *testing.T) {
 
 // TestCisTransString tests string representation
 func TestCisTransString(t *testing.T) {
-	cisTrans := src.NewMoleculeCisTrans()
+	cisTrans := molecule.NewMoleculeCisTrans()
 
 	subst := [4]int{1, 2, 3, 4}
-	cisTrans.Add(0, subst, src.CIS)
+	cisTrans.Add(0, subst, molecule.CIS)
 
 	s := cisTrans.String(0)
 	if s != "cis (Z)" {
 		t.Errorf("expected 'cis (Z)', got '%s'", s)
 	}
 
-	cisTrans.SetParity(0, src.TRANS)
+	cisTrans.SetParity(0, molecule.TRANS)
 	s = cisTrans.String(0)
 	if s != "trans (E)" {
 		t.Errorf("expected 'trans (E)', got '%s'", s)

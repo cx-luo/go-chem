@@ -1,7 +1,7 @@
 package test
 
 import (
-	"go-chem/src"
+	"go-chem/src/molecule"
 	"strings"
 	"testing"
 )
@@ -21,7 +21,7 @@ func TestMolfileLoadBasic(t *testing.T) {
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading MOL: %v", err)
 	}
@@ -35,21 +35,21 @@ M  END
 	}
 
 	// Check atom types
-	if mol.GetAtomNumber(0) != src.ELEM_C {
+	if mol.GetAtomNumber(0) != molecule.ELEM_C {
 		t.Error("atom 0 should be carbon")
 	}
-	if mol.GetAtomNumber(1) != src.ELEM_C {
+	if mol.GetAtomNumber(1) != molecule.ELEM_C {
 		t.Error("atom 1 should be carbon")
 	}
-	if mol.GetAtomNumber(2) != src.ELEM_O {
+	if mol.GetAtomNumber(2) != molecule.ELEM_O {
 		t.Error("atom 2 should be oxygen")
 	}
 
 	// Check bond orders
-	if mol.GetBondOrder(0) != src.BOND_SINGLE {
+	if mol.GetBondOrder(0) != molecule.BOND_SINGLE {
 		t.Error("bond 0 should be single")
 	}
-	if mol.GetBondOrder(1) != src.BOND_SINGLE {
+	if mol.GetBondOrder(1) != molecule.BOND_SINGLE {
 		t.Error("bond 1 should be single")
 	}
 }
@@ -67,7 +67,7 @@ M  CHG  1   2  -1
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading MOL: %v", err)
 	}
@@ -89,7 +89,7 @@ M  ISO  1   1   2
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading MOL: %v", err)
 	}
@@ -102,19 +102,19 @@ M  END
 // TestMolfileSaveBasic tests basic MOL file saving
 func TestMolfileSaveBasic(t *testing.T) {
 	// Create a simple molecule (methane: CH4)
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 	m.Name = "Methane"
 
-	c := m.AddAtom(src.ELEM_C)
-	h1 := m.AddAtom(src.ELEM_H)
-	h2 := m.AddAtom(src.ELEM_H)
-	h3 := m.AddAtom(src.ELEM_H)
-	h4 := m.AddAtom(src.ELEM_H)
+	c := m.AddAtom(molecule.ELEM_C)
+	h1 := m.AddAtom(molecule.ELEM_H)
+	h2 := m.AddAtom(molecule.ELEM_H)
+	h3 := m.AddAtom(molecule.ELEM_H)
+	h4 := m.AddAtom(molecule.ELEM_H)
 
-	m.AddBond(c, h1, src.BOND_SINGLE)
-	m.AddBond(c, h2, src.BOND_SINGLE)
-	m.AddBond(c, h3, src.BOND_SINGLE)
-	m.AddBond(c, h4, src.BOND_SINGLE)
+	m.AddBond(c, h1, molecule.BOND_SINGLE)
+	m.AddBond(c, h2, molecule.BOND_SINGLE)
+	m.AddBond(c, h3, molecule.BOND_SINGLE)
+	m.AddBond(c, h4, molecule.BOND_SINGLE)
 
 	// Set some coordinates
 	m.SetAtomXYZ(c, 0, 0, 0)
@@ -124,7 +124,7 @@ func TestMolfileSaveBasic(t *testing.T) {
 	m.SetAtomXYZ(h4, -1, -1, -1)
 
 	// Save to string
-	molString, err := src.SaveMoleculeToString(m)
+	molString, err := molecule.SaveMoleculeToString(m)
 	if err != nil {
 		t.Fatalf("error saving MOL: %v", err)
 	}
@@ -159,19 +159,19 @@ M  END
 `
 
 	// Load
-	mol, err := src.LoadMoleculeFromString(originalMol)
+	mol, err := molecule.LoadMoleculeFromString(originalMol)
 	if err != nil {
 		t.Fatalf("error loading: %v", err)
 	}
 
 	// Save
-	savedMol, err := src.SaveMoleculeToString(mol)
+	savedMol, err := molecule.SaveMoleculeToString(mol)
 	if err != nil {
 		t.Fatalf("error saving: %v", err)
 	}
 
 	// Load again
-	mol2, err := src.LoadMoleculeFromString(savedMol)
+	mol2, err := molecule.LoadMoleculeFromString(savedMol)
 	if err != nil {
 		t.Fatalf("error reloading: %v", err)
 	}
@@ -216,19 +216,19 @@ func TestMolfileBondTypes(t *testing.T) {
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading: %v", err)
 	}
 
 	// Check bond types: single, double, triple
-	if mol.GetBondOrder(0) != src.BOND_SINGLE {
+	if mol.GetBondOrder(0) != molecule.BOND_SINGLE {
 		t.Error("bond 0 should be single")
 	}
-	if mol.GetBondOrder(1) != src.BOND_DOUBLE {
+	if mol.GetBondOrder(1) != molecule.BOND_DOUBLE {
 		t.Error("bond 1 should be double")
 	}
-	if mol.GetBondOrder(2) != src.BOND_TRIPLE {
+	if mol.GetBondOrder(2) != molecule.BOND_TRIPLE {
 		t.Error("bond 2 should be triple")
 	}
 }
@@ -245,7 +245,7 @@ func TestMolfilePseudoAtom(t *testing.T) {
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading: %v", err)
 	}
@@ -280,7 +280,7 @@ func TestMolfileStereo(t *testing.T) {
 M  END
 `
 
-	mol, err := src.LoadMoleculeFromString(molString)
+	mol, err := molecule.LoadMoleculeFromString(molString)
 	if err != nil {
 		t.Fatalf("error loading: %v", err)
 	}
@@ -291,10 +291,10 @@ M  END
 	}
 
 	// Check bond directions
-	if mol.GetBondDirection(1) != src.BOND_UP {
+	if mol.GetBondDirection(1) != molecule.BOND_UP {
 		t.Error("bond 1 should be wedge (up)")
 	}
-	if mol.GetBondDirection(2) != src.BOND_DOWN {
+	if mol.GetBondDirection(2) != molecule.BOND_DOWN {
 		t.Error("bond 2 should be hash (down)")
 	}
 }

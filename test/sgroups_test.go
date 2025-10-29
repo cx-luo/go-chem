@@ -1,15 +1,15 @@
 package test
 
 import (
-	"go-chem/src"
+	"go-chem/src/molecule"
 	"testing"
 )
 
 // TestSGroupBasic tests basic S-Group operations
 func TestSGroupBasic(t *testing.T) {
-	sg := src.NewSGroup(src.SGroupGeneric)
+	sg := molecule.NewSGroup(molecule.SGroupGeneric)
 
-	if sg.Type != src.SGroupGeneric {
+	if sg.Type != molecule.SGroupGeneric {
 		t.Error("S-Group type should be Generic")
 	}
 
@@ -34,16 +34,16 @@ func TestSGroupBasic(t *testing.T) {
 
 // TestSGroupTypes tests different S-Group types
 func TestSGroupTypes(t *testing.T) {
-	types := []src.SGroupType{
-		src.SGroupGeneric,
-		src.SGroupData,
-		src.SGroupSuperatom,
-		src.SGroupSRU,
-		src.SGroupMultiple,
+	types := []molecule.SGroupType{
+		molecule.SGroupGeneric,
+		molecule.SGroupData,
+		molecule.SGroupSuperatom,
+		molecule.SGroupSRU,
+		molecule.SGroupMultiple,
 	}
 
 	for _, sgType := range types {
-		sg := src.NewSGroup(sgType)
+		sg := molecule.NewSGroup(sgType)
 		if sg.Type != sgType {
 			t.Errorf("type mismatch for %v", sgType)
 		}
@@ -59,9 +59,9 @@ func TestSGroupTypes(t *testing.T) {
 
 // TestDataSGroup tests Data S-Group
 func TestDataSGroup(t *testing.T) {
-	ds := src.NewDataSGroup()
+	ds := molecule.NewDataSGroup()
 
-	if ds.Type != src.SGroupData {
+	if ds.Type != molecule.SGroupData {
 		t.Error("should be Data S-Group")
 	}
 
@@ -84,9 +84,9 @@ func TestDataSGroup(t *testing.T) {
 
 // TestSuperatom tests Superatom S-Group
 func TestSuperatom(t *testing.T) {
-	sa := src.NewSuperatom("Ph")
+	sa := molecule.NewSuperatom("Ph")
 
-	if sa.Type != src.SGroupSuperatom {
+	if sa.Type != molecule.SGroupSuperatom {
 		t.Error("should be Superatom S-Group")
 	}
 
@@ -108,9 +108,9 @@ func TestSuperatom(t *testing.T) {
 
 // TestMultipleGroup tests Multiple S-Group
 func TestMultipleGroup(t *testing.T) {
-	mg := src.NewMultipleGroup(3)
+	mg := molecule.NewMultipleGroup(3)
 
-	if mg.Type != src.SGroupMultiple {
+	if mg.Type != molecule.SGroupMultiple {
 		t.Error("should be Multiple S-Group")
 	}
 
@@ -128,9 +128,9 @@ func TestMultipleGroup(t *testing.T) {
 
 // TestSRUGroup tests SRU S-Group
 func TestSRUGroup(t *testing.T) {
-	sru := src.NewSRUGroup()
+	sru := molecule.NewSRUGroup()
 
-	if sru.Type != src.SGroupSRU {
+	if sru.Type != molecule.SGroupSRU {
 		t.Error("should be SRU S-Group")
 	}
 
@@ -139,29 +139,29 @@ func TestSRUGroup(t *testing.T) {
 	}
 
 	// Set connectivity
-	sru.Connectivity = src.SGroupConnHeadToTail
+	sru.Connectivity = molecule.SGroupConnHeadToTail
 
-	if sru.Connectivity != src.SGroupConnHeadToTail {
+	if sru.Connectivity != molecule.SGroupConnHeadToTail {
 		t.Error("connectivity not set correctly")
 	}
 }
 
 // TestMoleculeSGroups tests S-Groups manager
 func TestMoleculeSGroups(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
 	if sgroups.Count() != 0 {
 		t.Error("should start with 0 S-Groups")
 	}
 
 	// Add different types of S-Groups
-	sg1 := src.NewSGroup(src.SGroupGeneric)
+	sg1 := molecule.NewSGroup(molecule.SGroupGeneric)
 	idx1 := sgroups.Add(sg1)
 
-	sa := src.NewSuperatom("Et")
+	sa := molecule.NewSuperatom("Et")
 	idx2 := sgroups.Add(sa)
 
-	ds := src.NewDataSGroup()
+	ds := molecule.NewDataSGroup()
 	idx3 := sgroups.Add(ds)
 
 	if sgroups.Count() != 3 {
@@ -178,7 +178,7 @@ func TestMoleculeSGroups(t *testing.T) {
 	}
 
 	// Test finding by type
-	superatoms := sgroups.FindByType(src.SGroupSuperatom)
+	superatoms := sgroups.FindByType(molecule.SGroupSuperatom)
 	if len(superatoms) != 1 {
 		t.Errorf("should find 1 superatom, got %d", len(superatoms))
 	}
@@ -188,16 +188,16 @@ func TestMoleculeSGroups(t *testing.T) {
 
 // TestSGroupsGetByType tests getting S-Groups by type
 func TestSGroupsGetByType(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
 	// Add multiple superatoms
-	sgroups.Add(src.NewSuperatom("Ph"))
-	sgroups.Add(src.NewSuperatom("Et"))
-	sgroups.Add(src.NewSuperatom("Me"))
+	sgroups.Add(molecule.NewSuperatom("Ph"))
+	sgroups.Add(molecule.NewSuperatom("Et"))
+	sgroups.Add(molecule.NewSuperatom("Me"))
 
 	// Add other types
-	sgroups.Add(src.NewDataSGroup())
-	sgroups.Add(src.NewSRUGroup())
+	sgroups.Add(molecule.NewDataSGroup())
+	sgroups.Add(molecule.NewSRUGroup())
 
 	// Get superatoms
 	superatoms := sgroups.GetSuperatoms()
@@ -220,11 +220,11 @@ func TestSGroupsGetByType(t *testing.T) {
 
 // TestSGroupRemove tests removing S-Groups
 func TestSGroupRemove(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
-	sgroups.Add(src.NewSGroup(src.SGroupGeneric))
-	sgroups.Add(src.NewSuperatom("Ph"))
-	sgroups.Add(src.NewDataSGroup())
+	sgroups.Add(molecule.NewSGroup(molecule.SGroupGeneric))
+	sgroups.Add(molecule.NewSuperatom("Ph"))
+	sgroups.Add(molecule.NewDataSGroup())
 
 	if sgroups.Count() != 3 {
 		t.Fatal("should have 3 S-Groups")
@@ -240,10 +240,10 @@ func TestSGroupRemove(t *testing.T) {
 
 // TestSGroupClear tests clearing all S-Groups
 func TestSGroupClear(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
-	sgroups.Add(src.NewSGroup(src.SGroupGeneric))
-	sgroups.Add(src.NewSuperatom("Ph"))
+	sgroups.Add(molecule.NewSGroup(molecule.SGroupGeneric))
+	sgroups.Add(molecule.NewSuperatom("Ph"))
 
 	sgroups.Clear()
 
@@ -256,17 +256,17 @@ func TestSGroupClear(t *testing.T) {
 func TestParseSGroupType(t *testing.T) {
 	testCases := []struct {
 		str      string
-		expected src.SGroupType
+		expected molecule.SGroupType
 	}{
-		{"GEN", src.SGroupGeneric},
-		{"DAT", src.SGroupData},
-		{"SUP", src.SGroupSuperatom},
-		{"SRU", src.SGroupSRU},
-		{"MUL", src.SGroupMultiple},
+		{"GEN", molecule.SGroupGeneric},
+		{"DAT", molecule.SGroupData},
+		{"SUP", molecule.SGroupSuperatom},
+		{"SRU", molecule.SGroupSRU},
+		{"MUL", molecule.SGroupMultiple},
 	}
 
 	for _, tc := range testCases {
-		result := src.ParseSGroupTypeString(tc.str)
+		result := molecule.ParseSGroupTypeString(tc.str)
 		if result != tc.expected {
 			t.Errorf("parsing '%s': expected %v, got %v", tc.str, tc.expected, result)
 		}
@@ -275,19 +275,19 @@ func TestParseSGroupType(t *testing.T) {
 
 // TestSGroupBrackets tests bracket handling
 func TestSGroupBrackets(t *testing.T) {
-	sg := src.NewSGroup(src.SGroupSRU)
+	sg := molecule.NewSGroup(molecule.SGroupSRU)
 
 	// Add brackets
-	bracket1 := src.Bracket{
-		Start: src.Vec2f{X: 0.0, Y: 0.0},
-		End:   src.Vec2f{X: 1.0, Y: 0.0},
+	bracket1 := molecule.Bracket{
+		Start: molecule.Vec2f{X: 0.0, Y: 0.0},
+		End:   molecule.Vec2f{X: 1.0, Y: 0.0},
 	}
-	bracket2 := src.Bracket{
-		Start: src.Vec2f{X: 2.0, Y: 0.0},
-		End:   src.Vec2f{X: 3.0, Y: 0.0},
+	bracket2 := molecule.Bracket{
+		Start: molecule.Vec2f{X: 2.0, Y: 0.0},
+		End:   molecule.Vec2f{X: 3.0, Y: 0.0},
 	}
 
-	sg.Brackets = []src.Bracket{bracket1, bracket2}
+	sg.Brackets = []molecule.Bracket{bracket1, bracket2}
 
 	if len(sg.Brackets) != 2 {
 		t.Errorf("should have 2 brackets, got %d", len(sg.Brackets))
@@ -296,9 +296,9 @@ func TestSGroupBrackets(t *testing.T) {
 
 // TestRemoveAtomsFromSGroups tests atom removal from S-Groups
 func TestRemoveAtomsFromSGroups(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
-	sg := src.NewSGroup(src.SGroupGeneric)
+	sg := molecule.NewSGroup(molecule.SGroupGeneric)
 	sg.AddAtom(0)
 	sg.AddAtom(1)
 	sg.AddAtom(2)
@@ -313,7 +313,7 @@ func TestRemoveAtomsFromSGroups(t *testing.T) {
 
 	// Should have 2 atoms remaining (0 and 2, mapped to 0 and 1)
 	retrieved, _ := sgroups.Get(0)
-	if sg, ok := retrieved.(*src.SGroup); ok {
+	if sg, ok := retrieved.(*molecule.SGroup); ok {
 		if len(sg.Atoms) != 2 {
 			t.Errorf("should have 2 atoms remaining, got %d", len(sg.Atoms))
 		}
@@ -322,14 +322,14 @@ func TestRemoveAtomsFromSGroups(t *testing.T) {
 
 // TestFindAtomsInSGroups tests finding all atoms in S-Groups
 func TestFindAtomsInSGroups(t *testing.T) {
-	sgroups := src.NewMoleculeSGroups()
+	sgroups := molecule.NewMoleculeSGroups()
 
-	sg1 := src.NewSGroup(src.SGroupGeneric)
+	sg1 := molecule.NewSGroup(molecule.SGroupGeneric)
 	sg1.AddAtom(0)
 	sg1.AddAtom(1)
 	sgroups.Add(sg1)
 
-	sg2 := src.NewSuperatom("Ph")
+	sg2 := molecule.NewSuperatom("Ph")
 	sg2.AddAtom(2)
 	sg2.AddAtom(3)
 	sg2.AddAtom(4)
@@ -351,22 +351,22 @@ func TestFindAtomsInSGroups(t *testing.T) {
 
 // TestDisplayOption tests display options
 func TestDisplayOption(t *testing.T) {
-	sg := src.NewSuperatom("Ph")
+	sg := molecule.NewSuperatom("Ph")
 
 	// Default should be undefined
-	if sg.DisplayOpt != src.DisplayUndefined {
+	if sg.DisplayOpt != molecule.DisplayUndefined {
 		t.Error("default display option should be undefined")
 	}
 
 	// Set to contracted
-	sg.DisplayOpt = src.DisplayContracted
-	if sg.DisplayOpt != src.DisplayContracted {
+	sg.DisplayOpt = molecule.DisplayContracted
+	if sg.DisplayOpt != molecule.DisplayContracted {
 		t.Error("display option should be contracted")
 	}
 
 	// Set to expanded
-	sg.DisplayOpt = src.DisplayExpanded
-	if sg.DisplayOpt != src.DisplayExpanded {
+	sg.DisplayOpt = molecule.DisplayExpanded
+	if sg.DisplayOpt != molecule.DisplayExpanded {
 		t.Error("display option should be expanded")
 	}
 }

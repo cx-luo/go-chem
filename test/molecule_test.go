@@ -1,36 +1,37 @@
 package test
 
 import (
-	"go-chem/src"
+	"fmt"
+	"go-chem/src/molecule"
 	"testing"
 )
 
 // TestMoleculeBasics tests basic molecule operations
 func TestMoleculeBasics(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
 	// Test adding atoms
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	c3 := m.AddAtom(src.ELEM_C)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	c3 := m.AddAtom(molecule.ELEM_C)
 
 	if m.AtomCount() != 3 {
 		t.Fatalf("expected 3 atoms, got %d", m.AtomCount())
 	}
 
 	// Test adding bonds
-	b1 := m.AddBond(c1, c2, src.BOND_SINGLE)
-	b2 := m.AddBond(c2, c3, src.BOND_DOUBLE)
+	b1 := m.AddBond(c1, c2, molecule.BOND_SINGLE)
+	b2 := m.AddBond(c2, c3, molecule.BOND_DOUBLE)
 
 	if m.BondCount() != 2 {
 		t.Fatalf("expected 2 bonds, got %d", m.BondCount())
 	}
 
 	// Test bond order
-	if m.GetBondOrder(b1) != src.BOND_SINGLE {
+	if m.GetBondOrder(b1) != molecule.BOND_SINGLE {
 		t.Errorf("bond 1 should be single")
 	}
-	if m.GetBondOrder(b2) != src.BOND_DOUBLE {
+	if m.GetBondOrder(b2) != molecule.BOND_DOUBLE {
 		t.Errorf("bond 2 should be double")
 	}
 
@@ -43,9 +44,9 @@ func TestMoleculeBasics(t *testing.T) {
 
 // TestAtomProperties tests atom property management
 func TestAtomProperties(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	o := m.AddAtom(src.ELEM_O)
+	o := m.AddAtom(molecule.ELEM_O)
 
 	// Test charge
 	m.SetAtomCharge(o, -1)
@@ -60,17 +61,17 @@ func TestAtomProperties(t *testing.T) {
 	}
 
 	// Test radical
-	m.SetAtomRadical(o, src.RADICAL_DOUBLET)
-	if m.Atoms[o].Radical != src.RADICAL_DOUBLET {
+	m.SetAtomRadical(o, molecule.RADICAL_DOUBLET)
+	if m.Atoms[o].Radical != molecule.RADICAL_DOUBLET {
 		t.Errorf("expected radical doublet")
 	}
 }
 
 // TestPseudoAtom tests pseudo atom handling
 func TestPseudoAtom(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	idx := m.AddAtom(src.ELEM_PSEUDO)
+	idx := m.AddAtom(molecule.ELEM_PSEUDO)
 	m.SetPseudoAtom(idx, "Ph")
 
 	if !m.IsPseudoAtom(idx) {
@@ -88,9 +89,9 @@ func TestPseudoAtom(t *testing.T) {
 
 // TestCoordinates tests 2D and 3D coordinate handling
 func TestCoordinates(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	c := m.AddAtom(src.ELEM_C)
+	c := m.AddAtom(molecule.ELEM_C)
 
 	// Test 3D coordinates
 	m.SetAtomXYZ(c, 1.0, 2.0, 3.0)
@@ -115,12 +116,12 @@ func TestCoordinates(t *testing.T) {
 
 // TestMoleculeClone tests molecule cloning
 func TestMoleculeClone(t *testing.T) {
-	m1 := src.NewMolecule()
+	m1 := molecule.NewMolecule()
 	m1.Name = "Original"
 
-	c1 := m1.AddAtom(src.ELEM_C)
-	c2 := m1.AddAtom(src.ELEM_C)
-	m1.AddBond(c1, c2, src.BOND_DOUBLE)
+	c1 := m1.AddAtom(molecule.ELEM_C)
+	c2 := m1.AddAtom(molecule.ELEM_C)
+	m1.AddBond(c1, c2, molecule.BOND_DOUBLE)
 
 	// Clone the molecule
 	m2 := m1.Clone()
@@ -138,7 +139,7 @@ func TestMoleculeClone(t *testing.T) {
 	}
 
 	// Modify clone and ensure original is unchanged
-	m2.AddAtom(src.ELEM_O)
+	m2.AddAtom(molecule.ELEM_O)
 
 	if m1.AtomCount() != 2 {
 		t.Error("modifying clone should not affect original")
@@ -151,14 +152,14 @@ func TestMoleculeClone(t *testing.T) {
 
 // TestFindBond tests bond finding functionality
 func TestFindBond(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	c3 := m.AddAtom(src.ELEM_C)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	c3 := m.AddAtom(molecule.ELEM_C)
 
-	b1 := m.AddBond(c1, c2, src.BOND_SINGLE)
-	m.AddBond(c2, c3, src.BOND_DOUBLE)
+	b1 := m.AddBond(c1, c2, molecule.BOND_SINGLE)
+	m.AddBond(c2, c3, molecule.BOND_DOUBLE)
 
 	// Find existing bond
 	found := m.FindBond(c1, c2)
@@ -181,12 +182,12 @@ func TestFindBond(t *testing.T) {
 
 // TestImplicitHydrogens tests implicit hydrogen calculation
 func TestImplicitHydrogens(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
 	// Methyl carbon (CH3)
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	m.AddBond(c1, c2, src.BOND_SINGLE)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	m.AddBond(c1, c2, molecule.BOND_SINGLE)
 
 	// c1 has 1 bond, should have 3 implicit H
 	implH := m.GetImplicitH(c1)
@@ -197,16 +198,20 @@ func TestImplicitHydrogens(t *testing.T) {
 
 // TestGetOtherBondEnd tests getting the other end of a bond
 func TestGetOtherBondEnd(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	b := m.AddBond(c1, c2, src.BOND_SINGLE)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	b := m.AddBond(c1, c2, molecule.BOND_SINGLE)
 
 	other := m.GetOtherBondEnd(b, c1)
 	if other != c2 {
 		t.Errorf("other end should be c2, got %d", other)
 	}
+
+	unit := molecule.CollectGross(m, molecule.GrossFormulaOptions{AddRSites: true, AddIsotopes: true})
+	s := molecule.GrossUnitsToStringHill(unit, true)
+	fmt.Println(unit, s)
 
 	other = m.GetOtherBondEnd(b, c2)
 	if other != c1 {
@@ -216,14 +221,14 @@ func TestGetOtherBondEnd(t *testing.T) {
 
 // TestMolecularWeight tests molecular weight calculation
 func TestMolecularWeight(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
 	// Water: H2O
-	o := m.AddAtom(src.ELEM_O)
-	h1 := m.AddAtom(src.ELEM_H)
-	h2 := m.AddAtom(src.ELEM_H)
-	m.AddBond(o, h1, src.BOND_SINGLE)
-	m.AddBond(o, h2, src.BOND_SINGLE)
+	o := m.AddAtom(molecule.ELEM_O)
+	h1 := m.AddAtom(molecule.ELEM_H)
+	h2 := m.AddAtom(molecule.ELEM_H)
+	m.AddBond(o, h1, molecule.BOND_SINGLE)
+	m.AddBond(o, h2, molecule.BOND_SINGLE)
 
 	mw := m.CalcMolecularWeight()
 
@@ -236,35 +241,35 @@ func TestMolecularWeight(t *testing.T) {
 
 // TestBondDirection tests stereochemical bond directions
 func TestBondDirection(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
-	c1 := m.AddAtom(src.ELEM_C)
-	c2 := m.AddAtom(src.ELEM_C)
-	b := m.AddBond(c1, c2, src.BOND_SINGLE)
+	c1 := m.AddAtom(molecule.ELEM_C)
+	c2 := m.AddAtom(molecule.ELEM_C)
+	b := m.AddBond(c1, c2, molecule.BOND_SINGLE)
 
 	// Set up wedge
-	m.SetBondDirection(b, src.BOND_UP)
+	m.SetBondDirection(b, molecule.BOND_UP)
 
-	if m.GetBondDirection(b) != src.BOND_UP {
+	if m.GetBondDirection(b) != molecule.BOND_UP {
 		t.Error("bond direction should be UP")
 	}
 
 	// Change to down
-	m.SetBondDirection(b, src.BOND_DOWN)
+	m.SetBondDirection(b, molecule.BOND_DOWN)
 
-	if m.GetBondDirection(b) != src.BOND_DOWN {
+	if m.GetBondDirection(b) != molecule.BOND_DOWN {
 		t.Error("bond direction should be DOWN")
 	}
 }
 
 // TestEditRevision tests edit revision tracking
 func TestEditRevision(t *testing.T) {
-	m := src.NewMolecule()
+	m := molecule.NewMolecule()
 
 	rev1 := m.GetEditRevision()
 
 	// Add atom should increment revision
-	m.AddAtom(src.ELEM_C)
+	m.AddAtom(molecule.ELEM_C)
 	rev2 := m.GetEditRevision()
 
 	if rev2 <= rev1 {

@@ -1,14 +1,14 @@
 package test
 
 import (
-	"go-chem/src"
+	"go-chem/src/molecule"
 	"testing"
 )
 
 // TestFingerprintBasic tests basic fingerprint operations
 func TestFingerprintBasic(t *testing.T) {
-	params := src.DefaultFingerprintParameters()
-	fp := src.NewFingerprint(params)
+	params := molecule.DefaultFingerprintParameters()
+	fp := molecule.NewFingerprint(params)
 
 	if fp.Size != 2048 {
 		t.Errorf("expected size 2048, got %d", fp.Size)
@@ -37,7 +37,7 @@ func TestFingerprintFromMolecule(t *testing.T) {
 	m := buildBenzeneLike()
 
 	// Generate fingerprint
-	fp := src.GenerateFingerprint(m)
+	fp := molecule.GenerateFingerprint(m)
 
 	if fp == nil {
 		t.Fatal("fingerprint should not be nil")
@@ -55,35 +55,35 @@ func TestFingerprintFromMolecule(t *testing.T) {
 // TestFingerprintSimilarity tests similarity calculations
 func TestFingerprintSimilarity(t *testing.T) {
 	// Create two identical molecules
-	m1 := src.NewMolecule()
-	c1 := m1.AddAtom(src.ELEM_C)
-	c2 := m1.AddAtom(src.ELEM_C)
-	m1.AddBond(c1, c2, src.BOND_SINGLE)
+	m1 := molecule.NewMolecule()
+	c1 := m1.AddAtom(molecule.ELEM_C)
+	c2 := m1.AddAtom(molecule.ELEM_C)
+	m1.AddBond(c1, c2, molecule.BOND_SINGLE)
 
 	m2 := m1.Clone()
 
 	// Generate fingerprints
-	fp1 := src.GenerateFingerprint(m1)
-	fp2 := src.GenerateFingerprint(m2)
+	fp1 := molecule.GenerateFingerprint(m1)
+	fp2 := molecule.GenerateFingerprint(m2)
 
 	// Tanimoto similarity should be 1.0 for identical molecules
-	similarity := src.TanimotoSimilarity(fp1, fp2)
+	similarity := molecule.TanimotoSimilarity(fp1, fp2)
 	if similarity != 1.0 {
 		t.Errorf("identical molecules should have similarity 1.0, got %f", similarity)
 	}
 
 	// Create a different molecule
-	m3 := src.NewMolecule()
-	o := m3.AddAtom(src.ELEM_O)
-	h1 := m3.AddAtom(src.ELEM_H)
-	h2 := m3.AddAtom(src.ELEM_H)
-	m3.AddBond(o, h1, src.BOND_SINGLE)
-	m3.AddBond(o, h2, src.BOND_SINGLE)
+	m3 := molecule.NewMolecule()
+	o := m3.AddAtom(molecule.ELEM_O)
+	h1 := m3.AddAtom(molecule.ELEM_H)
+	h2 := m3.AddAtom(molecule.ELEM_H)
+	m3.AddBond(o, h1, molecule.BOND_SINGLE)
+	m3.AddBond(o, h2, molecule.BOND_SINGLE)
 
-	fp3 := src.GenerateFingerprint(m3)
+	fp3 := molecule.GenerateFingerprint(m3)
 
 	// Similarity should be less than 1.0 for different molecules
-	similarity2 := src.TanimotoSimilarity(fp1, fp3)
+	similarity2 := molecule.TanimotoSimilarity(fp1, fp3)
 	if similarity2 >= 1.0 {
 		t.Errorf("different molecules should have similarity < 1.0, got %f", similarity2)
 	}
@@ -96,13 +96,13 @@ func TestFingerprintECFP(t *testing.T) {
 	m := buildBenzeneLike()
 
 	// Generate ECFP4 fingerprint
-	fp := src.GenerateFingerprintECFP4(m)
+	fp := molecule.GenerateFingerprintECFP4(m)
 
 	if fp == nil {
 		t.Fatal("ECFP fingerprint should not be nil")
 	}
 
-	if fp.Type != src.FingerprintECFP4 {
+	if fp.Type != molecule.FingerprintECFP4 {
 		t.Error("fingerprint type should be ECFP4")
 	}
 
@@ -119,29 +119,29 @@ func TestFingerprintDifferentTypes(t *testing.T) {
 	m := buildBenzeneLike()
 
 	// Path-based
-	params1 := src.FingerprintParameters{
-		Type:    src.FingerprintPath,
+	params1 := molecule.FingerprintParameters{
+		Type:    molecule.FingerprintPath,
 		Size:    2048,
 		MinPath: 1,
 		MaxPath: 7,
 	}
-	builder1 := src.NewFingerprintBuilder(m, params1)
+	builder1 := molecule.NewFingerprintBuilder(m, params1)
 	fp1 := builder1.Build()
 
 	// ECFP2
-	params2 := src.FingerprintParameters{
-		Type: src.FingerprintECFP2,
+	params2 := molecule.FingerprintParameters{
+		Type: molecule.FingerprintECFP2,
 		Size: 2048,
 	}
-	builder2 := src.NewFingerprintBuilder(m, params2)
+	builder2 := molecule.NewFingerprintBuilder(m, params2)
 	fp2 := builder2.Build()
 
 	// ECFP6
-	params3 := src.FingerprintParameters{
-		Type: src.FingerprintECFP6,
+	params3 := molecule.FingerprintParameters{
+		Type: molecule.FingerprintECFP6,
 		Size: 2048,
 	}
-	builder3 := src.NewFingerprintBuilder(m, params3)
+	builder3 := molecule.NewFingerprintBuilder(m, params3)
 	fp3 := builder3.Build()
 
 	// All should have some bits set
@@ -156,10 +156,10 @@ func TestFingerprintDifferentTypes(t *testing.T) {
 // TestDiceSimilarity tests Dice coefficient
 func TestDiceSimilarity(t *testing.T) {
 	m := buildBenzeneLike()
-	fp1 := src.GenerateFingerprint(m)
-	fp2 := src.GenerateFingerprint(m)
+	fp1 := molecule.GenerateFingerprint(m)
+	fp2 := molecule.GenerateFingerprint(m)
 
-	similarity := src.DiceSimilarity(fp1, fp2)
+	similarity := molecule.DiceSimilarity(fp1, fp2)
 	if similarity != 1.0 {
 		t.Errorf("Dice similarity of identical fingerprints should be 1.0, got %f", similarity)
 	}
@@ -168,10 +168,10 @@ func TestDiceSimilarity(t *testing.T) {
 // TestCosineSimilarity tests cosine similarity
 func TestCosineSimilarity(t *testing.T) {
 	m := buildBenzeneLike()
-	fp1 := src.GenerateFingerprint(m)
-	fp2 := src.GenerateFingerprint(m)
+	fp1 := molecule.GenerateFingerprint(m)
+	fp2 := molecule.GenerateFingerprint(m)
 
-	similarity := src.CosineSimilarity(fp1, fp2)
+	similarity := molecule.CosineSimilarity(fp1, fp2)
 	if similarity != 1.0 {
 		t.Errorf("Cosine similarity of identical fingerprints should be 1.0, got %f", similarity)
 	}
@@ -179,8 +179,8 @@ func TestCosineSimilarity(t *testing.T) {
 
 // TestFingerprintHexString tests hex string conversion
 func TestFingerprintHexString(t *testing.T) {
-	params := src.DefaultFingerprintParameters()
-	fp := src.NewFingerprint(params)
+	params := molecule.DefaultFingerprintParameters()
+	fp := molecule.NewFingerprint(params)
 
 	fp.SetBit(0)
 	fp.SetBit(8)
@@ -201,13 +201,13 @@ func TestFingerprintHexString(t *testing.T) {
 
 // TestFingerprintDistance tests distance calculations
 func TestFingerprintDistance(t *testing.T) {
-	fd := &src.FingerprintDistance{}
+	fd := &molecule.FingerprintDistance{}
 
 	m1 := buildBenzeneLike()
 	m2 := m1.Clone()
 
-	fp1 := src.GenerateFingerprint(m1)
-	fp2 := src.GenerateFingerprint(m2)
+	fp1 := molecule.GenerateFingerprint(m1)
+	fp2 := molecule.GenerateFingerprint(m2)
 
 	// Hamming distance should be 0 for identical fingerprints
 	hamming := fd.HammingDistance(fp1, fp2)
