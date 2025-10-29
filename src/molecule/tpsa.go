@@ -1,7 +1,7 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @File    : tpsa.go
-package src
+package molecule
 
 // CalculateTPSA computes a simplified Topological Polar Surface Area.
 // This is a placeholder approximation: counts contributions from O and N atoms

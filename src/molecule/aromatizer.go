@@ -1,11 +1,11 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @Time    : 2025/10/13 15:50
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
 // @File    : aromatizer.go
 // @Software: GoLand
-package src
+package molecule
 
 // AromatizerBase provides a simple API to aromatize/dearomatize a molecule.
 // This is a minimal and pluggable placeholder; full parity with Indigo's

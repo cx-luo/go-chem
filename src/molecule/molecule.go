@@ -1,4 +1,4 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // coding=utf-8
 // @Project : go-chem
 // @Time    : 2025/10/13 15:21
@@ -6,7 +6,7 @@
 // @Email   : chengxiang.luo@foxmail.com
 // @File    : molecule.go
 // @Software: GoLand
-package src
+package molecule
 
 import (
 	"fmt"

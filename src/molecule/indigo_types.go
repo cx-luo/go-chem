@@ -1,8 +1,8 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @File    : indigo_types.go
 // Shared lightweight types/constants mirroring Indigo headers where practical.
-package src
+package molecule
 
 // Index aliases for readability
 type AtomIndex = int

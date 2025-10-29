@@ -1,6 +1,6 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // This file implements S-Groups (Sgroups) for representing structural features.
-package src
+package molecule
 
 import (
 	"fmt"

@@ -1,7 +1,7 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @File    : cml.go
-package src
+package molecule
 
 import "fmt"
 

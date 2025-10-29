@@ -1,7 +1,7 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @File    : lipinski.go
-package src
+package molecule
 
 // NumRotatableBonds returns a naive count of rotatable single bonds (non-terminal, non-ring approximation)
 func NumRotatableBonds(m *Molecule) int {

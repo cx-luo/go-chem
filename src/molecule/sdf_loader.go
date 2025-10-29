@@ -1,7 +1,7 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // This file implements SDF (Structure Data File) format loading.
 // SDF files contain multiple MOL structures with associated data.
-package src
+package molecule
 
 import (
 	"bufio"

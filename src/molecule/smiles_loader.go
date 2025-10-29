@@ -1,11 +1,11 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @Time    : 2025/10/13 16:12
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
 // @File    : smiles_loader.go
 // @Software: GoLand
-package src
+package molecule
 
 import (
 	"fmt"

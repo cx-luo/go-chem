@@ -1,7 +1,7 @@
-// Package src coding=utf-8
+// Package molecule coding=utf-8
 // @Project : go-chem
 // @File    : io_interfaces.go
-package src
+package molecule
 
 // MoleculeLoader provides a common interface for loading molecules from text or files.
 type MoleculeLoader interface {

@@ -1,6 +1,6 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // This file implements cis/trans (E/Z) stereochemistry handling.
-package src
+package molecule
 
 import (
 	"fmt"

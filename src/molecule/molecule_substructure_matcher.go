@@ -1,6 +1,6 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // This file implements substructure matching (subgraph isomorphism).
-package src
+package molecule
 
 import (
 	"fmt"

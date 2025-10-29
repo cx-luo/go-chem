@@ -1,6 +1,6 @@
-// Package src provides molecular structure manipulation and analysis tools.
+// Package molecule provides molecular structure manipulation and analysis tools.
 // This file implements molecular fingerprint generation for similarity searching.
-package src
+package molecule
 
 import (
 	"hash/fnv"
