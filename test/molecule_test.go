@@ -205,6 +205,8 @@ func TestGetOtherBondEnd(t *testing.T) {
 	b := m.AddBond(c1, c2, molecule.BOND_TRIPLE)
 
 	fmt.Println(m.CalcMolecularWeight())
+	unit := molecule.CollectGross(m, molecule.GrossFormulaOptions{})
+	fmt.Println(molecule.GrossUnitsToStringHill(unit, false))
 
 	other := m.GetOtherBondEnd(b, c1)
 	if other != c2 {

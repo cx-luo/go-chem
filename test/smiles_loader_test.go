@@ -15,19 +15,30 @@ func TestSMILES_Ethene(t *testing.T) {
 	if len(m.Atoms) != 2 || len(m.Bonds) != 1 {
 		t.Fatalf("expected 2 atoms and 1 bond, got %d atoms %d bonds", len(m.Atoms), len(m.Bonds))
 	}
+
+	fmt.Println(m.CalcMolecularWeight())
+	unit := srcpkg.CollectGross(m, srcpkg.GrossFormulaOptions{})
+	fmt.Println(srcpkg.GrossUnitsToStringHill(unit, false))
+	fmt.Println(m.CalculateMoleculeHash())
+
 	if m.GetBondOrder(0) != srcpkg.BOND_DOUBLE {
 		t.Fatalf("expected double bond")
 	}
 }
 
 func TestSMILES_Benzene(t *testing.T) {
-	m, err := (srcpkg.SmilesLoader{}).Parse("COc1cc(C(C)(C)C)cc(C(C)(C)C)c1-c1ccccc1[PH+](c1ccccc1)C(C)(C)C.CS(=O)(=O)O")
+	m, err := (srcpkg.SmilesLoader{}).Parse("c1ccccc1")
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
 	if len(m.Atoms) != 6 || len(m.Bonds) != 6 {
 		t.Fatalf("expected 6 atoms and 6 bonds, got %d atoms %d bonds", len(m.Atoms), len(m.Bonds))
 	}
+
+	fmt.Println(m.CalcMolecularWeight())
+	unit := srcpkg.CollectGross(m, srcpkg.GrossFormulaOptions{})
+	fmt.Println(srcpkg.GrossUnitsToStringHill(unit, false))
+
 	aromatic := 0
 	for i := range m.Bonds {
 		if m.GetBondOrder(i) == srcpkg.BOND_AROMATIC {
@@ -120,7 +131,10 @@ func TestSMILES_RoundTrip(t *testing.T) {
 			t.Fatalf("parse failed for %s: %v", input, err)
 		}
 
-		output := m.SaveSMILES()
+		output, err := m.SaveSMILES()
+		if err != nil {
+			t.Fatalf("SaveSMILES failed for input %s: %v", input, err)
+		}
 		if output == "" {
 			t.Fatalf("SaveSMILES returned empty string for input: %s", input)
 		}
@@ -148,7 +162,10 @@ func TestSMILES_Output(t *testing.T) {
 		t.Fatalf("parse failed: %v", err)
 	}
 
-	output := m.SaveSMILES()
+	output, err := m.SaveSMILES()
+	if err != nil {
+		t.Fatalf("SaveSMILES failed: %v", err)
+	}
 	fmt.Println(m.CalculateMoleculeHash())
 	fmt.Println(output)
 	if output == "" {

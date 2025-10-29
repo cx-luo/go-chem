@@ -9,22 +9,30 @@ package molecule
 
 import (
 	"fmt"
-	"strings"
 	"unicode"
 )
 
-type SmilesLoader struct{}
+// SmilesLoader loads molecules from SMILES strings
+type SmilesLoader struct {
+	// IgnoreBadValence if true, doesn't fail on valence errors
+	IgnoreBadValence bool
+	// SmartsMode enables SMARTS query molecule parsing
+	SmartsMode bool
+	// IgnoreCisTransErrors if true, ignores stereochemistry errors
+	IgnoreCisTransErrors bool
+}
 
-// Parse builds a Molecule from an enhanced subset of SMILES.
-// Supported:
-// - Atoms: uppercase elements and lowercase aromatic (c, n, o, s, p)
+// Parse builds a Molecule from SMILES notation.
+// Supported features:
+// - Atoms: uppercase elements and lowercase aromatic (c, n, o, s, p, etc.)
 // - Charges: +, -, ++, --, +3, -2, etc.
 // - Isotopes: [13C], [2H], [15N], etc.
-// - Bonds: -, =, #, or implied single
+// - Bonds: -, =, #, : (aromatic), or implied single
 // - Branches: (...)
-// - Rings: digits 1-9 (single-digit)
+// - Rings: digits 1-9 and %10-%99 for higher ring numbers
 // - Stereochemistry: @, @@ (basic support)
-func (SmilesLoader) Parse(s string) (*Molecule, error) {
+// - Disconnected components: separated by '.'
+func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	m := NewMolecule()
 	type stackEntry struct{ atomIdx int }
 	var branchStack []stackEntry
@@ -32,7 +40,7 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 		atom  int
 		order int
 	}
-	ringBonds := make(map[rune]ringOpen) // digit -> opening site and optional bond order
+	ringBonds := make(map[int]ringOpen) // ring number -> opening site and optional bond order
 
 	lastAtom := -1
 	pendingOrder := 0
@@ -58,9 +66,16 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		ch := rune(s[i])
-		// aromatic lower-case
-		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
+		// aromatic lower-case atoms
+		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' || ch == 'b' {
 			return string(ch), i + 1, true, 0, 0, nil
+		}
+		// Two-character aromatic atoms: as, se
+		if i+1 < len(s) {
+			twoChar := string(s[i : i+2])
+			if twoChar == "as" || twoChar == "se" {
+				return twoChar, i + 2, true, 0, 0, nil
+			}
 		}
 		// uppercase + optional lowercase (Cl, Br)
 		if unicode.IsUpper(ch) {
@@ -90,6 +105,12 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 				return ELEM_S, nil
 			case "p":
 				return ELEM_P, nil
+			case "b":
+				return ELEM_B, nil
+			case "as":
+				return ELEM_As, nil
+			case "se":
+				return ELEM_Se, nil
 			}
 			return -1, fmt.Errorf("unsupported aromatic atom: %s", sym)
 		}
@@ -151,32 +172,71 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 			i++
 			continue
 		}
-		if ch >= '0' && ch <= '9' { // ring closure/opening
+
+		// Ring closure/opening - handle both single digit and %NN format
+		if (ch >= '0' && ch <= '9') || ch == '%' {
 			if lastAtom < 0 {
 				return nil, fmt.Errorf("ring digit without atom at %d", i)
 			}
-			if open, ok := ringBonds[ch]; ok {
-				// determine bond order: prefer explicit pending, otherwise stored from opening
+
+			ringNum := 0
+			nextI := i + 1
+
+			if ch == '%' {
+				// %NN format for ring numbers >= 10
+				if i+2 >= len(s) {
+					return nil, fmt.Errorf("incomplete %%NN ring number at %d", i)
+				}
+				d1 := s[i+1]
+				d2 := s[i+2]
+				if d1 < '0' || d1 > '9' || d2 < '0' || d2 > '9' {
+					return nil, fmt.Errorf("invalid %%NN ring number at %d", i)
+				}
+				ringNum = int(d1-'0')*10 + int(d2-'0')
+				nextI = i + 3
+			} else {
+				// single digit 0-9
+				ringNum = int(ch - '0')
+			}
+
+			if open, ok := ringBonds[ringNum]; ok {
+				// closing a ring
 				order := pendingOrder
 				if order == 0 {
 					order = open.order
 				}
 				if order == 0 {
-					order = BOND_SINGLE
+					// No explicit order specified - infer from aromaticity
+					// Check if current atom is aromatic
+					currentAromatic := false
+					if lastAtom < len(m.Aromaticity) && m.Aromaticity[lastAtom] == ATOM_AROMATIC {
+						currentAromatic = true
+					}
+					// Check if opening atom is aromatic
+					openAromatic := false
+					if open.atom < len(m.Aromaticity) && m.Aromaticity[open.atom] == ATOM_AROMATIC {
+						openAromatic = true
+					}
+					// If both aromatic, use aromatic bond
+					if currentAromatic && openAromatic {
+						order = BOND_AROMATIC
+					} else {
+						order = BOND_SINGLE
+					}
 				}
 				// if both specified and conflict, error
 				if pendingOrder != 0 && open.order != 0 && pendingOrder != open.order {
-					return nil, fmt.Errorf("conflicting ring bond orders on digit %c", ch)
+					return nil, fmt.Errorf("conflicting ring bond orders on ring %d", ringNum)
 				}
 				m.AddBond(open.atom, lastAtom, order)
-				delete(ringBonds, ch)
+				delete(ringBonds, ringNum)
 				pendingOrder = 0
 			} else {
-				// store opening site with any pending order, and clear pending
-				ringBonds[ch] = ringOpen{atom: lastAtom, order: pendingOrder}
+				// opening a ring
+				ringBonds[ringNum] = ringOpen{atom: lastAtom, order: pendingOrder}
 				pendingOrder = 0
 			}
-			i++
+			i = nextI
 			continue
 		}
 
@@ -199,11 +259,20 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 			m.SetAtomCharge(idx, charge)
 		}
 
+		// Mark atom as aromatic if it was specified with lowercase
+		if aromatic {
+			// Ensure Aromaticity array is large enough
+			for len(m.Aromaticity) <= idx {
+				m.Aromaticity = append(m.Aromaticity, -1)
+			}
+			m.Aromaticity[idx] = ATOM_AROMATIC
+		}
+
 		if lastAtom >= 0 {
 			order := pendingOrder
 			if order == 0 {
 				// implied single; if both aromatic atoms, mark as aromatic bond
-				if aromatic && (m.Atoms[lastAtom].Number == ELEM_C || m.Atoms[lastAtom].Number == ELEM_N || m.Atoms[lastAtom].Number == ELEM_O || m.Atoms[lastAtom].Number == ELEM_S || m.Atoms[lastAtom].Number == ELEM_P) && (sym == "c" || sym == "n" || sym == "o" || sym == "s" || sym == "p") {
+				if aromatic && isAromaticElement(m.Atoms[lastAtom].Number) {
 					order = BOND_AROMATIC
 				} else {
 					order = BOND_SINGLE
@@ -218,6 +287,37 @@ func (SmilesLoader) Parse(s string) (*Molecule, error) {
 	if len(ringBonds) != 0 {
 		return nil, fmt.Errorf("unclosed ring bonds")
 	}
+
+	// Set aromaticity based on aromatic bonds
+	// Since AddBond invalidates the cache, we need to rebuild it
+	m.Aromaticity = make([]int, len(m.Atoms))
+	for i := range m.Aromaticity {
+		m.Aromaticity[i] = ATOM_ALIPHATIC
+	}
+
+	// Mark atoms as aromatic if they have any aromatic bonds
+	for _, bond := range m.Bonds {
+		if bond.Order == BOND_AROMATIC {
+			m.Aromaticity[bond.Beg] = ATOM_AROMATIC
+			m.Aromaticity[bond.End] = ATOM_AROMATIC
+		}
+	}
+
+	// Fix ring closure bonds: if both endpoints are aromatic but bond is single,
+	// change it to aromatic
+	for i := range m.Bonds {
+		if m.Bonds[i].Order == BOND_SINGLE {
+			beg := m.Bonds[i].Beg
+			end := m.Bonds[i].End
+			if m.Aromaticity[beg] == ATOM_AROMATIC && m.Aromaticity[end] == ATOM_AROMATIC {
+				m.Bonds[i].Order = BOND_AROMATIC
+				if i < len(m.BondOrders) {
+					m.BondOrders[i] = BOND_AROMATIC
+				}
+			}
+		}
+	}
+
 	return m, nil
 }
 
@@ -264,12 +364,33 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 			}
 		}
 		i++
-	} else if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
+	} else if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' || ch == 'b' {
 		sym = string(ch)
 		aromatic = true
 		i++
+	} else if i+1 < len(s) && (s[i:i+2] == "as" || s[i:i+2] == "se") {
+		sym = s[i : i+2]
+		aromatic = true
+		i += 2
+	} else if ch == 'H' {
+		// Explicit hydrogen - allowed in brackets like [H] or [2H]
+		sym = "H"
+		i++
 	} else {
 		return "", i, false, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
+	}
+
+	// Parse explicit H count (like NH3+, CH2, etc.)
+	if i < len(s) && s[i] == 'H' {
+		i++ // skip 'H'
+		// Check for H count
+		if i < len(s) && unicode.IsDigit(rune(s[i])) {
+			// Parse the number after H
+			// For now, we'll just skip it since we don't have ExplicitImplH support here
+			for i < len(s) && unicode.IsDigit(rune(s[i])) {
+				i++
+			}
+		}
 	}
 
 	// Parse stereochemistry (@, @@)
@@ -333,137 +454,11 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	return sym, i + 1, aromatic, isotope, charge, nil
 }
 
-// SaveSMILES converts a molecule back to SMILES format
-func (m *Molecule) SaveSMILES() string {
-	if len(m.Atoms) == 0 {
-		return ""
+// isAromaticElement checks if an element number can be aromatic
+func isAromaticElement(atomNum int) bool {
+	switch atomNum {
+	case ELEM_C, ELEM_N, ELEM_O, ELEM_S, ELEM_P, ELEM_B, ELEM_As, ELEM_Se:
+		return true
 	}
-
-	// Simple approach: traverse atoms and bonds
-	visited := make([]bool, len(m.Atoms))
-	var result strings.Builder
-	ringBonds := make(map[string]int) // "atom1-atom2" -> ring number
-	nextRingNum := 1
-
-	var dfs func(atomIdx int, parentIdx int)
-	dfs = func(atomIdx int, parentIdx int) {
-		if visited[atomIdx] {
-			return
-		}
-		visited[atomIdx] = true
-
-		// Write atom
-		atom := m.Atoms[atomIdx]
-		aromatic := m.isAromaticAtom(atomIdx)
-
-		// Check if we need brackets
-		needsBrackets := atom.Isotope > 0 || atom.Charge != 0 || !aromatic
-
-		if needsBrackets {
-			result.WriteByte('[')
-			if atom.Isotope > 0 {
-				result.WriteString(fmt.Sprintf("%d", atom.Isotope))
-			}
-		}
-
-		// Write element symbol
-		if aromatic {
-			result.WriteString(m.getAromaticSymbol(atom.Number))
-		} else {
-			result.WriteString(ElementToString(atom.Number))
-		}
-
-		if needsBrackets {
-			// Write charge
-			if atom.Charge > 0 {
-				if atom.Charge == 1 {
-					result.WriteByte('+')
-				} else {
-					result.WriteString(fmt.Sprintf("+%d", atom.Charge))
-				}
-			} else if atom.Charge < 0 {
-				if atom.Charge == -1 {
-					result.WriteByte('-')
-				} else {
-					result.WriteString(fmt.Sprintf("%d", atom.Charge))
-				}
-			}
-			result.WriteByte(']')
-		}
-
-		// Process bonds to neighbors
-		for _, edgeIdx := range m.Vertices[atomIdx].Edges {
-			edge := m.Bonds[edgeIdx]
-			otherIdx := edge.Beg
-			if otherIdx == atomIdx {
-				otherIdx = edge.End
-			}
-
-			// Skip if this is the parent bond
-			if otherIdx == parentIdx {
-				continue
-			}
-
-			// Check if this bond forms a ring
-			ringKey := fmt.Sprintf("%d-%d", atomIdx, otherIdx)
-			if otherRingKey, exists := ringBonds[ringKey]; exists {
-				// This is a ring closure
-				result.WriteString(fmt.Sprintf("%d", otherRingKey))
-				continue
-			}
-
-			// Check if we've already visited this atom (ring opening)
-			if visited[otherIdx] {
-				ringNum := nextRingNum
-				nextRingNum++
-				ringBonds[ringKey] = ringNum
-				result.WriteString(fmt.Sprintf("%d", ringNum))
-				continue
-			}
-
-			// Write bond order
-			bondOrder := m.BondOrders[edgeIdx]
-			if bondOrder == BOND_DOUBLE {
-				result.WriteByte('=')
-			} else if bondOrder == BOND_TRIPLE {
-				result.WriteByte('#')
-			} else if bondOrder == BOND_SINGLE {
-				result.WriteByte('-')
-			}
-			// Aromatic bonds are implied, no symbol needed
-
-			// Recursively visit the neighbor
-			dfs(otherIdx, atomIdx)
-		}
-	}
-
-	// Start DFS from first atom
-	dfs(0, -1)
-
-	return result.String()
-}
-
-// Helper functions for SMILES output
-func (m *Molecule) isAromaticAtom(atomIdx int) bool {
-	if atomIdx >= len(m.Aromaticity) {
-		return false
-	}
-	return m.Aromaticity[atomIdx] == ATOM_AROMATIC
-}
-
-func (m *Molecule) getAromaticSymbol(elementNum int) string {
-	switch elementNum {
-	case ELEM_C:
-		return "c"
-	case ELEM_N:
-		return "n"
-	case ELEM_O:
-		return "o"
-	case ELEM_S:
-		return "s"
-	case ELEM_P:
-		return "p"
-	default:
-		return ElementToString(elementNum)
-	}
+	return false
 }
