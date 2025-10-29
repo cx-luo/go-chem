@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"go-chem/src/molecule"
 	"strings"
 	"testing"
@@ -9,15 +10,15 @@ import (
 // TestMolfileLoadBasic tests basic MOL file loading
 func TestMolfileLoadBasic(t *testing.T) {
 	// Simple ethanol MOL file
-	molString := `Ethanol
-  Example
+	molString := `0Chemicalbook64-17-5.MOL
+  ChemDraw12022217142D
 
   3  2  0  0  0  0  0  0  0  0999 V2000
-    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.0000    1.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  1  0  0  0  0
-  2  3  1  0  0  0  0
+   -0.0000    0.2062    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7145   -0.2062    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7145   -0.2062    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0      
+  1  3  1  0      
 M  END
 `
 
@@ -25,6 +26,13 @@ M  END
 	if err != nil {
 		t.Fatalf("error loading MOL: %v", err)
 	}
+
+	fmt.Println(molecule.CollectGross(mol, molecule.GrossFormulaOptions{}))
+
+	mw := mol.CalcMolecularWeight()
+	fmt.Println(mw)
+
+	fmt.Println(mol.TotalHydrogensCount())
 
 	if mol.AtomCount() != 3 {
 		t.Errorf("expected 3 atoms, got %d", mol.AtomCount())

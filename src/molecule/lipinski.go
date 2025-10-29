@@ -91,6 +91,10 @@ func NumHydrogenBondDonors(m *Molecule) int {
 		if n != ELEM_O && n != ELEM_N {
 			continue
 		}
+		// Skip special atom types that don't support implicit H calculation
+		if m.IsPseudoAtom(i) || m.IsTemplateAtom(i) || n == ELEM_RSITE {
+			continue
+		}
 		if m.GetAtomCharge(i) < 0 {
 			continue
 		}

@@ -202,16 +202,14 @@ func TestGetOtherBondEnd(t *testing.T) {
 
 	c1 := m.AddAtom(molecule.ELEM_C)
 	c2 := m.AddAtom(molecule.ELEM_C)
-	b := m.AddBond(c1, c2, molecule.BOND_SINGLE)
+	b := m.AddBond(c1, c2, molecule.BOND_TRIPLE)
+
+	fmt.Println(m.CalcMolecularWeight())
 
 	other := m.GetOtherBondEnd(b, c1)
 	if other != c2 {
 		t.Errorf("other end should be c2, got %d", other)
 	}
-
-	unit := molecule.CollectGross(m, molecule.GrossFormulaOptions{AddRSites: true, AddIsotopes: true})
-	s := molecule.GrossUnitsToStringHill(unit, true)
-	fmt.Println(unit, s)
 
 	other = m.GetOtherBondEnd(b, c2)
 	if other != c1 {

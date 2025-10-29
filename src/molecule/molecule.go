@@ -499,7 +499,12 @@ func (m *Molecule) setBondOrderInternal(bondIdx int, order int) {
 }
 
 func (m *Molecule) GetAtomConnectivity(idx int) int {
-	return m.getAtomConnectivityNoImplH(idx) + m.GetImplicitH(idx)
+	conn := m.getAtomConnectivityNoImplH(idx)
+	// Only add implicit H for normal atoms
+	if !m.IsPseudoAtom(idx) && !m.IsTemplateAtom(idx) && m.Atoms[idx].Number > 0 {
+		conn += m.GetImplicitH(idx)
+	}
+	return conn
 }
 
 func (m *Molecule) getAtomConnectivityNoImplH(idx int) int {
@@ -714,7 +719,10 @@ func (m *Molecule) TotalHydrogensCount() int {
 		if m.Atoms[i].Number == ELEM_H {
 			count++
 		}
-		count += m.GetImplicitH(i)
+		// Only count implicit H for normal atoms
+		if !m.IsPseudoAtom(i) && !m.IsTemplateAtom(i) && m.Atoms[i].Number > 0 {
+			count += m.GetImplicitH(i)
+		}
 	}
 	return count
 }
@@ -728,8 +736,10 @@ func (m *Molecule) CalcMolecularWeight() float64 {
 			// Use approximate atomic masses
 			weight += getAtomicMass(atom.Number, atom.Isotope)
 		}
-		// Add hydrogen weights
-		weight += float64(m.GetImplicitH(i)) * 1.008
+		// Add hydrogen weights - only for normal atoms
+		if !m.IsPseudoAtom(i) && !m.IsTemplateAtom(i) && atom.Number > 0 {
+			weight += float64(m.GetImplicitH(i)) * 1.008
+		}
 	}
 	return weight
 }

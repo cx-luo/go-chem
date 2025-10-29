@@ -266,7 +266,11 @@ func (fb *MoleculeFingerprintBuilder) getInitialAtomIdentifier(atomIdx int) uint
 	h.Write([]byte{byte(heavyCount)})
 
 	// Total connectivity
-	totalH := fb.mol.GetImplicitH(atomIdx)
+	totalH := 0
+	// Only calculate implicit H for normal atoms (not pseudo/template/rsite)
+	if !fb.mol.IsPseudoAtom(atomIdx) && !fb.mol.IsTemplateAtom(atomIdx) && atom.Number > 0 {
+		totalH = fb.mol.GetImplicitH(atomIdx)
+	}
 	for _, n := range neighbors {
 		if fb.mol.Atoms[n].Number == ELEM_H {
 			totalH++

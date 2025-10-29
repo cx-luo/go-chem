@@ -56,12 +56,10 @@ func CollectGross(mol *Molecule, opts GrossFormulaOptions) GrossUnits {
 		}
 		unit.Isotopes[key] = unit.Isotopes[key] + 1
 
-		// implicit H
-		if !mol.IsTemplateAtom(atomIdx) && number != ELEM_RSITE {
-			implH := mol.GetImplicitH(atomIdx)
-			if implH >= 0 && implH != 0 {
-				unit.Isotopes[ELEM_H] = unit.Isotopes[ELEM_H] + implH
-			}
+		// implicit H - safe to call here as pseudo/template/rsite atoms were filtered above
+		implH := mol.GetImplicitH(atomIdx)
+		if implH > 0 {
+			unit.Isotopes[ELEM_H] = unit.Isotopes[ELEM_H] + implH
 		}
 	}
 	return units
@@ -102,7 +100,7 @@ func GrossToString(gross map[int]int, addRSites bool) string {
 			// ignored in this simple path
 		}
 		if c.count == 1 {
-			parts = append(parts, fmt.Sprintf("%s", ElementToString(c.elem&0xFF)))
+			parts = append(parts, ElementToString(c.elem&0xFF))
 		} else {
 			parts = append(parts, fmt.Sprintf("%s%d", ElementToString(c.elem&0xFF), c.count))
 		}
