@@ -45,11 +45,15 @@ func (rh *ReactionHash) Calculate(rxn *Reaction) uint32 {
 	}
 
 	var hash uint32 = 0
-	hash = uint32((hash + (324723947 + reactantHash)) ^ 93485734985)
-	hash = uint32((hash + (324723947 + productHash)) ^ 93485734985)
-	hash = uint32((hash + (324723947 + catalystHash)) ^ 93485734985)
+	const mixConst uint32 = 324723947
+	const xorConst uint32 = 0xADE7B9C9 // 0xADE7B9C9 == 2911939273, fits in uint32
+
+	hash = ((hash + (mixConst + reactantHash)) ^ xorConst)
+	hash = ((hash + (mixConst + productHash)) ^ xorConst)
+	hash = ((hash + (mixConst + catalystHash)) ^ xorConst)
 
 	return hash
+
 }
 
 // calculateMoleculeHash is a placeholder for molecule hash calculation
