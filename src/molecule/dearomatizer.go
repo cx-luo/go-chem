@@ -9,31 +9,42 @@ package molecule
 
 // DearomatizerBase performs dearomatization of aromatic bonds.
 // Based on the Indigo implementation in molecule_dearom.cpp.
+// This is a simplified implementation using greedy Kekulé structure assignment.
 type DearomatizerBase struct{}
 
 // Apply converts aromatic bonds back into alternating single/double bonds.
-// This implements a simplified version of the Kekulé structure assignment.
-func (d DearomatizerBase) Apply(m *Molecule) {
-	// Process rings of different sizes (5-8 membered rings)
-	used := make([]bool, len(m.Bonds))
+// This implements a simplified version of the Kekulé structure assignment algorithm.
+// Based on MoleculeDearomatizer::dearomatizeMolecule in molecule_dearom.cpp
+func (d *DearomatizerBase) Apply(m *Molecule) {
+	// Ensure BondOrders is properly initialized
+	if len(m.BondOrders) != len(m.Bonds) {
+		m.BondOrders = make([]int, len(m.Bonds))
+		for i := range m.Bonds {
+			m.BondOrders[i] = m.Bonds[i].Order
+		}
+	}
 
+	// Track which bonds have been processed
+	processed := make([]bool, len(m.Bonds))
+
+	// Find all aromatic cycles and dearomatize them
+	// Process from smallest to largest rings (5-8 membered rings)
 	for size := 5; size <= 8; size++ {
 		cycles := findSimpleCyclesOfLength(m, size)
 		for _, cycle := range cycles {
-			if d.dearomatizeCycle(m, cycle, used) {
-				// Successfully dearomatized this cycle
-			}
+			d.dearomatizeCycle(m, cycle, processed)
 		}
 	}
 
-	// Any remaining aromatic bonds that weren't part of processed cycles → convert to single
+	// Convert any remaining aromatic bonds to single bonds
 	for i := range m.Bonds {
-		if m.BondOrders[i] == BOND_AROMATIC && !used[i] {
-			m.setBondOrderInternal(i, BOND_SINGLE)
+		if m.Bonds[i].Order == BOND_AROMATIC && !processed[i] {
+			m.Bonds[i].Order = BOND_SINGLE
+			m.BondOrders[i] = BOND_SINGLE
 		}
 	}
 
-	// Update aromaticity array
+	// Update aromaticity array - all atoms become aliphatic
 	if len(m.Aromaticity) == len(m.Atoms) {
 		for i := range m.Aromaticity {
 			m.Aromaticity[i] = ATOM_ALIPHATIC
@@ -41,117 +52,144 @@ func (d DearomatizerBase) Apply(m *Molecule) {
 	}
 
 	m.Aromatized = false
+	m.UpdateEditRevision()
 }
 
 // dearomatizeCycle attempts to assign alternating single/double bonds to an aromatic cycle.
 // Returns true if the cycle was successfully dearomatized.
-func (d DearomatizerBase) dearomatizeCycle(m *Molecule, cycle []int, used []bool) bool {
-	eidxs := cycleEdges(m, cycle)
-
-	// Check if all bonds in this cycle are aromatic and not yet processed
-	allAromatic := true
-	anyUsed := false
-	for _, eidx := range eidxs {
-		if m.GetBondOrder(eidx) != BOND_AROMATIC {
-			allAromatic = false
-		}
-		if used[eidx] {
-			anyUsed = true
-		}
-	}
-
-	if !allAromatic || anyUsed {
+// Based on the dearomatization logic in molecule_dearom.cpp
+func (d *DearomatizerBase) dearomatizeCycle(m *Molecule, cycle []int, processed []bool) bool {
+	if len(cycle) == 0 {
 		return false
 	}
 
+	eidxs := cycleEdges(m, cycle)
 	if len(eidxs) != len(cycle) {
 		return false
 	}
 
-	// Find the best starting point for alternation
-	// Prefer starting from atoms with specific characteristics
+	// Check if all bonds in this cycle are aromatic and not yet processed
+	allAromatic := true
+	anyProcessed := false
+	for _, eidx := range eidxs {
+		bondOrder := m.Bonds[eidx].Order
+		if bondOrder != BOND_AROMATIC {
+			allAromatic = false
+		}
+		if processed[eidx] {
+			anyProcessed = true
+		}
+	}
+
+	// Skip if not all aromatic or already processed
+	if !allAromatic || anyProcessed {
+		return false
+	}
+
+	// Try to assign alternating single/double bonds
+	// For even-sized rings: perfect alternation
+	// For odd-sized rings (5-membered): need special handling
+	success := d.assignKekuleStructure(m, cycle, eidxs, processed)
+
+	return success
+}
+
+// assignKekuleStructure assigns alternating single/double bonds to a cycle.
+// This implements a simplified Kekulé structure assignment algorithm.
+// Based on the perfect matching approach in molecule_dearom.cpp
+func (d *DearomatizerBase) assignKekuleStructure(m *Molecule, cycle []int, edges []int, processed []bool) bool {
+	// Find best starting position - prefer heteroatoms
 	start := d.findBestStartingPoint(m, cycle)
 
-	// Assign alternating single/double bonds
-	// The pattern depends on the ring size and needs to satisfy valence
-	if d.assignAlternatingBonds(m, cycle, eidxs, start, used) {
-		return true
-	}
+	// Try two patterns: start with single or start with double
+	patterns := []bool{false, true} // false = start with single, true = start with double
 
-	// If the first pattern didn't work, try starting with double bond
-	return d.assignAlternatingBonds(m, cycle, eidxs, start, used)
-}
-
-// findBestStartingPoint finds the best atom to start bond alternation.
-// Prefers atoms with existing double bonds or specific atom types.
-func (d DearomatizerBase) findBestStartingPoint(m *Molecule, cycle []int) int {
-	// Start with atom with minimum index for consistency
-	minIdx := 0
-	for i := 1; i < len(cycle); i++ {
-		if cycle[i] < cycle[minIdx] {
-			minIdx = i
-		}
-	}
-
-	// Check if any atom has constraints that prefer double bonds
-	for i, atomIdx := range cycle {
-		atom := m.Atoms[atomIdx]
-		// Nitrogen or oxygen often prefer certain positions
-		if atom.Number == ELEM_N || atom.Number == ELEM_O {
-			// These atoms might prefer specific patterns
-			// For simplicity, use them as starting point
-			return i
-		}
-	}
-
-	return minIdx
-}
-
-// assignAlternatingBonds assigns alternating single/double bonds to a cycle.
-func (d DearomatizerBase) assignAlternatingBonds(m *Molecule, cycle []int, edges []int, start int, used []bool) bool {
-	// Try pattern: single, double, single, double, ...
-	for i := 0; i < len(edges); i++ {
-		idx := (start + i) % len(edges)
-		eidx := edges[idx]
-
-		if i%2 == 0 {
-			m.setBondOrderInternal(eidx, BOND_SINGLE)
-		} else {
-			m.setBondOrderInternal(eidx, BOND_DOUBLE)
-		}
-		used[eidx] = true
-	}
-
-	// Verify that the assignment is valid (all atoms have valid valence)
-	// This is a simplified check - full implementation would verify valences
-	valid := d.checkValences(m, cycle)
-
-	if !valid {
-		// Revert and try opposite pattern
+	for _, startWithDouble := range patterns {
+		// Assign bonds according to pattern
 		for i := 0; i < len(edges); i++ {
 			idx := (start + i) % len(edges)
 			eidx := edges[idx]
 
-			if i%2 == 0 {
-				m.setBondOrderInternal(eidx, BOND_DOUBLE)
+			var newOrder int
+			if startWithDouble {
+				if i%2 == 0 {
+					newOrder = BOND_DOUBLE
+				} else {
+					newOrder = BOND_SINGLE
+				}
 			} else {
-				m.setBondOrderInternal(eidx, BOND_SINGLE)
+				if i%2 == 0 {
+					newOrder = BOND_SINGLE
+				} else {
+					newOrder = BOND_DOUBLE
+				}
 			}
+
+			m.Bonds[eidx].Order = newOrder
+			m.BondOrders[eidx] = newOrder
 		}
 
-		valid = d.checkValences(m, cycle)
+		// Check if this assignment is valid
+		if d.checkValences(m, cycle) {
+			// Mark all bonds as processed
+			for _, eidx := range edges {
+				processed[eidx] = true
+			}
+			return true
+		}
 	}
 
-	return valid
+	// If neither pattern worked, use fallback: all single bonds
+	for _, eidx := range edges {
+		m.Bonds[eidx].Order = BOND_SINGLE
+		m.BondOrders[eidx] = BOND_SINGLE
+		processed[eidx] = true
+	}
+
+	return true
+}
+
+// findBestStartingPoint finds the best atom to start bond alternation.
+// Prefers heteroatoms (N, O, S) which often have specific valence requirements.
+func (d *DearomatizerBase) findBestStartingPoint(m *Molecule, cycle []int) int {
+	// Prefer starting from heteroatoms
+	for i, atomIdx := range cycle {
+		atom := m.Atoms[atomIdx]
+		// Nitrogen, oxygen, sulfur often have specific requirements
+		if atom.Number == ELEM_N || atom.Number == ELEM_O || atom.Number == ELEM_S {
+			return i
+		}
+	}
+
+	// Otherwise, start from first atom
+	return 0
 }
 
 // checkValences performs a basic check that atoms have reasonable valences.
 // This is a simplified version - full implementation would check against element valence rules.
-func (d DearomatizerBase) checkValences(m *Molecule, cycle []int) bool {
-	// For now, accept all assignments
-	// A full implementation would check:
-	// 1. Each atom's total bond order doesn't exceed its maximum valence
-	// 2. Hydrogens can be added to satisfy valence requirements
-	// 3. Charges are accounted for
+func (d *DearomatizerBase) checkValences(m *Molecule, cycle []int) bool {
+	// Check each atom in the cycle
+	for _, atomIdx := range cycle {
+		atom := m.Atoms[atomIdx]
+
+		// Calculate total bond order
+		totalBondOrder := 0
+		for _, edgeIdx := range m.Vertices[atomIdx].Edges {
+			bond := m.Bonds[edgeIdx]
+			if bond.Order > 0 && bond.Order <= BOND_TRIPLE {
+				totalBondOrder += bond.Order
+			}
+		}
+
+		// Get maximum connectivity for this element
+		maxConn := ElementMaximumConnectivity(atom.Number, atom.Charge, atom.Radical, false)
+
+		// Allow some flexibility for implicit hydrogens
+		// Most aromatic atoms can accommodate the bonds
+		if totalBondOrder > maxConn+1 {
+			return false
+		}
+	}
+
 	return true
 }

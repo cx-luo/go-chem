@@ -8,18 +8,40 @@
 package molecule
 
 // AromatizerBase provides an API to aromatize/dearomatize a molecule.
-// Based on the Indigo implementation, using Huckel's rule (4n+2 π electrons).
-type AromatizerBase struct{}
+// Based on the Indigo implementation in molecule_arom.cpp, using Huckel's rule (4n+2 π electrons).
+type AromatizerBase struct {
+	bondsAromaticCount []int // Count of aromatic cycles containing each bond
+}
 
 // Aromatize marks bonds in rings that satisfy Huckel's rule as aromatic.
 // This checks for 4n+2 π electrons in planar cyclic systems.
-func (a AromatizerBase) Aromatize(m *Molecule) {
+// Based on MoleculeAromatizer::aromatizeBonds in molecule_arom.cpp
+func (a *AromatizerBase) Aromatize(m *Molecule) {
+	// Initialize bond aromatic counts
+	a.bondsAromaticCount = make([]int, len(m.Bonds))
+
+	// Precalculate pi labels for all atoms
+	piLabels := make([]int, len(m.Atoms))
+	for i := range m.Atoms {
+		piLabels[i] = a.getPiLabel(m, i)
+	}
+
 	// Find all simple cycles (5-8 membered rings are most common aromatic rings)
 	for size := 5; size <= 8; size++ {
 		cycles := findSimpleCyclesOfLength(m, size)
 		for _, cycle := range cycles {
-			if a.isCycleAromatic(m, cycle) {
+			if a.isCycleAromatic(m, cycle, piLabels) {
 				a.aromatizeCycle(m, cycle)
+			}
+		}
+	}
+
+	// Update bond orders based on aromaticity
+	for i := range m.Bonds {
+		if a.bondsAromaticCount[i] > 0 {
+			m.Bonds[i].Order = BOND_AROMATIC
+			if len(m.BondOrders) > i {
+				m.BondOrders[i] = BOND_AROMATIC
 			}
 		}
 	}
@@ -27,9 +49,9 @@ func (a AromatizerBase) Aromatize(m *Molecule) {
 	// Update aromaticity array based on aromatic bonds
 	if len(m.Aromaticity) != len(m.Atoms) {
 		m.Aromaticity = make([]int, len(m.Atoms))
-		for i := range m.Aromaticity {
-			m.Aromaticity[i] = ATOM_ALIPHATIC
-		}
+	}
+	for i := range m.Aromaticity {
+		m.Aromaticity[i] = ATOM_ALIPHATIC
 	}
 
 	for _, bond := range m.Bonds {
@@ -51,33 +73,91 @@ func (a AromatizerBase) Dearomatize(m *Molecule) {
 }
 
 // isCycleAromatic checks if a cycle satisfies Huckel's rule (4n+2 π electrons).
-// Based on C++ implementation in molecule_arom.cpp::_isCycleAromatic
-func (a AromatizerBase) isCycleAromatic(m *Molecule, cycle []int) bool {
-	// First check: all atoms must be potentially aromatic
+// Based on MoleculeAromatizer::_isCycleAromatic in molecule_arom.cpp
+func (a *AromatizerBase) isCycleAromatic(m *Molecule, cycle []int, piLabels []int) bool {
+	// Check: all atoms must be potentially aromatic (pi label >= 0)
 	for _, atomIdx := range cycle {
-		if !a.canBeAromatic(m, atomIdx) {
+		if piLabels[atomIdx] < 0 {
 			return false
 		}
 	}
 
-	// Calculate π electron count using pi labels
+	// Check for double bonds in the cycle - corresponds to _checkDoubleBonds
+	if !a.checkDoubleBonds(m, cycle) {
+		return false
+	}
+
+	// Calculate π electron count using precalculated pi labels
 	piCount := 0
 	for _, atomIdx := range cycle {
-		piLabel := a.getPiLabel(m, atomIdx, cycle)
-		if piLabel < 0 {
-			return false // Atom cannot contribute to aromaticity
-		}
-		piCount += piLabel
+		piCount += piLabels[atomIdx]
 	}
 
 	// Huckel's rule: 4n+2 π electrons (where n = 0, 1, 2, ...)
-	// This means: piCount - 2 must be divisible by 4
+	// This means: (piCount - 2) % 4 == 0
 	if ((piCount - 2) % 4) != 0 {
 		return false
 	}
 
-	// Additional check: must have alternating or all aromatic bonds
-	return a.checkBondPattern(m, cycle)
+	return true
+}
+
+// checkDoubleBonds verifies that double bonds in the cycle are acceptable for aromaticity.
+// Based on AromatizerBase::_checkDoubleBonds in molecule_arom.cpp
+func (a *AromatizerBase) checkDoubleBonds(m *Molecule, cycle []int) bool {
+	cycleLen := len(cycle)
+	for j := 0; j < cycleLen; j++ {
+		vCenter := cycle[j]
+		vLeft := cycle[(j-1+cycleLen)%cycleLen]
+		vRight := cycle[(j+1)%cycleLen]
+
+		internalDoubleCount := 0
+		for _, edgeIdx := range m.Vertices[vCenter].Edges {
+			bond := m.Bonds[edgeIdx]
+			neiIdx := bond.End
+			if neiIdx == vCenter {
+				neiIdx = bond.Beg
+			}
+
+			if bond.Order == BOND_DOUBLE && a.bondsAromaticCount[edgeIdx] == 0 {
+				if neiIdx != vLeft && neiIdx != vRight {
+					// External double bond - check if acceptable
+					if !a.acceptOutgoingDoubleBond(m, vCenter, neiIdx) {
+						return false
+					}
+				} else {
+					// Internal double bond
+					internalDoubleCount++
+				}
+			}
+		}
+		// Cannot have 2+ consecutive double bonds in the cycle
+		if internalDoubleCount >= 2 {
+			return false
+		}
+	}
+	return true
+}
+
+// acceptOutgoingDoubleBond checks if an external double bond is acceptable.
+// Based on MoleculeAromatizer::_acceptOutgoingDoubleBond in molecule_arom.cpp
+func (a *AromatizerBase) acceptOutgoingDoubleBond(m *Molecule, atom int, neighbor int) bool {
+	atomNum := m.Atoms[atom].Number
+	neighNum := m.Atoms[neighbor].Number
+
+	// C=O, C=N, C=S are acceptable (atom contributes 0 pi electrons)
+	if atomNum == ELEM_C {
+		if neighNum == ELEM_N || neighNum == ELEM_O || neighNum == ELEM_S {
+			return true
+		}
+	}
+
+	// S=O is acceptable
+	if atomNum == ELEM_S && neighNum == ELEM_O {
+		return true
+	}
+
+	return false
 }
 
 // canBeAromatic checks if an atom can participate in aromatic systems.
@@ -94,155 +174,249 @@ func (a AromatizerBase) canBeAromatic(m *Molecule, atomIdx int) bool {
 
 // getPiLabel calculates the π electron contribution of an atom.
 // Returns: 0 (vacant p-orbital), 1 (radical/double bond), 2 (lone pair), -1 (cannot be aromatic)
-// Based on MoleculeAromatizer::_getPiLabel in C++.
-func (a AromatizerBase) getPiLabel(m *Molecule, atomIdx int, cycle []int) int {
+// Based on MoleculeAromatizer::_getPiLabel in molecule_arom.cpp
+func (a *AromatizerBase) getPiLabel(m *Molecule, atomIdx int) int {
 	atom := m.Atoms[atomIdx]
 
-	// Count bonds in and out of the ring
-	doubleBondsInRing := 0
-	doubleBondsOutRing := 0
-	neighbors := 0
+	// Pseudo atoms, R-sites, templates cannot be aromatic
+	if m.IsPseudoAtom(atomIdx) || m.IsTemplateAtom(atomIdx) {
+		return -1
+	}
 
-	for _, bondIdx := range m.Vertices[atomIdx].Edges {
-		bond := m.Bonds[bondIdx]
-		otherAtom := bond.End
-		if otherAtom == atomIdx {
-			otherAtom = bond.Beg
+	// Check if element can be aromatic
+	if !ElementCanBeAromatic(atom.Number) {
+		return -1
+	}
+
+	// Count connectivity and identify bond types
+	nonAromConn := 0
+	aromBonds := 0
+	nDoubleTotal := 0
+	nDoubleExt := 0
+
+	for _, edgeIdx := range m.Vertices[atomIdx].Edges {
+		bond := m.Bonds[edgeIdx]
+		bondOrder := bond.Order
+
+		if bondOrder == BOND_TRIPLE {
+			return -1 // Triple bonds cannot participate in aromaticity
 		}
 
-		neighbors++
-		if bond.Order == BOND_DOUBLE {
-			if isInCycle(otherAtom, cycle) {
-				doubleBondsInRing++
-			} else {
-				doubleBondsOutRing++
+		if bondOrder == BOND_AROMATIC {
+			aromBonds++
+		} else if bondOrder == BOND_DOUBLE {
+			nDoubleTotal++
+			// Check if this might be an external double bond
+			// External double bonds typically go to O, N, S heteroatoms
+			neighbor := bond.End
+			if neighbor == atomIdx {
+				neighbor = bond.Beg
 			}
-		} else if bond.Order == BOND_TRIPLE {
-			return -1 // Triple bonds cannot be aromatic
+			neighAtom := m.Atoms[neighbor].Number
+			// C=O, C=N, C=S, S=O are typically external
+			if (atom.Number == ELEM_C && (neighAtom == ELEM_O || neighAtom == ELEM_N || neighAtom == ELEM_S)) ||
+				(atom.Number == ELEM_S && neighAtom == ELEM_O) {
+				if !a.acceptOutgoingDoubleBond(m, atomIdx, neighbor) {
+					return -1
+				}
+				nDoubleExt++
+			}
+		} else {
+			nonAromConn++
 		}
 	}
 
-	// If there's a double bond in the ring, atom contributes 1 π electron
-	if doubleBondsInRing > 0 {
+	// If there are double bonds that are not external, they contribute 1 π electron
+	nDoubleRing := nDoubleTotal - nDoubleExt
+	if nDoubleRing > 0 {
 		return 1
 	}
 
-	// If there are multiple external double bonds, cannot be aromatic
-	if doubleBondsOutRing > 1 {
+	// Multiple external double bonds not allowed
+	if nDoubleExt > 1 {
 		return -1
 	}
 
-	// Special case for external double bonds (e.g., C=O, C=S in aromatic rings)
-	if doubleBondsOutRing == 1 {
-		// Check if it's an acceptable exocyclic double bond (e.g., C=O, C=S, C=N)
-		if atom.Number == ELEM_C || atom.Number == ELEM_S {
-			return 0 // Vacant p-orbital
+	// Single external double bond: atom contributes specific π electrons
+	if nDoubleExt == 1 {
+		if atom.Number == ELEM_S {
+			return 2 // S with external =O can contribute lone pair
 		}
-		return -1
+		return 0 // Vacant p-orbital (no pi contribution)
 	}
 
-	// Determine π contribution based on atom type and connectivity
-	return a.getPiLabelByConnectivity(m, atomIdx, neighbors)
+	// No double bonds - calculate based on connectivity
+	// For proper aromaticity detection, we need to account for implicit hydrogens
+	connectivity := nonAromConn + aromBonds
+
+	// If no aromatic bonds and only single bonds, check if atom is saturated
+	if aromBonds == 0 && nDoubleTotal == 0 {
+		// For carbon, if connectivity is 2 and we could add 2 more H to reach 4,
+		// it would be sp3 (saturated), not aromatic
+		if atom.Number == ELEM_C && connectivity == 2 {
+			// Could be aromatic (sp2) OR saturated (sp3)
+			// Need to check if implicit H count suggests sp3
+			// In a proper implementation, this would check getImplicitH
+			// For now, if no double bonds in the molecule and pure single bonds,
+			// assume it's saturated
+			hasAnyDoubleBonds := false
+			for i := range m.Bonds {
+				if m.Bonds[i].Order == BOND_DOUBLE || m.Bonds[i].Order == BOND_AROMATIC {
+					hasAnyDoubleBonds = true
+					break
+				}
+			}
+			if !hasAnyDoubleBonds {
+				return -1 // Saturated ring, not aromatic
+			}
+		}
+	}
+
+	return a.getPiLabelByConnectivity(m, atomIdx, connectivity)
 }
 
 // getPiLabelByConnectivity determines π electron contribution based on atom type and connectivity.
-// Based on MoleculeAromatizer::_getPiLabelByConn in C++.
-func (a AromatizerBase) getPiLabelByConnectivity(m *Molecule, atomIdx int, connectivity int) int {
+// Based on MoleculeAromatizer::_getPiLabelByConn in molecule_arom.cpp
+func (a *AromatizerBase) getPiLabelByConnectivity(m *Molecule, atomIdx int, connectivity int) int {
 	atom := m.Atoms[atomIdx]
 
-	// Simplified pi label assignment based on common aromatic atoms
+	// Check for radicals - always contributes 1 π electron
+	if atom.Radical == RADICAL_DOUBLET || atom.Radical == RADICAL_TRIPLET {
+		return 1
+	}
+
+	// Get element group for vacant pi orbital / lone pair calculation
+	group := ElementGroup(atom.Number)
+
 	switch atom.Number {
 	case ELEM_C:
-		// Carbon with 3 connections: sp2 hybridized, contributes 1 π electron
+		// Carbon: 4 valence electrons
+		// conn=3 → 1 unpaired electron → contributes 1
 		if connectivity == 3 {
+			return 1
+		}
+		if connectivity == 2 {
+			// Carbene or similar: 2 lone electrons
 			return 1
 		}
 	case ELEM_N:
-		// Nitrogen with 2 connections: pyridine-like, contributes 1 π electron
-		if connectivity == 2 {
-			return 1
-		}
-		// Nitrogen with 3 connections: pyrrole-like, contributes 2 π electrons (lone pair)
-		if connectivity == 3 {
-			return 2
+		// Nitrogen: 5 valence electrons, charge affects behavior
+		charge := atom.Charge
+		if charge == 0 {
+			if connectivity == 2 {
+				// =N- (pyridine): 1 π electron
+				return 1
+			}
+			if connectivity == 3 {
+				// -N< (pyrrole): lone pair contributes 2
+				return 2
+			}
+		} else if charge == 1 {
+			// N+ with 3 bonds: pyridinium (vacant orbital)
+			if connectivity == 3 {
+				return 0
+			}
 		}
 	case ELEM_O:
-		// Oxygen with 2 connections: furan-like, contributes 2 π electrons (lone pair)
+		// Oxygen: 6 valence electrons
 		if connectivity == 2 {
+			// -O- (furan): two lone pairs, contributes 2
 			return 2
 		}
 	case ELEM_S:
-		// Sulfur with 2 connections: thiophene-like, contributes 2 π electrons (lone pair)
+		// Sulfur: 6 valence electrons (like oxygen)
 		if connectivity == 2 {
+			// -S- (thiophene): lone pair contributes 2
 			return 2
 		}
 	case ELEM_P:
-		// Phosphorus similar to nitrogen
+		// Phosphorus: 5 valence electrons (like nitrogen)
 		if connectivity == 2 {
 			return 1
 		}
 		if connectivity == 3 {
 			return 2
 		}
-	}
-
-	return -1 // Cannot determine or not aromatic
-}
-
-// checkBondPattern verifies that bonds in the cycle can be aromatic.
-func (a AromatizerBase) checkBondPattern(m *Molecule, cycle []int) bool {
-	// Check that all bonds are either single, double, or already aromatic
-	for i := 0; i < len(cycle); i++ {
-		u := cycle[i]
-		v := cycle[(i+1)%len(cycle)]
-
-		bondIdx := -1
-		for _, eidx := range m.Vertices[u].Edges {
-			e := m.Bonds[eidx]
-			if (e.Beg == u && e.End == v) || (e.Beg == v && e.End == u) {
-				bondIdx = eidx
-				break
+	case ELEM_B:
+		// Boron: 3 valence electrons, typically vacant p-orbital
+		if connectivity == 3 {
+			return 0 // Vacant orbital
+		}
+	case ELEM_As, ELEM_Se:
+		// Similar to P and S respectively
+		if connectivity == 2 {
+			if atom.Number == ELEM_As {
+				return 1
 			}
-		}
-
-		if bondIdx == -1 {
-			return false
-		}
-
-		order := m.GetBondOrder(bondIdx)
-		if order != BOND_SINGLE && order != BOND_DOUBLE && order != BOND_AROMATIC {
-			return false
+			return 2
 		}
 	}
-	return true
+
+	// For other cases, use simplified electron counting
+	// Group valence electrons minus connectivity
+	electrons := group - connectivity - atom.Charge
+	if electrons == 1 {
+		return 1 // Unpaired electron
+	}
+	if electrons >= 2 {
+		return 2 // Lone pair
+	}
+	if electrons == 0 {
+		return 0 // Vacant orbital
+	}
+
+	return -1 // Cannot be aromatic
 }
 
 // aromatizeCycle marks all bonds in a cycle as aromatic.
-// Based on C++ implementation in molecule_arom.cpp::_aromatizeCycle
-func (a AromatizerBase) aromatizeCycle(m *Molecule, cycle []int) {
-	// Mark all bonds in the cycle as aromatic
+// Based on AromatizerBase::_aromatizeCycle in molecule_arom.cpp
+func (a *AromatizerBase) aromatizeCycle(m *Molecule, cycle []int) {
+	// Mark all bonds in the cycle by incrementing their aromatic count
 	for i := 0; i < len(cycle); i++ {
 		u := cycle[i]
 		v := cycle[(i+1)%len(cycle)]
 
+		// Find edge between u and v
 		for _, eidx := range m.Vertices[u].Edges {
 			e := m.Bonds[eidx]
 			if (e.Beg == u && e.End == v) || (e.Beg == v && e.End == u) {
-				m.setBondOrderInternal(eidx, BOND_AROMATIC)
+				a.bondsAromaticCount[eidx]++
 				break
 			}
 		}
 	}
-}
 
-// isInCycle checks if an atom is in the given cycle.
-func isInCycle(atomIdx int, cycle []int) bool {
-	for _, a := range cycle {
-		if a == atomIdx {
-			return true
+	// Also mark single bonds inside the aromatic cycle as aromatic
+	// For example, in fused rings like naphthalene
+	cycleAtomSet := make(map[int]bool, len(cycle))
+	for _, atomIdx := range cycle {
+		cycleAtomSet[atomIdx] = true
+	}
+
+	for _, atomIdx := range cycle {
+		for _, edgeIdx := range m.Vertices[atomIdx].Edges {
+			bond := m.Bonds[edgeIdx]
+			otherAtom := bond.End
+			if otherAtom == atomIdx {
+				otherAtom = bond.Beg
+			}
+
+			// Check if both ends are in the cycle
+			if !cycleAtomSet[otherAtom] {
+				continue
+			}
+
+			// If already marked as aromatic, skip
+			if a.bondsAromaticCount[edgeIdx] > 0 {
+				continue
+			}
+
+			// Mark single bonds inside the cycle as aromatic
+			if bond.Order == BOND_SINGLE {
+				a.bondsAromaticCount[edgeIdx]++
+			}
 		}
 	}
-	return false
 }
 
 // --- helpers (graph cycles) ---

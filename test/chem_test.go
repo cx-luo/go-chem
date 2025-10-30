@@ -26,7 +26,7 @@ func buildBenzeneLike() *molecule.Molecule {
 
 func TestAromatizerBase_Aromatize_Benzene(t *testing.T) {
 	m := buildBenzeneLike()
-	a := molecule.AromatizerBase{}
+	a := &molecule.AromatizerBase{}
 	a.Aromatize(m)
 
 	// expect all 6 ring bonds to be aromatic
@@ -44,10 +44,11 @@ func TestAromatizerBase_Aromatize_Benzene(t *testing.T) {
 func TestDearomatizerBase_Apply_Benzene(t *testing.T) {
 	m := buildBenzeneLike()
 	// aromatize first
-	molecule.AromatizerBase{}.Aromatize(m)
+	a := &molecule.AromatizerBase{}
+	a.Aromatize(m)
 
 	// then dearomatize
-	d := molecule.DearomatizerBase{}
+	d := &molecule.DearomatizerBase{}
 	d.Apply(m)
 
 	single := 0
