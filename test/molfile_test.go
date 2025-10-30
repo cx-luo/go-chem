@@ -34,6 +34,9 @@ M  END
 
 	fmt.Println(mol.TotalHydrogensCount())
 
+	unit := molecule.CollectGross(mol, molecule.GrossFormulaOptions{})
+	fmt.Println(molecule.GrossUnitsToStringHill(unit, false))
+
 	if mol.AtomCount() != 3 {
 		t.Errorf("expected 3 atoms, got %d", mol.AtomCount())
 	}

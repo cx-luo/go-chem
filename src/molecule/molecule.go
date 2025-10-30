@@ -499,7 +499,7 @@ func (m *Molecule) setBondOrderInternal(bondIdx int, order int) {
 }
 
 func (m *Molecule) GetAtomConnectivity(idx int) int {
-	conn := m.getAtomConnectivityNoImplH(idx)
+	conn := m.GetAtomConnectivityNoImplH(idx)
 	// Only add implicit H for normal atoms
 	if !m.IsPseudoAtom(idx) && !m.IsTemplateAtom(idx) && m.Atoms[idx].Number > 0 {
 		conn += m.GetImplicitH(idx)
@@ -507,7 +507,7 @@ func (m *Molecule) GetAtomConnectivity(idx int) int {
 	return conn
 }
 
-func (m *Molecule) getAtomConnectivityNoImplH(idx int) int {
+func (m *Molecule) GetAtomConnectivityNoImplH(idx int) int {
 	if idx < len(m.Connectivity) && m.Connectivity[idx] >= 0 {
 		return m.Connectivity[idx]
 	}
@@ -539,19 +539,15 @@ func (m *Molecule) GetImplicitH(idx int) int {
 		return m.ImplicitH[idx]
 	}
 	atom := m.Atoms[idx]
-	conn := m.getAtomConnectivityNoImplH(idx)
+	conn := m.GetAtomConnectivityNoImplH(idx)
 	if atom.Number == ELEM_PSEUDO || atom.Number == ELEM_RSITE || atom.Number == ELEM_TEMPLATE {
 		panic("getImplicitH does not work on pseudo/template/RSite atoms")
 	}
 	implH := 0
 	if atom.Number == 6 && atom.Charge == 0 {
-		// carbon
-		if conn == 4 {
-			implH = 0
-		} else if conn == 3 {
-			implH = 1
-		} else if conn == 2 {
-			implH = 2
+		// carbon - normal valence is 4
+		if conn >= 0 && conn <= 4 {
+			implH = 4 - conn
 		} else if conn == -1 {
 			// aromatic carbon: approximate H by degree (2 -> CH)
 			deg := 0
@@ -565,21 +561,17 @@ func (m *Molecule) GetImplicitH(idx int) int {
 			}
 		}
 	} else if atom.Number == 7 && atom.Charge == 0 {
-		// nitrogen
-		if conn == 3 {
-			implH = 0
-		} else if conn == 2 {
-			implH = 1
+		// nitrogen - normal valence is 3
+		if conn >= 0 && conn <= 3 {
+			implH = 3 - conn
 		} else if conn == -1 {
 			// aromatic N (pyridine-like, degree 2) -> no H
 			implH = 0
 		}
 	} else if atom.Number == 8 && atom.Charge == 0 {
-		// oxygen
-		if conn == 2 {
-			implH = 0
-		} else if conn == 1 {
-			implH = 1
+		// oxygen - normal valence is 2
+		if conn >= 0 && conn <= 2 {
+			implH = 2 - conn
 		}
 	} else {
 		implH = 0 // fallback

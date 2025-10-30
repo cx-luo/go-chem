@@ -8,42 +8,61 @@ import (
 )
 
 func TestSMILES(t *testing.T) {
-	m, err := (srcpkg.SmilesLoader{}).Parse("CCC(C)C(=O)C(=O)O")
+	m, err := (srcpkg.SmilesLoader{}).Parse("CC(=O)OC1=CC=CC=C1C(=O)O")
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
 
+	// Remove verbose output for CI and correctness testing
 	fmt.Println(m.CalcMolecularWeight())
 	unit := srcpkg.CollectGross(m, srcpkg.GrossFormulaOptions{})
 	fmt.Println(srcpkg.GrossUnitsToStringHill(unit, false))
 	fmt.Println(m.CalculateMoleculeHash())
 
-	// The original test checked for a double bond at bond 0, but the input has no double bond.
-	// Instead, check that atom 4 is a nitrogen, has charge +1, and is bonded to four carbons.
-	nIndex := -1
-	for i, atom := range m.Atoms {
-		// srcpkg.ELEM_N is nitrogen atomic number (7)
-		if atom.Number == srcpkg.ELEM_N {
-			nIndex = i
-			break
+	// Aspirin (acetylsalicylic acid): C9H8O4
+	expectedC := 9
+	expectedO := 4
+
+	// Check atom counts
+	cCount, oCount := 0, 0
+	for _, atom := range m.Atoms {
+		switch atom.Number {
+		case srcpkg.ELEM_C:
+			cCount++
+		case srcpkg.ELEM_O:
+			oCount++
+		case srcpkg.ELEM_N:
+			t.Fatalf("did not expect nitrogen atom in aspirin")
 		}
 	}
-	if nIndex == -1 {
-		t.Fatalf("expected nitrogen atom")
+	if cCount != expectedC {
+		t.Fatalf("expected %d C atoms, got %d", expectedC, cCount)
 	}
-	if m.Atoms[nIndex].Charge != 1 {
-		t.Fatalf("expected +1 charge on nitrogen, got %d", m.Atoms[nIndex].Charge)
+	if oCount != expectedO {
+		t.Fatalf("expected %d O atoms, got %d", expectedO, oCount)
 	}
-	// Count how many carbons are connected to the nitrogen
-	carbonBonds := 0
-	for i := range m.Bonds {
-		a1 := m.Bonds[i].Beg
-		a2 := m.Bonds[i].End
-		if a1 == nIndex && m.GetAtomNumber(a2) == srcpkg.ELEM_C {
-			carbonBonds++
-		} else if a2 == nIndex && m.GetAtomNumber(a1) == srcpkg.ELEM_C {
-			carbonBonds++
+
+	// Verify molecular formula
+	grossFormula := srcpkg.GrossUnitsToStringHill(unit, false)
+	expectedFormula := "C9 H8 O4"
+	if grossFormula != expectedFormula {
+		t.Fatalf("expected formula %s, got %s", expectedFormula, grossFormula)
+	}
+
+	// Check for at least one C=O double bond
+	hasDoubleBondedO := false
+	for i, bond := range m.Bonds {
+		a1 := m.Atoms[bond.Beg]
+		a2 := m.Atoms[bond.End]
+		order := m.GetBondOrder(i)
+		if ((a1.Number == srcpkg.ELEM_C && a2.Number == srcpkg.ELEM_O) ||
+			(a2.Number == srcpkg.ELEM_C && a1.Number == srcpkg.ELEM_O)) && order == srcpkg.BOND_DOUBLE {
+			hasDoubleBondedO = true
+			break // found, no need to continue
 		}
+	}
+	if !hasDoubleBondedO {
+		t.Fatalf("expected at least one C=O double bond in aspirin")
 	}
 }
 
@@ -104,7 +123,7 @@ func TestSMILES_ChargedAtom(t *testing.T) {
 }
 
 func TestSMILES_Isotope(t *testing.T) {
-	m, err := (srcpkg.SmilesLoader{}).Parse("CC")
+	m, err := (srcpkg.SmilesLoader{}).Parse("[13C]")
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}

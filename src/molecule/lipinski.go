@@ -71,7 +71,7 @@ func NumHydrogenBondAcceptors(m *Molecule) int {
 		if m.GetAtomCharge(i) > 0 {
 			continue
 		}
-		conn := m.getAtomConnectivityNoImplH(i)
+		conn := m.GetAtomConnectivityNoImplH(i)
 		// proxy: oxygen connectivity <=2, nitrogen <=3
 		if (n == ELEM_O && conn <= 2) || (n == ELEM_N && conn <= 3) {
 			c++

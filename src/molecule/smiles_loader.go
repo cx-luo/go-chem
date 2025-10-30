@@ -354,7 +354,7 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	ch := rune(s[i])
 	if unicode.IsUpper(ch) {
 		sym = string(ch)
-		if i+1 < len(s) {
+		if i+1 < len(s) && s[i+1] != '@' && s[i+1] != 'H' && s[i+1] != '+' && s[i+1] != '-' && s[i+1] != ']' {
 			ch2 := rune(s[i+1])
 			if unicode.IsLower(ch2) {
 				sym += string(ch2)
@@ -378,6 +378,12 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 		return "", i, false, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
 	}
 
+	// Parse stereochemistry (@, @@) - must come before H count
+	// In SMILES, stereochemistry comes as @, @@, or @H, @@H, etc.
+	for i < len(s) && s[i] == '@' {
+		i++
+	}
+
 	// Parse explicit H count (like NH3+, CH2, etc.)
 	if i < len(s) && s[i] == 'H' {
 		i++ // skip 'H'
@@ -389,11 +395,6 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 				i++
 			}
 		}
-	}
-
-	// Parse stereochemistry (@, @@)
-	for i < len(s) && (s[i] == '@') {
-		i++
 	}
 
 	// Parse charge
