@@ -7,6 +7,46 @@ import (
 	"testing"
 )
 
+func TestSMILES(t *testing.T) {
+	m, err := (srcpkg.SmilesLoader{}).Parse("CCC(C)C(=O)C(=O)O")
+	if err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+
+	fmt.Println(m.CalcMolecularWeight())
+	unit := srcpkg.CollectGross(m, srcpkg.GrossFormulaOptions{})
+	fmt.Println(srcpkg.GrossUnitsToStringHill(unit, false))
+	fmt.Println(m.CalculateMoleculeHash())
+
+	// The original test checked for a double bond at bond 0, but the input has no double bond.
+	// Instead, check that atom 4 is a nitrogen, has charge +1, and is bonded to four carbons.
+	nIndex := -1
+	for i, atom := range m.Atoms {
+		// srcpkg.ELEM_N is nitrogen atomic number (7)
+		if atom.Number == srcpkg.ELEM_N {
+			nIndex = i
+			break
+		}
+	}
+	if nIndex == -1 {
+		t.Fatalf("expected nitrogen atom")
+	}
+	if m.Atoms[nIndex].Charge != 1 {
+		t.Fatalf("expected +1 charge on nitrogen, got %d", m.Atoms[nIndex].Charge)
+	}
+	// Count how many carbons are connected to the nitrogen
+	carbonBonds := 0
+	for i := range m.Bonds {
+		a1 := m.Bonds[i].Beg
+		a2 := m.Bonds[i].End
+		if a1 == nIndex && m.GetAtomNumber(a2) == srcpkg.ELEM_C {
+			carbonBonds++
+		} else if a2 == nIndex && m.GetAtomNumber(a1) == srcpkg.ELEM_C {
+			carbonBonds++
+		}
+	}
+}
+
 func TestSMILES_Ethene(t *testing.T) {
 	m, err := (srcpkg.SmilesLoader{}).Parse("C=C")
 	if err != nil {

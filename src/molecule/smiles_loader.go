@@ -42,6 +42,10 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	}
 	ringBonds := make(map[int]ringOpen) // ring number -> opening site and optional bond order
 
+	// Use a temporary array to track aromaticity during parsing
+	// because AddBond() invalidates m.Aromaticity
+	atomAromaticity := make([]int, 0)
+
 	lastAtom := -1
 	pendingOrder := 0
 
@@ -66,8 +70,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		ch := rune(s[i])
-		// aromatic lower-case atoms
-		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' || ch == 'b' {
+		// aromatic lower-case atoms (c, n, o, s, p per SMILES specification)
+		// Note: 'b' is not a valid aromatic atom in standard SMILES
+		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
 			return string(ch), i + 1, true, 0, 0, nil
 		}
 		// Two-character aromatic atoms: as, se
@@ -105,8 +110,6 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				return ELEM_S, nil
 			case "p":
 				return ELEM_P, nil
-			case "b":
-				return ELEM_B, nil
 			case "as":
 				return ELEM_As, nil
 			case "se":
@@ -209,12 +212,12 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 					// No explicit order specified - infer from aromaticity
 					// Check if current atom is aromatic
 					currentAromatic := false
-					if lastAtom < len(m.Aromaticity) && m.Aromaticity[lastAtom] == ATOM_AROMATIC {
+					if lastAtom < len(atomAromaticity) && atomAromaticity[lastAtom] == ATOM_AROMATIC {
 						currentAromatic = true
 					}
 					// Check if opening atom is aromatic
 					openAromatic := false
-					if open.atom < len(m.Aromaticity) && m.Aromaticity[open.atom] == ATOM_AROMATIC {
+					if open.atom < len(atomAromaticity) && atomAromaticity[open.atom] == ATOM_AROMATIC {
 						openAromatic = true
 					}
 					// If both aromatic, use aromatic bond
@@ -260,19 +263,24 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		// Mark atom as aromatic if it was specified with lowercase
+		// Ensure atomAromaticity array is large enough (idx is 0-based, so we need idx+1 elements)
+		for len(atomAromaticity) < idx+1 {
+			atomAromaticity = append(atomAromaticity, ATOM_ALIPHATIC)
+		}
 		if aromatic {
-			// Ensure Aromaticity array is large enough
-			for len(m.Aromaticity) <= idx {
-				m.Aromaticity = append(m.Aromaticity, -1)
-			}
-			m.Aromaticity[idx] = ATOM_AROMATIC
+			atomAromaticity[idx] = ATOM_AROMATIC
 		}
 
 		if lastAtom >= 0 {
 			order := pendingOrder
 			if order == 0 {
-				// implied single; if both aromatic atoms, mark as aromatic bond
-				if aromatic && isAromaticElement(m.Atoms[lastAtom].Number) {
+				// implied single; if both atoms are aromatic, mark as aromatic bond
+				// Check if BOTH the current atom AND the previous atom were marked as aromatic
+				lastAtomAromatic := false
+				if lastAtom < len(atomAromaticity) && atomAromaticity[lastAtom] == ATOM_AROMATIC {
+					lastAtomAromatic = true
+				}
+				if aromatic && lastAtomAromatic {
 					order = BOND_AROMATIC
 				} else {
 					order = BOND_SINGLE
@@ -288,33 +296,23 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		return nil, fmt.Errorf("unclosed ring bonds")
 	}
 
-	// Set aromaticity based on aromatic bonds
-	// Since AddBond invalidates the cache, we need to rebuild it
+	// Copy atomAromaticity to m.Aromaticity
+	// Ensure it's properly sized for all atoms
 	m.Aromaticity = make([]int, len(m.Atoms))
-	for i := range m.Aromaticity {
-		m.Aromaticity[i] = ATOM_ALIPHATIC
+	for i := 0; i < len(m.Atoms); i++ {
+		if i < len(atomAromaticity) {
+			m.Aromaticity[i] = atomAromaticity[i]
+		} else {
+			m.Aromaticity[i] = ATOM_ALIPHATIC
+		}
 	}
 
-	// Mark atoms as aromatic if they have any aromatic bonds
+	// Mark atoms as aromatic based on their aromatic bonds
+	// This handles cases where bonds were marked aromatic but atoms weren't
 	for _, bond := range m.Bonds {
 		if bond.Order == BOND_AROMATIC {
 			m.Aromaticity[bond.Beg] = ATOM_AROMATIC
 			m.Aromaticity[bond.End] = ATOM_AROMATIC
-		}
-	}
-
-	// Fix ring closure bonds: if both endpoints are aromatic but bond is single,
-	// change it to aromatic
-	for i := range m.Bonds {
-		if m.Bonds[i].Order == BOND_SINGLE {
-			beg := m.Bonds[i].Beg
-			end := m.Bonds[i].End
-			if m.Aromaticity[beg] == ATOM_AROMATIC && m.Aromaticity[end] == ATOM_AROMATIC {
-				m.Bonds[i].Order = BOND_AROMATIC
-				if i < len(m.BondOrders) {
-					m.BondOrders[i] = BOND_AROMATIC
-				}
-			}
 		}
 	}
 
@@ -364,7 +362,7 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 			}
 		}
 		i++
-	} else if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' || ch == 'b' {
+	} else if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
 		sym = string(ch)
 		aromatic = true
 		i++
@@ -457,7 +455,7 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 // isAromaticElement checks if an element number can be aromatic
 func isAromaticElement(atomNum int) bool {
 	switch atomNum {
-	case ELEM_C, ELEM_N, ELEM_O, ELEM_S, ELEM_P, ELEM_B, ELEM_As, ELEM_Se:
+	case ELEM_C, ELEM_N, ELEM_O, ELEM_S, ELEM_P, ELEM_As, ELEM_Se:
 		return true
 	}
 	return false
