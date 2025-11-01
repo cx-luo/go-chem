@@ -37,8 +37,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	type stackEntry struct{ atomIdx int }
 	var branchStack []stackEntry
 	type ringOpen struct {
-		atom  int
-		order int
+		atom      int
+		order     int
+		direction int // stereochemistry direction
 	}
 	ringBonds := make(map[int]ringOpen) // ring number -> opening site and optional bond order
 
@@ -48,6 +49,7 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 
 	lastAtom := -1
 	pendingOrder := 0
+	pendingDirection := 0 // For stereochemistry: BOND_UP (/) or BOND_DOWN (\)
 
 	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, explicitH int, err error) {
 		if i >= len(s) {
@@ -169,9 +171,20 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 			i++
 			continue
 		}
+		if ch == '/' { // stereochemistry: up direction
+			pendingDirection = BOND_UP
+			i++
+			continue
+		}
+		if ch == '\\' { // stereochemistry: down direction
+			pendingDirection = BOND_DOWN
+			i++
+			continue
+		}
 		if ch == '.' { // disconnected component separator
 			lastAtom = -1
 			pendingOrder = 0
+			pendingDirection = 0
 			i++
 			continue
 		}
@@ -231,13 +244,23 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				if pendingOrder != 0 && open.order != 0 && pendingOrder != open.order {
 					return nil, fmt.Errorf("conflicting ring bond orders on ring %d", ringNum)
 				}
-				m.AddBond(open.atom, lastAtom, order)
+				bondIdx := m.AddBond(open.atom, lastAtom, order)
+				// Apply stereochemistry direction - use closing direction if specified, else opening direction
+				direction := pendingDirection
+				if direction == 0 {
+					direction = open.direction
+				}
+				if direction != 0 {
+					m.SetBondDirection(bondIdx, direction)
+				}
 				delete(ringBonds, ringNum)
 				pendingOrder = 0
+				pendingDirection = 0
 			} else {
 				// opening a ring
-				ringBonds[ringNum] = ringOpen{atom: lastAtom, order: pendingOrder}
+				ringBonds[ringNum] = ringOpen{atom: lastAtom, order: pendingOrder, direction: pendingDirection}
 				pendingOrder = 0
+				pendingDirection = 0
 			}
 			i = nextI
 			continue
@@ -306,8 +329,13 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 					order = BOND_SINGLE
 				}
 			}
-			m.AddBond(lastAtom, idx, order)
+			bondIdx := m.AddBond(lastAtom, idx, order)
+			// Apply stereochemistry direction if specified
+			if pendingDirection != 0 {
+				m.SetBondDirection(bondIdx, pendingDirection)
+			}
 			pendingOrder = 0
+			pendingDirection = 0
 		}
 		lastAtom = idx
 		i = next
