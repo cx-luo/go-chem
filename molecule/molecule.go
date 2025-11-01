@@ -587,6 +587,11 @@ func (m *Molecule) GetImplicitH(idx int) int {
 			if conn >= 0 && conn <= 4 {
 				implH = 4 - conn
 			}
+		} else if charge == -1 {
+			// N-: valence 2 (like NH2-)
+			if conn >= 0 && conn <= 2 {
+				implH = 2 - conn
+			}
 		} else {
 			implH = 0
 		}
@@ -666,11 +671,27 @@ func (m *Molecule) GetImplicitH(idx int) int {
 
 	case ELEM_P: // Phosphorus
 		if charge == 0 {
-			// Neutral P: valence 3 (like PH3) or 5
+			// Neutral P: valence 3 (like PH3) or 5 (like H3PO3, H3PO4)
+			// Try valence 3 first
+			if conn >= 0 && conn <= 3 {
+				implH = 3 - conn
+			} else if conn >= 4 && conn <= 5 {
+				// Higher valence 5
+				implH = 5 - conn
+			} else {
+				implH = 0
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_B: // Boron
+		if charge == 0 {
+			// Neutral B: valence 3 (like BH3)
 			if conn >= 0 && conn <= 3 {
 				implH = 3 - conn
 			} else {
-				implH = 0 // Higher valence
+				implH = 0
 			}
 		} else {
 			implH = 0
