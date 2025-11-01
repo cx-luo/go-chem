@@ -543,44 +543,155 @@ func (m *Molecule) GetImplicitH(idx int) int {
 	if atom.Number == ELEM_PSEUDO || atom.Number == ELEM_RSITE || atom.Number == ELEM_TEMPLATE {
 		panic("getImplicitH does not work on pseudo/template/RSite atoms")
 	}
+
 	implH := 0
-	if atom.Number == 6 && atom.Charge == 0 {
-		// carbon - normal valence is 4
-		if conn >= 0 && conn <= 4 {
-			implH = 4 - conn
-		} else if conn == -1 {
-			// aromatic carbon: approximate H by degree (2 -> CH)
-			deg := 0
-			if idx < len(m.Vertices) {
-				deg = len(m.Vertices[idx].Edges)
+	charge := atom.Charge
+
+	// Based on indigo's implementation and standard valence rules
+	switch atom.Number {
+	case ELEM_H: // Hydrogen
+		// H can be [H] (0 conn, 0 implH) or [HH] (1 conn, 0 implH)
+		implH = 0
+
+	case ELEM_C: // Carbon
+		if charge == 0 {
+			if conn >= 0 && conn <= 4 {
+				implH = 4 - conn
+			} else if conn == -1 {
+				// aromatic carbon
+				deg := 0
+				if idx < len(m.Vertices) {
+					deg = len(m.Vertices[idx].Edges)
+				}
+				if deg == 2 {
+					implH = 1
+				} else {
+					implH = 0
+				}
 			}
-			if deg == 2 {
-				implH = 1
-			} else {
-				implH = 0
-			}
-		}
-	} else if atom.Number == 7 && atom.Charge == 0 {
-		// nitrogen - normal valence is 3
-		if conn >= 0 && conn <= 3 {
-			implH = 3 - conn
-		} else if conn == -1 {
-			// aromatic N (pyridine-like, degree 2) -> no H
+		} else {
+			// Charged carbon: generally no implicit H unless explicitly specified
 			implH = 0
 		}
-	} else if atom.Number == 8 && atom.Charge == 0 {
-		// oxygen - normal valence is 2
-		if conn >= 0 && conn <= 2 {
-			implH = 2 - conn
+
+	case ELEM_N: // Nitrogen
+		if charge == 0 {
+			// Neutral nitrogen: valence 3
+			if conn >= 0 && conn <= 3 {
+				implH = 3 - conn
+			} else if conn == -1 {
+				implH = 0 // aromatic
+			}
+		} else if charge == 1 {
+			// N+: valence 4 (like NH4+)
+			if conn >= 0 && conn <= 4 {
+				implH = 4 - conn
+			}
+		} else {
+			implH = 0
 		}
-	} else {
-		implH = 0 // fallback
+
+	case ELEM_O: // Oxygen
+		if charge == 0 {
+			// Neutral oxygen: valence 2
+			if conn >= 0 && conn <= 2 {
+				implH = 2 - conn
+			}
+		} else if charge == -1 {
+			// O-: valence 1 (like OH-)
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_S: // Sulfur
+		if charge == 0 {
+			// Neutral sulfur: valence 2 (like H2S, RSH, RSR)
+			// But can also be 4 or 6 in SO2, SO3, etc.
+			if conn >= 0 && conn <= 2 {
+				implH = 2 - conn
+			} else {
+				implH = 0 // Higher valence sulfur compounds
+			}
+		} else if charge == -1 {
+			// S-: valence 1
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_F: // Fluorine
+		if charge == 0 {
+			// Neutral F: valence 1
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_Cl: // Chlorine
+		if charge == 0 {
+			// Neutral Cl: valence 1
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_Br: // Bromine
+		if charge == 0 {
+			// Neutral Br: valence 1
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_I: // Iodine
+		if charge == 0 {
+			// Neutral I: valence 1
+			if conn >= 0 && conn <= 1 {
+				implH = 1 - conn
+			}
+		} else {
+			implH = 0
+		}
+
+	case ELEM_P: // Phosphorus
+		if charge == 0 {
+			// Neutral P: valence 3 (like PH3) or 5
+			if conn >= 0 && conn <= 3 {
+				implH = 3 - conn
+			} else {
+				implH = 0 // Higher valence
+			}
+		} else {
+			implH = 0
+		}
+
+	default:
+		implH = 0
 	}
+
 	for len(m.ImplicitH) <= idx {
 		m.ImplicitH = append(m.ImplicitH, -1)
 	}
 	m.ImplicitH[idx] = implH
 	return implH
+}
+
+func (m *Molecule) SetImplicitH(idx int, h int) {
+	for len(m.ImplicitH) <= idx {
+		m.ImplicitH = append(m.ImplicitH, -1)
+	}
+	m.ImplicitH[idx] = h
 }
 
 func (m *Molecule) GetAtomAromaticity(idx int) int {

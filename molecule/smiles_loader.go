@@ -49,9 +49,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	lastAtom := -1
 	pendingOrder := 0
 
-	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, err error) {
+	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, explicitH int, err error) {
 		if i >= len(s) {
-			return "", i, false, 0, 0, fmt.Errorf("unexpected end of input")
+			return "", i, false, 0, 0, 0, fmt.Errorf("unexpected end of input")
 		}
 
 		// Check for bracketed atoms [13C+], [NH3+], etc.
@@ -65,7 +65,7 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				// Avoid repeated work by running just once over the region
 				return readBracketedAtom(s, i)
 			} else {
-				return "", i, false, 0, 0, fmt.Errorf("unclosed bracket at %d", i)
+				return "", i, false, 0, 0, 0, fmt.Errorf("unclosed bracket at %d", i)
 			}
 		}
 
@@ -73,13 +73,13 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		// aromatic lower-case atoms (c, n, o, s, p per SMILES specification)
 		// Note: 'b' is not a valid aromatic atom in standard SMILES
 		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
-			return string(ch), i + 1, true, 0, 0, nil
+			return string(ch), i + 1, true, 0, 0, 0, nil
 		}
 		// Two-character aromatic atoms: as, se
 		if i+1 < len(s) {
 			twoChar := string(s[i : i+2])
 			if twoChar == "as" || twoChar == "se" {
-				return twoChar, i + 2, true, 0, 0, nil
+				return twoChar, i + 2, true, 0, 0, 0, nil
 			}
 		}
 		// uppercase + optional lowercase (Cl, Br)
@@ -89,12 +89,12 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				ch2 := rune(s[i+1])
 				if unicode.IsLower(ch2) {
 					sym += string(ch2)
-					return sym, i + 2, false, 0, 0, nil
+					return sym, i + 2, false, 0, 0, 0, nil
 				}
 			}
-			return sym, i + 1, false, 0, 0, nil
+			return sym, i + 1, false, 0, 0, 0, nil
 		}
-		return "", i, false, 0, 0, fmt.Errorf("bad atom at %d", i)
+		return "", i, false, 0, 0, 0, fmt.Errorf("bad atom at %d", i)
 	}
 
 	elemToNum := func(sym string, aromatic bool) (int, error) {
@@ -244,7 +244,7 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		// must be atom
-		sym, next, aromatic, isotope, charge, err := readElement(i)
+		sym, next, aromatic, isotope, charge, explicitH, err := readElement(i)
 		if err != nil {
 			return nil, err
 		}
@@ -260,6 +260,25 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 		if charge != 0 {
 			m.SetAtomCharge(idx, charge)
+		}
+
+		// Handle explicit H count for cases like [NH3+], [HH]
+		if explicitH > 0 {
+			// For [HH], we need to create an additional H atom and bond them
+			if num == ELEM_H {
+				// Create explicitH additional H atoms and bond them
+				for i := 0; i < explicitH; i++ {
+					hIdx := m.AddAtom(ELEM_H)
+					m.AddBond(idx, hIdx, BOND_SINGLE)
+					// Expand aromat­icity array
+					for len(atomAromaticity) < hIdx+1 {
+						atomAromaticity = append(atomAromaticity, ATOM_ALIPHATIC)
+					}
+				}
+			} else {
+				// For other elements, set implicit H
+				m.SetImplicitH(idx, explicitH)
+			}
 		}
 
 		// Mark atom as aromatic if it was specified with lowercase
@@ -320,15 +339,17 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 }
 
 // readBracketedAtom parses bracketed atoms like [13C+], [NH3+], [C@H], etc.
-func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool, isotope int, charge int, err error) {
+// Returns: sym (element symbol), next (position after ]), aromatic, isotope, charge, explicitH (H count like in NH3), error
+func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool, isotope int, charge int, explicitH int, err error) {
 	if start >= len(s) || s[start] != '[' {
-		return "", start, false, 0, 0, fmt.Errorf("expected '[' at %d", start)
+		return "", start, false, 0, 0, 0, fmt.Errorf("expected '[' at %d", start)
 	}
 
 	i := start + 1
 	aromatic = false
 	isotope = 0
 	charge = 0
+	explicitH = 0
 
 	// Parse isotope if present (digits at start)
 	if i < len(s) && unicode.IsDigit(rune(s[i])) {
@@ -348,7 +369,7 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 
 	// Parse element symbol
 	if i >= len(s) {
-		return "", i, false, 0, 0, fmt.Errorf("unexpected end in bracketed atom")
+		return "", i, false, 0, 0, 0, fmt.Errorf("unexpected end in bracketed atom")
 	}
 
 	ch := rune(s[i])
@@ -375,7 +396,7 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 		sym = "H"
 		i++
 	} else {
-		return "", i, false, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
+		return "", i, false, 0, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
 	}
 
 	// Parse stereochemistry (@, @@) - must come before H count
@@ -384,15 +405,23 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 		i++
 	}
 
-	// Parse explicit H count (like NH3+, CH2, etc.)
+	// Parse explicit H count (like NH3+, CH2, [HH], etc.)
 	if i < len(s) && s[i] == 'H' {
-		i++ // skip 'H'
-		// Check for H count
+		i++           // skip 'H'
+		explicitH = 1 // Default H count is 1 if no number follows
+		// Check for H count number
 		if i < len(s) && unicode.IsDigit(rune(s[i])) {
 			// Parse the number after H
-			// For now, we'll just skip it since we don't have ExplicitImplH support here
+			hCountStart := i
 			for i < len(s) && unicode.IsDigit(rune(s[i])) {
 				i++
+			}
+			if i > hCountStart {
+				hCountStr := s[hCountStart:i]
+				explicitH = 0
+				for _, c := range hCountStr {
+					explicitH = explicitH*10 + int(c-'0')
+				}
 			}
 		}
 	}
@@ -447,10 +476,10 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 
 	// Expect closing bracket
 	if i >= len(s) || s[i] != ']' {
-		return "", i, false, 0, 0, fmt.Errorf("expected ']' at %d", i)
+		return "", i, false, 0, 0, 0, fmt.Errorf("expected ']' at %d", i)
 	}
 
-	return sym, i + 1, aromatic, isotope, charge, nil
+	return sym, i + 1, aromatic, isotope, charge, explicitH, nil
 }
 
 // isAromaticElement checks if an element number can be aromatic

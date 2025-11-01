@@ -19,6 +19,7 @@ type GrossFormulaOptions struct {
 type GrossUnit struct {
 	Isotopes   map[int]int // key: (isotope<<8)+atomicNumber, or atomicNumber if isotope==0; may include ELEM_RSITE as key
 	Multiplier string      // e.g., n, m
+	Charge     int         // total charge of the unit
 }
 
 // GrossUnits holds base molecule unit at index 0 and repeating units after
@@ -27,7 +28,7 @@ type GrossUnits []GrossUnit
 // CollectGross computes gross formula counts per unit. This Go version currently
 // emits a single base unit (no polymer SGroups support), and counts implicit H.
 func CollectGross(mol *Molecule, opts GrossFormulaOptions) GrossUnits {
-	units := GrossUnits{GrossUnit{Isotopes: make(map[int]int)}}
+	units := GrossUnits{GrossUnit{Isotopes: make(map[int]int), Charge: 0}}
 	unit := &units[0]
 
 	selected := make(map[int]bool) // selection not supported yet; treat as all selected
@@ -55,6 +56,9 @@ func CollectGross(mol *Molecule, opts GrossFormulaOptions) GrossUnits {
 			key = (isotope << 8) + number
 		}
 		unit.Isotopes[key] = unit.Isotopes[key] + 1
+
+		// Add charge to total
+		unit.Charge += mol.GetAtomCharge(atomIdx)
 
 		// implicit H - safe to call here as pseudo/template/rsite atoms were filtered above
 		implH := mol.GetImplicitH(atomIdx)
@@ -123,7 +127,26 @@ func GrossUnitsToStringHill(units GrossUnits, addRSites bool) string {
 		return ""
 	}
 	base := units[0].Isotopes
+	charge := units[0].Charge
 	out := hillFromIsotopes(base, addRSites)
+
+	// Add charge if present
+	if charge != 0 {
+		if charge > 0 {
+			if charge == 1 {
+				out += "+"
+			} else {
+				out += fmt.Sprintf("+%d", charge)
+			}
+		} else {
+			if charge == -1 {
+				out += "-"
+			} else {
+				out += fmt.Sprintf("%d", charge)
+			}
+		}
+	}
+
 	// No repeating units in Go rewrite yet
 	return out
 }
