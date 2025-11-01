@@ -117,6 +117,10 @@ type Molecule struct {
 	TotalH       []int // Total hydrogen count per atom (-1 = not cached)
 	Valence      []int // Valence per atom (-1 = not cached)
 
+	// Stereochemistry
+	CisTrans      *MoleculeCisTrans      // Cis/trans stereochemistry management
+	Stereocenters *MoleculeStereocenters // Stereocenter management
+
 	// Metadata
 	Name             string // Molecule name
 	IgnoreBadValence bool   // Whether to ignore valence errors
@@ -131,6 +135,8 @@ type Molecule struct {
 // NewMolecule creates a new empty molecule
 func NewMolecule() *Molecule {
 	return &Molecule{
+		CisTrans:         NewMoleculeCisTrans(),
+		Stereocenters:    NewMoleculeStereocenters(),
 		Aromatized:       false,
 		IgnoreBadValence: false,
 		ChiralFlag:       -1,
