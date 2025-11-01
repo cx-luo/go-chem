@@ -1,7 +1,7 @@
 package test
 
 import (
-	"go-chem/src/molecule"
+	"github.com/cx-luo/go-chem/molecule"
 	"testing"
 )
 

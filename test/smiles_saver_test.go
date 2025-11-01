@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	srcpkg "go-chem/src/molecule"
+	srcpkg "github.com/cx-luo/go-chem/molecule"
 )
 
 func TestSmilesSaver_Simple(t *testing.T) {

@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	srcpkg "go-chem/src/molecule"
+	srcpkg "github.com/cx-luo/go-chem/molecule"
 	"testing"
 )
 

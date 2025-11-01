@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"go-chem/src/molecule"
+	"github.com/cx-luo/go-chem/molecule"
 	"strings"
 	"testing"
 )
