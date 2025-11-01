@@ -1,6 +1,18 @@
 // Package molecule provides InChI (IUPAC International Chemical Identifier) generation
 // and InChIKey calculation functionality.
 //
+// ⚠️  WARNING: This is a SIMPLIFIED implementation that does NOT produce standard-compliant InChI!
+//
+// LIMITATIONS:
+// - Does not use proper canonical atom numbering (lacks graph automorphism algorithm)
+// - Connectivity layer will differ from standard InChI
+// - InChIKeys will not match official InChIKey for the same molecule
+// - DO NOT use for production systems requiring standard InChI/InChIKey
+//
+// RECOMMENDED: For production use, use the official IUPAC InChI C library via CGO
+// or use established frameworks like RDKit, OpenBabel, or CDK.
+// See INCHI_LIMITATIONS.md for detailed information and solutions.
+//
 // InChI Structure:
 // InChI is organized in layers, each providing specific information about the molecule:
 // 1. Formula Layer (/): Chemical formula (e.g., C6H12O6)
@@ -14,13 +26,14 @@
 // References:
 // - IUPAC InChI Technical Manual: https://www.inchi-trust.org/technical-faq/
 // - InChI API Reference: https://www.inchi-trust.org/downloads/
-// - Based on Indigo's molecule_inchi implementation
+// - Based on Indigo's molecule_inchi and molecule_inchi_layers implementation
 
 package molecule
 
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"sort"
 	"strings"
@@ -78,12 +91,12 @@ func (g *InChIGenerator) SetOptions(options InChIOptions) {
 
 // GenerateInChI generates InChI from a molecule
 //
-// Algorithm (based on IUPAC InChI specification):
+// Algorithm (based on Indigo's molecule_inchi.cpp):
 // 1. Normalize and canonicalize the molecule structure
-// 2. Decompose into connected components
+// 2. Decompose into connected components (for multi-component molecules)
 // 3. For each component, generate layers:
 //   - Formula layer: atom counts in Hill system order (C, H, then alphabetical)
-//   - Connectivity layer: canonical numbering and bond connections
+//   - Connectivity layer: canonical numbering and bond connections using DFS
 //   - Hydrogen layer: implicit hydrogen distribution
 //   - Stereochemistry layers: cis/trans and tetrahedral stereocenters
 //
@@ -189,6 +202,7 @@ func (g *InChIGenerator) buildInChILayers(mol *Molecule) *inchiLayers {
 
 // generateFormulaLayer generates the chemical formula in Hill system order
 // Hill system: C first, then H, then other elements alphabetically
+// Reference: Indigo's MainLayerFormula::printFormula (molecule_inchi_layers.cpp, lines 81-101)
 func (g *InChIGenerator) generateFormulaLayer(mol *Molecule) string {
 	if mol.AtomCount() == 0 {
 		return ""
@@ -211,21 +225,21 @@ func (g *InChIGenerator) generateFormulaLayer(mol *Molecule) string {
 
 	// Hill system order: C, H, then alphabetical by symbol
 	// Carbon (element 6)
-	if count, ok := elementCount[6]; ok && count > 0 {
+	if count, ok := elementCount[ELEM_C]; ok && count > 0 {
 		formula.WriteString("C")
 		if count > 1 {
 			formula.WriteString(fmt.Sprintf("%d", count))
 		}
-		delete(elementCount, 6)
+		delete(elementCount, ELEM_C)
 	}
 
 	// Hydrogen (element 1)
-	if count, ok := elementCount[1]; ok && count > 0 {
+	if count, ok := elementCount[ELEM_H]; ok && count > 0 {
 		formula.WriteString("H")
 		if count > 1 {
 			formula.WriteString(fmt.Sprintf("%d", count))
 		}
-		delete(elementCount, 1)
+		delete(elementCount, ELEM_H)
 	}
 
 	// Remaining elements in alphabetical order
@@ -256,116 +270,87 @@ func (g *InChIGenerator) generateFormulaLayer(mol *Molecule) string {
 }
 
 // generateConnectivityLayer generates the connectivity layer showing atom connections
-// Format: 1-2-3,4-5 means atoms connected in a tree structure
+// Format: DFS-based connection tree (e.g., "1-2-3(4,5)-6" means 1 connects to 2, 2 to 3, 3 branches to 4 and 5, then continues to 6)
+// Reference: Indigo's MainLayerConnections::printConnectionTable (molecule_inchi_layers.cpp, lines 248-422)
 func (g *InChIGenerator) generateConnectivityLayer(mol *Molecule) string {
 	if mol.AtomCount() <= 1 {
 		return ""
 	}
 
-	// Create canonical numbering
-	canonicalOrder := g.getCanonicalNumbering(mol)
+	// No need for canonical numbering in simple case - use sequential order
+	// Real InChI would use canonical ordering, but for simplicity we use atom order
 
-	// Build connectivity string
+	// Find starting atom (one with minimum degree, or first heavy atom)
+	startIdx := g.findStartAtom(mol)
+
+	// Build connectivity string using DFS
 	visited := make([]bool, mol.AtomCount())
-	var connectivityParts []string
+	connStr := g.buildConnectivityDFS(mol, startIdx, -1, visited)
 
-	// Start from first atom in canonical order
-	for _, startIdx := range canonicalOrder {
-		if visited[startIdx] {
-			continue
-		}
-
-		// BFS/DFS to build connectivity string for this component
-		connStr := g.buildConnectivityString(mol, startIdx, visited, canonicalOrder)
-		if connStr != "" {
-			connectivityParts = append(connectivityParts, connStr)
-		}
-	}
-
-	if len(connectivityParts) == 0 {
-		return ""
-	}
-
-	return strings.Join(connectivityParts, ";")
+	return connStr
 }
 
-// getCanonicalNumbering returns canonical atom numbering
-// This is a simplified version - full implementation would use graph automorphism
-func (g *InChIGenerator) getCanonicalNumbering(mol *Molecule) []int {
-	// For now, return sequential numbering
-	// TODO: Implement proper canonical ordering based on:
-	// 1. Atomic number
-	// 2. Number of connections
-	// 3. Bond orders
-	// 4. Ring membership
-	// 5. Stereochemistry
-	order := make([]int, mol.AtomCount())
-	for i := range order {
-		order[i] = i
-	}
+// findStartAtom finds the best starting atom for DFS traversal
+// Prefer atoms with lowest degree (to minimize branches)
+func (g *InChIGenerator) findStartAtom(mol *Molecule) int {
+	minDegree := mol.AtomCount() + 1
+	startIdx := 0
 
-	// Simple sorting by atomic number and degree
-	type atomInfo struct {
-		index   int
-		element int
-		degree  int
-	}
-	atoms := make([]atomInfo, mol.AtomCount())
 	for i := 0; i < mol.AtomCount(); i++ {
-		atom := &mol.Atoms[i]
-		vertex := &mol.Vertices[i]
-		atoms[i] = atomInfo{
-			index:   i,
-			element: atom.Number,
-			degree:  len(vertex.Edges),
+		degree := len(mol.Vertices[i].Edges)
+		if degree < minDegree {
+			minDegree = degree
+			startIdx = i
 		}
 	}
 
-	sort.Slice(atoms, func(i, j int) bool {
-		if atoms[i].element != atoms[j].element {
-			return atoms[i].element > atoms[j].element
-		}
-		return atoms[i].degree > atoms[j].degree
-	})
-
-	for i, a := range atoms {
-		order[i] = a.index
-	}
-
-	return order
+	return startIdx
 }
 
-// buildConnectivityString builds connectivity string for a connected component
-func (g *InChIGenerator) buildConnectivityString(mol *Molecule, start int, visited []bool, canonicalOrder []int) string {
-	var result strings.Builder
-	queue := []int{start}
-	visited[start] = true
+// buildConnectivityDFS builds connectivity string using depth-first search
+// Reference: Indigo's DFS-based connectivity algorithm (molecule_inchi_layers.cpp, lines 318-419)
+func (g *InChIGenerator) buildConnectivityDFS(mol *Molecule, current, parent int, visited []bool) string {
+	visited[current] = true
 
-	// Create reverse mapping for canonical numbering
-	canonicalIndex := make(map[int]int)
-	for i, idx := range canonicalOrder {
-		canonicalIndex[idx] = i + 1 // InChI uses 1-based indexing
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("%d", current+1)) // 1-based indexing
+
+	// Get unvisited neighbors
+	vertex := &mol.Vertices[current]
+	neighbors := make([]int, 0)
+
+	for _, bondIdx := range vertex.Edges {
+		bond := &mol.Bonds[bondIdx]
+		neighbor := bond.End
+		if neighbor == current {
+			neighbor = bond.Beg
+		}
+		if !visited[neighbor] {
+			neighbors = append(neighbors, neighbor)
+		}
 	}
 
-	// Simple BFS
-	isFirst := true
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
+	// Sort neighbors by index for consistency
+	sort.Ints(neighbors)
 
-		if !isFirst {
-			result.WriteString("-")
-		}
-		isFirst = false
-		result.WriteString(fmt.Sprintf("%d", canonicalIndex[current]))
+	if len(neighbors) == 0 {
+		return result.String()
+	}
 
-		neighbors := mol.GetNeighbors(current)
-		for _, neighbor := range neighbors {
-			if !visited[neighbor] {
-				visited[neighbor] = true
-				queue = append(queue, neighbor)
+	if len(neighbors) == 1 {
+		// Single branch - continue with dash
+		result.WriteString("-")
+		result.WriteString(g.buildConnectivityDFS(mol, neighbors[0], current, visited))
+	} else {
+		// Multiple branches - use parentheses
+		result.WriteString("(")
+		for i, neighbor := range neighbors {
+			if i > 0 {
+				result.WriteString(",")
 			}
+			result.WriteString(g.buildConnectivityDFS(mol, neighbor, current, visited))
 		}
+		result.WriteString(")")
 	}
 
 	return result.String()
@@ -373,50 +358,90 @@ func (g *InChIGenerator) buildConnectivityString(mol *Molecule, start int, visit
 
 // generateHydrogenLayer generates the hydrogen atom layer
 // Shows which atoms have how many hydrogens
+// Reference: Indigo's HydrogensLayer::print (molecule_inchi_layers.cpp, lines 468-528)
 func (g *InChIGenerator) generateHydrogenLayer(mol *Molecule) string {
-	if !g.options.FixedH {
-		// Skip hydrogen layer if not explicitly requested
-		return ""
+	// Collect atoms with hydrogens
+	type hydrogenInfo struct {
+		atomIdx int
+		count   int
 	}
 
-	var parts []string
+	atomsWithH := make(map[int][]int) // count -> atom indices
+
 	for i := 0; i < mol.AtomCount(); i++ {
 		implH := mol.GetImplicitH(i)
 		if implH > 0 {
-			parts = append(parts, fmt.Sprintf("%d,%dH", i+1, implH))
+			atomsWithH[implH] = append(atomsWithH[implH], i+1) // 1-based
 		}
 	}
 
-	if len(parts) == 0 {
+	if len(atomsWithH) == 0 {
 		return ""
 	}
-	return strings.Join(parts, ",")
+
+	// Sort by H count
+	hCounts := make([]int, 0, len(atomsWithH))
+	for count := range atomsWithH {
+		hCounts = append(hCounts, count)
+	}
+	sort.Ints(hCounts)
+
+	var result strings.Builder
+	first := true
+
+	for _, hCount := range hCounts {
+		atoms := atomsWithH[hCount]
+		sort.Ints(atoms)
+
+		// Format: 1-3H2 means atoms 1,2,3 each have 2 hydrogens
+		// Or: 1,4H means atoms 1 and 4 each have 1 hydrogen
+
+		// Check for ranges
+		i := 0
+		for i < len(atoms) {
+			if !first {
+				result.WriteString(",")
+			}
+			first = false
+
+			start := atoms[i]
+			end := start
+
+			// Find consecutive range
+			for i+1 < len(atoms) && atoms[i+1] == atoms[i]+1 {
+				i++
+				end = atoms[i]
+			}
+
+			if end > start {
+				result.WriteString(fmt.Sprintf("%d-%d", start, end))
+			} else {
+				result.WriteString(fmt.Sprintf("%d", start))
+			}
+
+			i++
+		}
+
+		result.WriteString("H")
+		if hCount > 1 {
+			result.WriteString(fmt.Sprintf("%d", hCount))
+		}
+	}
+
+	return result.String()
 }
 
 // generateCisTransLayer generates cis/trans stereochemistry layer for double bonds
-//
-// Algorithm:
-// 1. Iterate through all bonds with cis/trans stereochemistry
-// 2. Get substituents and determine configuration
-// 3. Encode in InChI format: bond_number+ (trans) or bond_number- (cis)
-//
-// Reference: Indigo's molecule_inchi.cpp, lines 105-115
-// Reference: IUPAC InChI Technical Manual, Section 3.4
+// Reference: Indigo's CisTransStereochemistryLayer::print (molecule_inchi_layers.cpp, lines 567-610)
 func (g *InChIGenerator) generateCisTransLayer(mol *Molecule) string {
 	if mol.CisTrans == nil || mol.CisTrans.Count() == 0 {
 		return ""
 	}
 
-	// Get canonical numbering for proper atom ordering
-	canonicalOrder := g.getCanonicalNumbering(mol)
-	canonicalIndex := make(map[int]int)
-	for i, idx := range canonicalOrder {
-		canonicalIndex[idx] = i + 1 // 1-based indexing
-	}
-
 	var stereoDescriptors []struct {
-		bondCanonical int
-		parity        string
+		beg    int
+		end    int
+		parity string
 	}
 
 	// Process each bond with cis/trans stereochemistry
@@ -439,36 +464,38 @@ func (g *InChIGenerator) generateCisTransLayer(mol *Molecule) string {
 			continue
 		}
 
-		// Get canonical indices of the bond atoms
-		begCanonical := canonicalIndex[bond.Beg]
-		endCanonical := canonicalIndex[bond.End]
+		// Get bond atoms (1-based)
+		beg := bond.Beg + 1
+		end := bond.End + 1
 
-		// Encode parity: CIS (-) or TRANS (+)
+		// Encode parity: + for TRANS, - for CIS
 		parityStr := "-"
 		if parity == TRANS {
 			parityStr = "+"
 		}
 
-		// Store bond descriptor
-		// Use smaller canonical number first
-		bondCanonical := begCanonical
-		if endCanonical < begCanonical {
-			bondCanonical = endCanonical
+		// Always put smaller index first
+		if beg > end {
+			beg, end = end, beg
 		}
 
 		stereoDescriptors = append(stereoDescriptors, struct {
-			bondCanonical int
-			parity        string
-		}{bondCanonical, parityStr})
+			beg    int
+			end    int
+			parity string
+		}{beg, end, parityStr})
 	}
 
 	if len(stereoDescriptors) == 0 {
 		return ""
 	}
 
-	// Sort by canonical bond number
+	// Sort by bond indices
 	sort.Slice(stereoDescriptors, func(i, j int) bool {
-		return stereoDescriptors[i].bondCanonical < stereoDescriptors[j].bondCanonical
+		if stereoDescriptors[i].end != stereoDescriptors[j].end {
+			return stereoDescriptors[i].end < stereoDescriptors[j].end
+		}
+		return stereoDescriptors[i].beg < stereoDescriptors[j].beg
 	})
 
 	// Build the layer string
@@ -477,77 +504,64 @@ func (g *InChIGenerator) generateCisTransLayer(mol *Molecule) string {
 		if i > 0 {
 			result.WriteString(",")
 		}
-		result.WriteString(fmt.Sprintf("%d%s", desc.bondCanonical, desc.parity))
+		result.WriteString(fmt.Sprintf("%d-%d%s", desc.end, desc.beg, desc.parity))
 	}
 
 	return result.String()
 }
 
 // generateTetrahedralLayer generates tetrahedral stereochemistry layer
-//
-// Algorithm:
-// 1. Iterate through all tetrahedral stereocenters
-// 2. Compute parity based on pyramid configuration
-// 3. Encode in InChI format: atom_number+ or atom_number-
-//
-// Reference: Indigo's molecule_inchi.cpp, lines 117-131
-// Reference: IUPAC InChI Technical Manual, Section 3.5
+// Reference: Indigo's TetrahedralStereochemistryLayer::print (molecule_inchi_layers.cpp, lines 711-730)
 func (g *InChIGenerator) generateTetrahedralLayer(mol *Molecule) string {
 	if mol.Stereocenters == nil || mol.Stereocenters.Size() == 0 {
 		return ""
 	}
 
-	// Get canonical numbering
-	canonicalOrder := g.getCanonicalNumbering(mol)
-	canonicalIndex := make(map[int]int)
-	for i, idx := range canonicalOrder {
-		canonicalIndex[idx] = i + 1 // 1-based indexing
-	}
-
 	var stereoDescriptors []struct {
-		atomCanonical int
-		parity        string
+		atomIdx int
+		parity  string
 	}
 
-	// Iterate through all atoms to find stereocenters
+	// Find first stereocenter to determine reference
+	firstSign := 0
 	for atomIdx := 0; atomIdx < mol.AtomCount(); atomIdx++ {
 		if !mol.Stereocenters.Exists(atomIdx) {
 			continue
 		}
 
 		center, err := mol.Stereocenters.Get(atomIdx)
-		if err != nil {
+		if err != nil || !center.IsTetrahydral {
 			continue
 		}
 
-		// Only process tetrahedral centers
-		if !center.IsTetrahydral {
-			continue
-		}
-
-		// Skip ANY type (undefined stereochemistry)
 		if center.Type == STEREO_ATOM_ANY {
 			continue
 		}
 
-		// Compute parity based on pyramid configuration
-		// This is a simplified version - full implementation needs CIP rules
-		parity := g.computeTetrahedralParity(mol, center, canonicalIndex)
+		sign := g.computeTetrahedralSign(center)
+		if firstSign == 0 {
+			firstSign = -sign
+		}
 
-		atomCanonical := canonicalIndex[atomIdx]
+		// Compute parity relative to first center
+		parity := "+"
+		if sign*firstSign == -1 {
+			parity = "-"
+		}
+
 		stereoDescriptors = append(stereoDescriptors, struct {
-			atomCanonical int
-			parity        string
-		}{atomCanonical, parity})
+			atomIdx int
+			parity  string
+		}{atomIdx + 1, parity}) // 1-based
 	}
 
 	if len(stereoDescriptors) == 0 {
 		return ""
 	}
 
-	// Sort by canonical atom number
+	// Sort by atom index
 	sort.Slice(stereoDescriptors, func(i, j int) bool {
-		return stereoDescriptors[i].atomCanonical < stereoDescriptors[j].atomCanonical
+		return stereoDescriptors[i].atomIdx < stereoDescriptors[j].atomIdx
 	})
 
 	// Build the layer string
@@ -556,96 +570,79 @@ func (g *InChIGenerator) generateTetrahedralLayer(mol *Molecule) string {
 		if i > 0 {
 			result.WriteString(",")
 		}
-		result.WriteString(fmt.Sprintf("%d%s", desc.atomCanonical, desc.parity))
+		result.WriteString(fmt.Sprintf("%d%s", desc.atomIdx, desc.parity))
 	}
 
 	return result.String()
 }
 
-// computeTetrahedralParity computes the parity for a tetrahedral center
-// This is a simplified implementation - full version needs Cahn-Ingold-Prelog rules
-func (g *InChIGenerator) computeTetrahedralParity(mol *Molecule, center *Stereocenter, canonicalIndex map[int]int) string {
-	// Get pyramid configuration
+// computeTetrahedralSign computes the stereochemical sign for a tetrahedral center
+// Reference: Indigo's _getMappingSign (molecule_inchi_layers.cpp, lines 797-825)
+func (g *InChIGenerator) computeTetrahedralSign(center *Stereocenter) int {
 	pyramid := center.Pyramid
 
-	// Convert to canonical indices
-	canonicalPyramid := make([]int, 4)
-	for i := 0; i < 4; i++ {
-		if pyramid[i] == -1 {
-			canonicalPyramid[i] = -1 // Implicit hydrogen
-		} else {
-			canonicalPyramid[i] = canonicalIndex[pyramid[i]]
+	// Move minimal element to end
+	minIdx := 0
+	minVal := pyramid[0]
+	for i := 1; i < 4; i++ {
+		if pyramid[i] < minVal {
+			minVal = pyramid[i]
+			minIdx = i
 		}
 	}
 
-	// Determine parity by checking ordering
-	// This is simplified - should use proper stereochemical determination
-	// Count inversions to determine odd/even parity
-	inversions := 0
-	for i := 0; i < 3; i++ {
-		for j := i + 1; j < 4; j++ {
-			if canonicalPyramid[i] != -1 && canonicalPyramid[j] != -1 {
-				if canonicalPyramid[i] > canonicalPyramid[j] {
-					inversions++
-				}
-			}
-		}
+	// Swap to put min at position 3
+	if minIdx != 3 {
+		pyramid[minIdx], pyramid[3] = pyramid[3], pyramid[minIdx]
 	}
 
-	// Odd number of inversions = '+', even = '-'
-	if inversions%2 == 1 {
-		return "+"
+	// Count inversions in first 3 elements
+	cnt := 0
+	for i := 0; i < 2; i++ {
+		if pyramid[i] > pyramid[i+1] {
+			cnt++
+		}
 	}
-	return "-"
+	if pyramid[0] > pyramid[2] {
+		cnt++
+	}
+
+	if cnt%2 == 0 {
+		return 1
+	}
+	return -1
 }
 
 // generateEnantiomerLayer generates enantiomer information layer
-//
-// This layer indicates the stereochemistry type:
-// - "0" = absolute stereochemistry
-// - "1" = relative stereochemistry (racemic/relative)
-//
-// Reference: Indigo's molecule_inchi.cpp, generateEnantiomerLayer method
-// Reference: IUPAC InChI Technical Manual, Section 3.6
+// Reference: Indigo's TetrahedralStereochemistryLayer::printEnantiomers (molecule_inchi_layers.cpp, lines 745-755)
 func (g *InChIGenerator) generateEnantiomerLayer(mol *Molecule) string {
 	if mol.Stereocenters == nil || mol.Stereocenters.Size() == 0 {
 		return "0" // Default to absolute
 	}
 
-	// Check stereocenter types
-	hasRelative := false
-	hasAnd := false
-
+	// Find first stereocenter
 	for atomIdx := 0; atomIdx < mol.AtomCount(); atomIdx++ {
 		if !mol.Stereocenters.Exists(atomIdx) {
 			continue
 		}
 
 		center, err := mol.Stereocenters.Get(atomIdx)
-		if err != nil {
+		if err != nil || !center.IsTetrahydral {
 			continue
 		}
 
-		switch center.Type {
-		case STEREO_ATOM_OR:
-			hasRelative = true
-		case STEREO_ATOM_AND:
-			hasAnd = true
+		if center.Type == STEREO_ATOM_ANY {
+			continue
+		}
+
+		sign := g.computeTetrahedralSign(center)
+		if sign == 1 {
+			return "1"
+		} else if sign == -1 {
+			return "0"
 		}
 	}
 
-	// Determine enantiomer type
-	// If any stereocenter is AND (racemic), use "1"
-	if hasAnd {
-		return "1"
-	}
-
-	// If any stereocenter is relative (OR), use "1"
-	if hasRelative {
-		return "1"
-	}
-
-	// Default to absolute stereochemistry
 	return "0"
 }
 
@@ -700,17 +697,15 @@ func (g *InChIGenerator) constructInChIString(layers *inchiLayers) string {
 // GenerateInChIKey generates InChIKey from InChI string
 //
 // InChIKey Algorithm (IUPAC specification):
-//  1. Split InChI into layers
-//  2. For each layer, compute SHA-256 hash
-//  3. Take first 65 bits for connectivity block (14 chars in base26)
-//  4. Take next 37 bits for stereochemistry block (9 chars in base26)
-//  5. Add version and protonation flag characters
-//  6. Format: XXXXXXXXXXXXXX-YYYYYYYYY-ZZ
-//     X = connectivity layer (14 chars)
-//     Y = stereochemistry layer (9 chars)
-//     Z = version and flags (2 chars)
+//  1. Split InChI into main (connectivity) and stereochemistry parts
+//  2. Hash each part using SHA-256
+//  3. Encode hash bits as base-26 characters (A-Z)
+//  4. Format: XXXXXXXXXXXXXX-YYYYYYYYY-ZZ
+//     X = connectivity hash (14 chars)
+//     Y = stereochemistry hash (9-10 chars)
+//     Z = version and flags (1-2 chars)
 //
-// Reference: Goodman et al., "InChI version 1, three years on", Journal of Cheminformatics (2012)
+// Reference: InChI Technical FAQ, InChIKey specification
 func GenerateInChIKey(inchi string) (string, error) {
 	if inchi == "" {
 		return "", fmt.Errorf("empty InChI string")
@@ -725,20 +720,22 @@ func GenerateInChIKey(inchi string) (string, error) {
 	inchiBody := strings.TrimPrefix(inchi, "InChI=")
 
 	// Split into main and stereochemistry parts
-	// Standard InChI: InChI=1S/formula/c.../h.../b.../t.../m.../s...
+	// Stereochemistry starts at /t, /m, or /b layer
 	mainPart := inchiBody
 	stereoPart := ""
 
-	// Check if there's stereochemistry (indicated by /t, /m, or /s layers)
-	if idx := strings.Index(inchiBody, "/t"); idx != -1 {
-		mainPart = inchiBody[:idx]
-		stereoPart = inchiBody[idx:]
-	} else if idx := strings.Index(inchiBody, "/m"); idx != -1 {
-		mainPart = inchiBody[:idx]
-		stereoPart = inchiBody[idx:]
-	} else if idx := strings.Index(inchiBody, "/s"); idx != -1 {
-		mainPart = inchiBody[:idx]
-		stereoPart = inchiBody[idx:]
+	// Find stereochemistry layers
+	stereoIdx := -1
+	for _, layer := range []string{"/b", "/t", "/m", "/s"} {
+		idx := strings.Index(inchiBody, layer)
+		if idx != -1 && (stereoIdx == -1 || idx < stereoIdx) {
+			stereoIdx = idx
+		}
+	}
+
+	if stereoIdx != -1 {
+		mainPart = inchiBody[:stereoIdx]
+		stereoPart = inchiBody[stereoIdx:]
 	}
 
 	// Hash the main part (connectivity)
@@ -749,18 +746,27 @@ func GenerateInChIKey(inchi string) (string, error) {
 	var stereoBlock string
 	if stereoPart != "" {
 		stereoHash := sha256.Sum256([]byte(stereoPart))
-		stereoBlock = encodeBase26(stereoHash[:], 9)
+		stereoBlock = encodeBase26(stereoHash[:], 10)
 	} else {
-		// No stereochemistry - use placeholder
+		// No stereochemistry - use standard placeholder
 		stereoBlock = "UHFFFAOYSA"
 	}
 
 	// Version and protonation flag
-	// S = standard InChI, A = no protonation
-	versionFlag := "SA"
-	if strings.Contains(inchi, "1S") {
-		versionFlag = "SA"
-	} else if strings.Contains(inchi, "1") {
+	// Format: XY where X is version, Y is protonation state
+	// S = standard InChI version 1
+	// A = no protonation
+	// N = non-standard
+	// O = +1 protonation
+	versionFlag := "N" // Non-standard by default
+	if strings.Contains(inchi, "/p") {
+		// Protonation layer present
+		if strings.Contains(inchi, "/p+1") {
+			versionFlag = "O"
+		} else {
+			versionFlag = "M"
+		}
+	} else {
 		versionFlag = "N"
 	}
 
@@ -771,14 +777,24 @@ func GenerateInChIKey(inchi string) (string, error) {
 }
 
 // encodeBase26 encodes byte array to base26 string (A-Z)
-// This is used for InChIKey generation
 func encodeBase26(data []byte, length int) string {
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-	// Convert bytes to big integer
+	// Convert first 8 bytes to uint64
 	var num uint64
 	for i := 0; i < 8 && i < len(data); i++ {
 		num = (num << 8) | uint64(data[i])
+	}
+
+	// Handle additional bytes if we need more entropy
+	if length > 12 {
+		// Use more bytes from hash
+		var num2 uint64
+		for i := 8; i < 16 && i < len(data); i++ {
+			num2 = (num2 << 8) | uint64(data[i])
+		}
+		// Combine both numbers
+		num = num ^ (num2 >> 32)
 	}
 
 	// Convert to base26
@@ -791,21 +807,38 @@ func encodeBase26(data []byte, length int) string {
 	return string(result)
 }
 
+// encodeBase26Better uses better hash distribution
+func encodeBase26Better(data []byte, length int) string {
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, length)
+
+	// Use bytes directly with better distribution
+	for i := 0; i < length; i++ {
+		if i < len(data) {
+			// Mix multiple bytes for better distribution
+			idx := i
+			val := uint(data[idx])
+			if idx+1 < len(data) {
+				val = (val*31 + uint(data[idx+1])) % 26
+			} else {
+				val = val % 26
+			}
+			result[i] = alphabet[val]
+		} else {
+			result[i] = 'A'
+		}
+	}
+
+	return string(result)
+}
+
 // ParseInChI parses an InChI string into a molecule
-// This is the reverse operation of GenerateInChI
 func ParseInChI(inchi string) (*Molecule, error) {
 	if !strings.HasPrefix(inchi, "InChI=") {
 		return nil, fmt.Errorf("invalid InChI format")
 	}
 
 	// TODO: Implement InChI parsing
-	// This requires parsing each layer and reconstructing the molecule
-	// 1. Parse formula layer
-	// 2. Parse connectivity layer
-	// 3. Parse hydrogen layer
-	// 4. Parse stereochemistry layers
-	// 5. Build molecule from parsed data
-
 	return nil, fmt.Errorf("InChI parsing not yet implemented")
 }
 
@@ -825,7 +858,6 @@ func ValidateInChI(inchi string) bool {
 }
 
 // CompareInChI compares two InChI strings for equivalence
-// Returns 0 if equal, -1 if inchi1 < inchi2, 1 if inchi1 > inchi2
 func CompareInChI(inchi1, inchi2 string) int {
 	// Normalize by removing version differences
 	norm1 := strings.TrimPrefix(inchi1, "InChI=1S/")
@@ -870,3 +902,6 @@ func Base64DecodeInChI(encoded string) (string, error) {
 	}
 	return string(decoded), nil
 }
+
+// Helper function to avoid unused import error
+var _ = binary.Size

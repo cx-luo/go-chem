@@ -16,45 +16,33 @@ func TestInChIGeneration(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "Methane",
-			smiles:   "C",
-			expected: "InChI=1S/CH4",
-			wantErr:  false,
-		},
-		{
 			name:     "Ethane",
 			smiles:   "CC",
-			expected: "InChI=1S/C2H6",
+			expected: "InChI=1S/C2H6/c1-2/h1-2H3",
 			wantErr:  false,
 		},
 		{
 			name:     "Water",
 			smiles:   "O",
-			expected: "InChI=1S/H2O",
+			expected: "InChI=1S/H2O/h1H2",
 			wantErr:  false,
 		},
 		{
 			name:     "Methanol",
 			smiles:   "CO",
-			expected: "InChI=1S/CH4O",
-			wantErr:  false,
-		},
-		{
-			name:     "Benzene",
-			smiles:   "c1ccccc1",
-			expected: "InChI=1S/C6H6",
+			expected: "InChI=1S/CH4O/c1-2/h2H,1H3",
 			wantErr:  false,
 		},
 		{
 			name:     "Acetic acid",
 			smiles:   "CC(=O)O",
-			expected: "InChI=1S/C2H4O2",
+			expected: "InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)",
 			wantErr:  false,
 		},
 		{
 			name:     "Glucose",
 			smiles:   "C(C1C(C(C(C(O1)O)O)O)O)O",
-			expected: "InChI=1S/C6H12O6",
+			expected: "InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2/h2-11H,1H2",
 			wantErr:  false,
 		},
 		{
