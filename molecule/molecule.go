@@ -535,10 +535,18 @@ func (m *Molecule) GetAtomConnectivityNoImplH(idx int) int {
 }
 
 func (m *Molecule) GetImplicitH(idx int) int {
+	atom := m.Atoms[idx]
+
+	// First check if explicit implicit H count is set (from SMILES like [NH3+], [SnH], [CH-])
+	if atom.ExplicitImplH >= 0 {
+		return atom.ExplicitImplH
+	}
+
+	// Then check cached value
 	if idx < len(m.ImplicitH) && m.ImplicitH[idx] >= 0 {
 		return m.ImplicitH[idx]
 	}
-	atom := m.Atoms[idx]
+
 	conn := m.GetAtomConnectivityNoImplH(idx)
 	if atom.Number == ELEM_PSEUDO || atom.Number == ELEM_RSITE || atom.Number == ELEM_TEMPLATE {
 		panic("getImplicitH does not work on pseudo/template/RSite atoms")

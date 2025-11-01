@@ -262,7 +262,7 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 			m.SetAtomCharge(idx, charge)
 		}
 
-		// Handle explicit H count for cases like [NH3+], [HH]
+		// Handle explicit H count for cases like [NH3+], [SnH], [CH-], [HH]
 		if explicitH > 0 {
 			// For [HH], we need to create an additional H atom and bond them
 			if num == ELEM_H {
@@ -276,8 +276,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 					}
 				}
 			} else {
-				// For other elements, set implicit H
-				m.SetImplicitH(idx, explicitH)
+				// For other elements, set the atom's ExplicitImplH field
+				// This represents explicit hydrogen count from SMILES like [NH3+], [SnH], [CH-]
+				m.Atoms[idx].ExplicitImplH = explicitH
 			}
 		}
 
