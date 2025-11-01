@@ -51,9 +51,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	pendingOrder := 0
 	pendingDirection := 0 // For stereochemistry: BOND_UP (/) or BOND_DOWN (\)
 
-	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, explicitH int, err error) {
+	readElement := func(i int) (sym string, next int, aromatic bool, isotope int, charge int, explicitH int, isBracketed bool, err error) {
 		if i >= len(s) {
-			return "", i, false, 0, 0, 0, fmt.Errorf("unexpected end of input")
+			return "", i, false, 0, 0, 0, false, fmt.Errorf("unexpected end of input")
 		}
 
 		// Check for bracketed atoms [13C+], [NH3+], etc.
@@ -65,9 +65,10 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 			}
 			if j < len(s) && s[j] == ']' {
 				// Avoid repeated work by running just once over the region
-				return readBracketedAtom(s, i)
+				sym, next, aromatic, isotope, charge, explicitH, err := readBracketedAtom(s, i)
+				return sym, next, aromatic, isotope, charge, explicitH, true, err
 			} else {
-				return "", i, false, 0, 0, 0, fmt.Errorf("unclosed bracket at %d", i)
+				return "", i, false, 0, 0, 0, false, fmt.Errorf("unclosed bracket at %d", i)
 			}
 		}
 
@@ -75,13 +76,13 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		// aromatic lower-case atoms (c, n, o, s, p per SMILES specification)
 		// Note: 'b' is not a valid aromatic atom in standard SMILES
 		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
-			return string(ch), i + 1, true, 0, 0, 0, nil
+			return string(ch), i + 1, true, 0, 0, 0, false, nil
 		}
 		// Two-character aromatic atoms: as, se
 		if i+1 < len(s) {
 			twoChar := string(s[i : i+2])
 			if twoChar == "as" || twoChar == "se" {
-				return twoChar, i + 2, true, 0, 0, 0, nil
+				return twoChar, i + 2, true, 0, 0, 0, false, nil
 			}
 		}
 		// uppercase + optional lowercase (Cl, Br)
@@ -91,12 +92,12 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				ch2 := rune(s[i+1])
 				if unicode.IsLower(ch2) {
 					sym += string(ch2)
-					return sym, i + 2, false, 0, 0, 0, nil
+					return sym, i + 2, false, 0, 0, 0, false, nil
 				}
 			}
-			return sym, i + 1, false, 0, 0, 0, nil
+			return sym, i + 1, false, 0, 0, 0, false, nil
 		}
-		return "", i, false, 0, 0, 0, fmt.Errorf("bad atom at %d", i)
+		return "", i, false, 0, 0, 0, false, fmt.Errorf("bad atom at %d", i)
 	}
 
 	elemToNum := func(sym string, aromatic bool) (int, error) {
@@ -267,7 +268,7 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		// must be atom
-		sym, next, aromatic, isotope, charge, explicitH, err := readElement(i)
+		sym, next, aromatic, isotope, charge, explicitH, isBracketed, err := readElement(i)
 		if err != nil {
 			return nil, err
 		}
@@ -285,22 +286,25 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 			m.SetAtomCharge(idx, charge)
 		}
 
-		// Handle explicit H count for cases like [NH3+], [SnH], [CH-], [HH]
-		if explicitH > 0 {
-			// For [HH], we need to create an additional H atom and bond them
-			if num == ELEM_H {
-				// Create explicitH additional H atoms and bond them
+		// Handle explicit H count
+		// Key SMILES rule: Atoms in brackets [] ALWAYS have explicit H count set
+		// - [NH3+] means exactly 3 H atoms
+		// - [N+] means exactly 0 H atoms (not calculated)
+		// - N (no brackets) means H count is calculated by valence rules
+		if isBracketed {
+			if num == ELEM_H && explicitH > 0 {
+				// Special case: [HH] means H with additional H atoms bonded
 				for i := 0; i < explicitH; i++ {
 					hIdx := m.AddAtom(ELEM_H)
 					m.AddBond(idx, hIdx, BOND_SINGLE)
-					// Expand aromat­icity array
+					// Expand aromaticity array
 					for len(atomAromaticity) < hIdx+1 {
 						atomAromaticity = append(atomAromaticity, ATOM_ALIPHATIC)
 					}
 				}
 			} else {
-				// For other elements, set the atom's ExplicitImplH field
-				// This represents explicit hydrogen count from SMILES like [NH3+], [SnH], [CH-]
+				// For all bracketed atoms (including [O], [N+], [C-], etc.),
+				// set ExplicitImplH to the specified value (even if 0)
 				m.Atoms[idx].ExplicitImplH = explicitH
 			}
 		}
