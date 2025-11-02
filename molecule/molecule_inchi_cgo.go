@@ -95,6 +95,7 @@ import "C"
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"unsafe"
 )
 
@@ -132,13 +133,66 @@ type InChIResult struct {
 }
 
 // SetOptions sets InChI generation options
+//
+// Options format (following inchi_api.h specification):
+//   - Use space-delimited options
+//   - Windows: prefix each option with '/'
+//   - Linux/Other: prefix each option with '-'
+//   - Example (Windows): "/FixedH /RecMet /AuxNone"
+//   - Example (Linux): "-FixedH -RecMet -AuxNone"
+//
 // Common options:
-//   - "" or "": Standard InChI
-//   - "FixedH": Fixed hydrogen layer
-//   - "RecMet": Reconnected metals
-//   - "SNon": Include omitted undefined/unknown stereo
+//   - "" or "": Standard InChI (default)
+//   - "/FixedH" or "-FixedH": Fixed hydrogen layer
+//   - "/RecMet" or "-RecMet": Reconnected metals
+//   - "/SNon" or "-SNon": Include omitted undefined/unknown stereo
+//   - "/AuxNone" or "-AuxNone": Omit auxiliary information
+//   - "/NEWPSOFF" or "-NEWPSOFF": Do not perceive stereo
+//   - "/DoNotAddH" or "-DoNotAddH": Do not add H
+//   - "/SUU" or "-SUU": Allow unusual valences
+//   - "/SRel" or "-SRel": Relative stereo
+//   - "/SRac" or "-SRac": Racemic stereo
+//
+// Note: Options like /FixedH, /RecMet, /SUU, etc. create non-standard InChI
+//
+// Reference: inchi_api.h, lines 800-834
 func (g *InChIGeneratorCGO) SetOptions(options string) {
-	g.options = options
+	// Normalize options: ensure proper prefix based on OS
+	if options != "" {
+		g.options = normalizeInChIOptions(options)
+	} else {
+		g.options = ""
+	}
+}
+
+// normalizeInChIOptions ensures options have the correct prefix for the OS
+// Windows uses '/', other systems use '-'
+// Reference: inchi_api.h line 803
+func normalizeInChIOptions(options string) string {
+	if options == "" {
+		return ""
+	}
+
+	// Split by space
+	parts := strings.Fields(options)
+	var normalized []string
+
+	for _, part := range parts {
+		// Remove any existing prefix
+		part = strings.TrimPrefix(part, "/")
+		part = strings.TrimPrefix(part, "-")
+
+		// Add correct prefix based on OS
+		var prefixed string
+		if runtime.GOOS == "windows" {
+			prefixed = "/" + part
+		} else {
+			prefixed = "-" + part
+		}
+		normalized = append(normalized, prefixed)
+	}
+
+	return strings.Join(normalized, " ")
 }
 
 // GenerateInChI generates InChI from a molecule using CGO bindings

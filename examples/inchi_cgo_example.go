@@ -221,7 +221,7 @@ func exampleWithOptions() {
 	result1, _ := gen1.GenerateInChI(mol)
 	fmt.Printf("Standard:  %s\n", result1.InChI)
 
-	// With FixedH option
+	// With FixedH option (will be auto-prefixed with / or - based on OS)
 	gen2 := molecule.NewInChIGeneratorCGO()
 	gen2.SetOptions("FixedH")
 	result2, _ := gen2.GenerateInChI(mol)
@@ -232,4 +232,10 @@ func exampleWithOptions() {
 	gen3.SetOptions("RecMet")
 	result3, _ := gen3.GenerateInChI(mol)
 	fmt.Printf("RecMet:    %s\n", result3.InChI)
+
+	// With multiple options
+	gen4 := molecule.NewInChIGeneratorCGO()
+	gen4.SetOptions("FixedH RecMet AuxNone")
+	result4, _ := gen4.GenerateInChI(mol)
+	fmt.Printf("Multiple:  %s\n", result4.InChI)
 }
