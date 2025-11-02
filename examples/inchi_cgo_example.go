@@ -106,16 +106,6 @@ func example2() {
 		fmt.Printf("CGO InChIKey: %s\n", resultCGO.InChIKey)
 	}
 
-	// Generate using Pure Go
-	generatorGo := molecule.NewInChIGenerator()
-	resultGo, err := generatorGo.GenerateInChI(mol)
-	if err != nil {
-		log.Printf("Pure Go error: %v\n", err)
-	} else {
-		fmt.Printf("Go InChI:     %s\n", resultGo.InChI)
-		fmt.Printf("Go InChIKey:  %s\n", resultGo.InChIKey)
-	}
-
 	fmt.Println()
 }
 

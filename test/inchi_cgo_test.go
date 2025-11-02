@@ -157,6 +157,10 @@ func TestInChICGO_Options(t *testing.T) {
 			name:    "FixedH",
 			options: "FixedH",
 		},
+		{
+			name:    "AuxInfo",
+			options: "AuxInfo",
+		},
 	}
 
 	for _, tt := range tests {
@@ -273,29 +277,17 @@ func TestInChICGO_Compare(t *testing.T) {
 	generatorCGO := molecule.NewInChIGeneratorCGO()
 	resultCGO, errCGO := generatorCGO.GenerateInChI(mol)
 
-	// Pure Go version
-	generatorGo := molecule.NewInChIGenerator()
-	resultGo, errGo := generatorGo.GenerateInChI(mol)
-
 	if errCGO != nil {
 		t.Logf("CGO error: %v", errCGO)
 	}
-	if errGo != nil {
-		t.Logf("Pure Go error: %v", errGo)
-	}
 
-	if errCGO == nil && errGo == nil {
+	if errCGO == nil {
 		t.Logf("CGO InChI:    %s", resultCGO.InChI)
-		t.Logf("Go InChI:     %s", resultGo.InChI)
 		t.Logf("CGO InChIKey: %s", resultCGO.InChIKey)
-		t.Logf("Go InChIKey:  %s", resultGo.InChIKey)
 
 		// Both should produce valid InChI (format may differ)
 		if !strings.HasPrefix(resultCGO.InChI, "InChI=") {
 			t.Errorf("CGO InChI should start with 'InChI='")
-		}
-		if !strings.HasPrefix(resultGo.InChI, "InChI=") {
-			t.Errorf("Go InChI should start with 'InChI='")
 		}
 	}
 }

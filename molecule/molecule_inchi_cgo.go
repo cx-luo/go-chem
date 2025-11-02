@@ -110,6 +110,27 @@ func NewInChIGeneratorCGO() *InChIGeneratorCGO {
 	}
 }
 
+// InChIOptions contains options for InChI generation
+type InChIOptions struct {
+	// FixedH indicates if hydrogen layer should be included
+	FixedH bool
+	// RecMet indicates reconnected metals option
+	RecMet bool
+	// AuxInfo indicates if auxiliary information should be generated
+	AuxInfo bool
+	// SNon indicates if stereo information for non-stereogenic centers should be included
+	SNon bool
+}
+
+// InChIResult contains the generated InChI and additional information
+type InChIResult struct {
+	InChI    string   // The generated InChI string
+	InChIKey string   // The generated InChIKey
+	AuxInfo  string   // Auxiliary information
+	Warnings []string // Any warnings during generation
+	Log      []string // Log messages
+}
+
 // SetOptions sets InChI generation options
 // Common options:
 //   - "" or "": Standard InChI
