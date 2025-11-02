@@ -221,6 +221,43 @@ func (m *Molecule) BondCount() int {
 	return len(m.Bonds)
 }
 
+// GetAtomCoordinates returns the 3D coordinates of an atom as [x, y, z]
+// Returns [0, 0, 0] if the atom index is out of range
+func (m *Molecule) GetAtomCoordinates(atomIdx int) [3]float64 {
+	if atomIdx < 0 || atomIdx >= len(m.Atoms) {
+		return [3]float64{0, 0, 0}
+	}
+	pos := m.Atoms[atomIdx].Pos
+	return [3]float64{pos.X, pos.Y, pos.Z}
+}
+
+// SetAtomCoordinates sets the 3D coordinates of an atom
+func (m *Molecule) SetAtomCoordinates(atomIdx int, x, y, z float64) {
+	if atomIdx < 0 || atomIdx >= len(m.Atoms) {
+		return
+	}
+	m.Atoms[atomIdx].Pos = Vec3f{X: x, Y: y, Z: z}
+	m.HaveXYZ = true
+}
+
+// GetAtom2DCoordinates returns the 2D coordinates of an atom as [x, y]
+// Returns [0, 0] if the atom index is out of range
+func (m *Molecule) GetAtom2DCoordinates(atomIdx int) [2]float64 {
+	if atomIdx < 0 || atomIdx >= len(m.Atoms) {
+		return [2]float64{0, 0}
+	}
+	pos := m.Atoms[atomIdx].Pos2D
+	return [2]float64{pos.X, pos.Y}
+}
+
+// SetAtom2DCoordinates sets the 2D coordinates of an atom
+func (m *Molecule) SetAtom2DCoordinates(atomIdx int, x, y float64) {
+	if atomIdx < 0 || atomIdx >= len(m.Atoms) {
+		return
+	}
+	m.Atoms[atomIdx].Pos2D = Vec2f{X: x, Y: y}
+}
+
 // AddBond adds a new bond between two atoms and returns its index
 func (m *Molecule) AddBond(beg, end, order int) int {
 	if beg < 0 || beg >= len(m.Atoms) || end < 0 || end >= len(m.Atoms) {
