@@ -1030,11 +1030,6 @@ func encodeBase26FromBytes(data []byte, length int) string {
 	return string(result)
 }
 
-// encodeBase26 is a simpler version for backwards compatibility
-func encodeBase26(data []byte, length int) string {
-	return encodeBase26FromBytes(data, length)
-}
-
 // ParseInChI parses an InChI string into a molecule
 // This is the reverse operation of GenerateInChI
 func ParseInChI(inchi string) (*Molecule, error) {
@@ -1051,17 +1046,6 @@ func ParseInChI(inchi string) (*Molecule, error) {
 	// 5. Build molecule from parsed data
 
 	return nil, fmt.Errorf("InChI parsing not yet implemented")
-}
-
-// ValidateInChI checks if an InChI string is valid
-func ValidateInChI(inchi string) bool {
-	if !strings.HasPrefix(inchi, "InChI=") {
-		return false
-	}
-
-	// Check for required layers
-	parts := strings.Split(inchi, "/")
-	return len(parts) >= 2
 }
 
 // CompareInChI compares two InChI strings for equivalence

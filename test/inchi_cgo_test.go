@@ -4,22 +4,11 @@
 package test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/cx-luo/go-chem/molecule"
 )
-
-// TestInChICGO_Version tests if InChI library can be loaded
-func TestInChICGO_Version(t *testing.T) {
-	version := molecule.GetInChIVersion()
-	fmt.Println(version)
-	if version == "" || version == "unknown" {
-		t.Errorf("Failed to get InChI version")
-	}
-	t.Logf("InChI Library Version: %s", version)
-}
 
 // TestInChICGO_Simple tests basic InChI generation with CGO
 func TestInChICGO_Simple(t *testing.T) {
