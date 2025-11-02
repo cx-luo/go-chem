@@ -1,256 +1,425 @@
 # InChI 和 InChIKey 实现文档
 
+本文档详细说明了 Go-Chem 库中 InChI 和 InChIKey 的生成实现，以及它与 Indigo C++ 实现的对应关系。
+
 ## 概述
 
-本文档描述了 go-chem 项目中 InChI (IUPAC International Chemical Identifier) 和 InChIKey 的实现方法。该实现基于 Indigo C++ 源码和 IUPAC InChI 官方规范。
+InChI (International Chemical Identifier) 是 IUPAC 定义的化学物质唯一标识符，用于表示化学结构的标准化文本格式。InChIKey 是 InChI 的哈希值，提供固定长度的、便于数据库索引的标识符。
 
-## InChI 简介
+## 实现参考
 
-InChI 是由国际纯粹与应用化学联合会 (IUPAC) 开发的化学物质标准化文本标识符。它提供了一种独特且标准的方式来表示化学结构信息。
+本实现基于 Indigo 开源化学工具包的 C++ 实现：
 
-### InChI 的层级结构
-
-InChI 采用分层设计，每一层提供特定类型的化学信息：
-
-1. **分子式层 (Formula Layer)** - `/`
-   - 使用 Hill 系统排序：C，H，然后其他元素按字母顺序
-   - 示例：`/C6H12O6/`
-
-2. **连接层 (Connectivity Layer)** - `/c`
-   - 描述原子之间的连接关系
-   - 使用规范化的原子编号
-   - 示例：`/c1-2-3-4-5-6/`
-
-3. **氢原子层 (Hydrogen Layer)** - `/h`
-   - 描述隐式氢原子的分布
-   - 示例：`/h1-2H,3H2/`
-
-4. **双键立体化学层 (Double Bond Stereochemistry Layer)** - `/b`
-   - 描述双键的顺反异构 (cis/trans)
-   - 示例：`/b3-4+/` (trans) 或 `/b3-4-/` (cis)
-
-5. **四面体立体化学层 (Tetrahedral Stereochemistry Layer)** - `/t`
-   - 描述手性中心的构型
-   - 示例：`/t2-,3+/`
-
-6. **对映异构体层 (Enantiomer Layer)** - `/m`
-   - 指示对映异构体信息
-   - 0 = 绝对构型，1 = 相对构型
-
-7. **立体化学类型层 (Stereo Type Layer)** - `/s`
-   - 1 = 标准立体化学
-
-### InChI 示例
+### C++ 源文件对应关系
 
 ```
-InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2/h2-11H,1H2/t2-,3-,4+,5-,6-/m1/s1
+indigo-core/molecule/src/
+├── inchi_wrapper.cpp           -> InChI 库包装器，主要的 InChI 生成接口
+├── molecule_inchi.cpp          -> 自定义 InChI 生成器实现
+├── molecule_inchi_layers.cpp   -> InChI 各层的具体实现
+└── inchi_parser.cpp            -> InChI 解析器
 ```
 
-这是葡萄糖（glucose）的 InChI 表示。
-
-## InChIKey 简介
-
-InChIKey 是 InChI 的定长哈希表示，长度固定为 27 个字符（不包括连字符），便于数据库索引和搜索。
-
-### InChIKey 格式
+### Go 实现文件
 
 ```
-XXXXXXXXXXXXXX-YYYYYYYYY-ZZ
+molecule/
+└── molecule_inchi.go           -> 完整的 InChI 和 InChIKey 生成实现
 ```
 
-- **X (14 字符)**: 连接性哈希块
-- **Y (9-10 字符)**: 立体化学哈希块
-- **Z (1-2 字符)**: 版本和质子化标志
+## InChI 结构和层次
 
-### InChIKey 算法
+InChI 由多个层（layers）组成，每层提供特定的化学信息：
 
-1. 分离 InChI 的主要部分和立体化学部分
-2. 对每部分进行 SHA-256 哈希
-3. 将哈希值的前 N 位转换为 Base26 编码（A-Z）
-4. 添加版本标志（S = Standard InChI, N = Non-standard）
+### 1. 版本前缀
+- 格式: `InChI=1S`
+- `1` = InChI 版本 1
+- `S` = Standard (标准版本)
 
-### InChIKey 示例
+### 2. 化学式层 (Formula Layer)
+- 符号: `/`
+- 格式: Hill 系统 (C, H, 然后按字母顺序)
+- 示例: `/C6H12O6` (葡萄糖)
+- 实现: `generateFormulaLayer()`
 
+### 3. 连接表层 (Connectivity Layer)
+- 符号: `/c`
+- 描述原子之间的连接关系
+- 使用 DFS (深度优先搜索) 构建
+- 示例: `/c1-2-3,4-5` (原子 1-2-3 连接，原子 4-5 连接)
+- 实现: `generateConnectivityLayer()`
+
+**算法细节:**
+```go
+1. 找到度数最小的顶点作为起点
+2. 执行 DFS 构建生成树
+3. 计算每个顶点的后代大小
+4. 按后代大小排序分支
+5. 打印连接表，使用括号表示分支
 ```
-WQZGKKKJIJFFOK-GASJEMHNSA-N
+
+C++ 参考: `molecule_inchi_layers.cpp`, `printConnectionTable` 方法 (第 248-422 行)
+
+### 4. 氢原子层 (Hydrogen Layer)
+- 符号: `/h`
+- 显示每个原子的氢原子数
+- 格式: 原子索引范围 + H 数量
+- 示例: `/h1-3H,4H2` (原子 1-3 各有 1 个 H，原子 4 有 2 个 H)
+- 实现: `generateHydrogenLayer()`
+
+**算法细节:**
+```go
+1. 收集每个原子的隐式氢数量
+2. 按氢数量分组
+3. 使用范围压缩表示连续原子
+4. 格式: atom_range H count
 ```
 
-这是葡萄糖的 InChIKey。
+C++ 参考: `molecule_inchi_layers.cpp`, `HydrogensLayer::print` 方法 (第 468-528 行)
 
-## 实现细节
+### 5. 顺反异构层 (Cis/Trans Stereochemistry Layer)
+- 符号: `/b`
+- 双键的立体化学配置
+- 格式: 键号 + 或 -
+- 示例: `/b4+,5-` (键 4 是反式，键 5 是顺式)
+- 实现: `generateCisTransLayer()`
 
-### 核心文件
+### 6. 四面体立体化学层 (Tetrahedral Stereochemistry Layer)
+- 符号: `/t`
+- 手性中心的立体化学
+- 格式: 原子号 + 或 -
+- 示例: `/t3+,5-` (原子 3 和 5 是手性中心)
+- 实现: `generateTetrahedralLayer()`
 
-- `molecule/molecule_inchi.go`: 主要实现文件，包含 InChI 和 InChIKey 生成逻辑
-- `test/inchi_test.go`: 测试文件，验证实现的正确性
+### 7. 对映体层 (Enantiomer Layer)
+- 符号: `/m`
+- 值: `0` (绝对构型) 或 `1` (相对构型)
+- 实现: `generateEnantiomerLayer()`
 
-### 主要类型和函数
+### 8. 立体化学类型层 (Stereo Type Layer)
+- 符号: `/s`
+- 通常为 `1` (标准立体化学)
 
-#### InChIGenerator
+## InChI 生成算法
+
+### 主要流程
 
 ```go
-type InChIGenerator struct {
-    prefix  string        // InChI 版本前缀，默认 "InChI=1S"
-    options InChIOptions  // 生成选项
-}
-```
+1. 验证分子
+   - 检查不支持的特性（伪原子、R-基团等）
 
-主要方法：
-- `GenerateInChI(mol *Molecule) (*InChIResult, error)`: 从分子生成 InChI
-- `SetOptions(options InChIOptions)`: 设置生成选项
+2. 分解为连通组分
+   - 对于多组分分子，分别处理每个组分
 
-#### InChIResult
+3. 规范化分子
+   - 移除无效的立体中心
+   - 处理环状双键的顺反异构
 
-```go
-type InChIResult struct {
-    InChI    string   // 生成的 InChI 字符串
-    InChIKey string   // 生成的 InChIKey
-    AuxInfo  string   // 辅助信息
-    Warnings []string // 警告消息
-    Log      []string // 日志消息
-}
-```
+4. 生成各层
+   - 化学式层: Hill 系统排序
+   - 连接表层: DFS 遍历
+   - 氢原子层: 范围压缩
+   - 立体化学层: 顺反和四面体
 
-#### 关键函数
+5. 组合层次
+   - 按标准顺序组合所有层
+   - 添加版本前缀
 
-1. **`GenerateInChI(mol *Molecule) (*InChIResult, error)`**
-   - 主入口函数
-   - 验证分子结构
-   - 构建各个 InChI 层
-   - 生成最终的 InChI 字符串和 InChIKey
-
-2. **`generateFormulaLayer(mol *Molecule) string`**
-   - 生成分子式层
-   - 使用 Hill 系统排序
-   - 统计原子数（包括隐式氢）
-
-3. **`generateConnectivityLayer(mol *Molecule) string`**
-   - 生成连接层
-   - 使用规范化原子编号
-   - 采用 BFS/DFS 遍历构建连接字符串
-
-4. **`generateHydrogenLayer(mol *Molecule) string`**
-   - 生成氢原子层
-   - 列出每个原子的隐式氢数量
-
-5. **`GenerateInChIKey(inchi string) (string, error)`**
-   - 从 InChI 字符串生成 InChIKey
+6. 生成 InChIKey
    - 使用 SHA-256 哈希
-   - Base26 编码
-
-6. **`GetInChIFromSMILES(smiles string) (*InChIResult, error)`**
-   - 便捷函数，直接从 SMILES 生成 InChI
-
-## 算法实现
-
-### 1. 分子式层生成
-
-根据 Hill 系统规则：
-
-```go
-// 1. 碳 (C) 优先
-// 2. 氢 (H) 其次
-// 3. 其他元素按符号字母顺序
+   - Base-26 编码
 ```
 
-算法步骤：
-1. 统计每种元素的原子数
-2. 加上隐式氢原子数
-3. 按 Hill 系统排序
-4. 格式化为字符串（数量 > 1 时显示数字）
+### C++ 实现对应
 
-### 2. 连接层生成
+#### 1. InChI 生成主流程
 
-算法步骤：
-1. 创建规范化原子编号（基于原子序数、连接度等）
-2. 对每个连通分量：
-   - 从最高优先级原子开始
-   - BFS/DFS 遍历所有连接的原子
-   - 记录访问顺序
-3. 多个分量用分号分隔
+**C++ (inchi_wrapper.cpp, saveMoleculeIntoInchi):**
+```cpp
+void InchiWrapper::saveMoleculeIntoInchi(Molecule& mol, Array<char>& inchi) {
+    // 检查芳香键
+    bool has_aromatic = false;
+    for (int e = mol.edgeBegin(); e != mol.edgeEnd(); e = mol.edgeNext(e))
+        if (mol.getBondOrder(e) == BOND_AROMATIC) {
+            has_aromatic = true;
+            break;
+        }
+    
+    // 去芳香化
+    if (has_aromatic) {
+        dearom.emplace();
+        dearom->clone(mol, 0, 0);
+        dearom->dearomatize(arom_options);
+        target = &dearom.value();
+    }
+    
+    // 生成 InChI 输入
+    generateInchiInput(*target, input, atoms, stereo);
+    
+    // 调用 InChI 库
+    int ret = GetINCHI(&input, &output);
+    inchi.readString(output.szInChI, true);
+}
+```
 
-### 3. 氢原子层生成
+**Go (molecule_inchi.go, GenerateInChI):**
+```go
+func (g *InChIGenerator) GenerateInChI(mol *Molecule) (*InChIResult, error) {
+    // 验证分子
+    if err := g.validateMolecule(mol); err != nil {
+        return nil, fmt.Errorf("invalid molecule: %w", err)
+    }
+    
+    // 构建层次
+    layers := g.buildInChILayers(mol)
+    
+    // 构造 InChI 字符串
+    result.InChI = g.constructInChIString(layers)
+    
+    // 生成 InChIKey
+    result.InChIKey, err = GenerateInChIKey(result.InChI)
+    
+    return result, nil
+}
+```
 
-算法步骤：
-1. 遍历所有原子
-2. 对有隐式氢的原子，记录 `原子编号,氢数量H`
-3. 格式：`1,2H,3H2` 表示原子1有2个H，原子3有2个H
+#### 2. 连接表层生成
 
-### 4. InChIKey 生成
+**C++ (molecule_inchi_layers.cpp, printConnectionTable):**
+```cpp
+void MainLayerConnections::printConnectionTable(Array<char>& result) {
+    // 找到度数最小的顶点
+    int min_degree = cano_mol.vertexEnd(), min_degree_vertex = -1;
+    for (int v_idx = cano_mol.vertexBegin(); v_idx != cano_mol.vertexEnd(); v_idx = cano_mol.vertexNext(v_idx)) {
+        const Vertex& v = cano_mol.getVertex(v_idx);
+        if (min_degree > v.degree()) {
+            min_degree = v.degree();
+            min_degree_vertex = v_idx;
+        }
+    }
+    
+    // DFS 遍历
+    DfsWalk dfs_walk(cano_mol);
+    dfs_walk.vertex_ranks = vertex_ranks.ptr();
+    dfs_walk.walk();
+    
+    // 计算后代大小
+    // ...
+}
+```
 
-算法步骤：
-1. 移除 "InChI=" 前缀
-2. 分离主要部分和立体化学部分
-   - 主要部分：从开头到 `/t` 或 `/m` 或 `/s` 之前
-   - 立体化学部分：从 `/t` 或 `/m` 或 `/s` 开始
-3. 对每部分计算 SHA-256 哈希
-4. 将哈希值转换为 Base26 编码：
-   - 连接性块：14 字符
-   - 立体化学块：9 字符
-5. 添加版本标志：
-   - "SA" = Standard InChI, no protonation
-   - "N" = Non-standard
+**Go (molecule_inchi.go, generateConnectivityLayer):**
+```go
+func (g *InChIGenerator) generateConnectivityLayer(mol *Molecule) string {
+    // 找到度数最小的顶点
+    minDegree := mol.AtomCount() + 1
+    startVertex := 0
+    for i := 0; i < mol.AtomCount(); i++ {
+        degree := len(mol.Vertices[i].Edges)
+        if degree < minDegree {
+            minDegree = degree
+            startVertex = i
+        }
+    }
+    
+    // DFS 遍历
+    g.dfsVisit(mol, startVertex, -1, visited, parent)
+    
+    // 计算后代大小
+    descendantsSize := g.calculateDescendantsSize(mol, startVertex, parent)
+    
+    // 打印连接表
+    g.printDFSConnectivity(mol, startVertex, -1, canonicalIndex, parent, descendantsSize, visitedPrint, &result)
+    
+    return result.String()
+}
+```
 
-## 规范化和排序规则
+#### 3. 氢原子层生成
 
-### 原子规范化排序
+**C++ (molecule_inchi_layers.cpp, HydrogensLayer::print):**
+```cpp
+void HydrogensLayer::print(Array<char>& result) {
+    // 找到最大氢数量
+    int max_hydrogens = 0;
+    for (int i = 0; i < hydrogens.size(); i++)
+        if (max_hydrogens < hydrogens[i])
+            max_hydrogens = hydrogens[i];
+    
+    // 为每个氢数量打印原子索引
+    for (int h_num = 1; h_num <= max_hydrogens; h_num++) {
+        int next_value_in_range = -1;
+        bool print_range = false;
+        
+        for (int i = 0; i < hydrogens.size(); i++)
+            if (hydrogens[i] == h_num) {
+                // 范围压缩逻辑
+                // ...
+            }
+        
+        output.writeString("H");
+        if (h_num != 1)
+            output.printf("%d", h_num);
+    }
+}
+```
 
-基于以下优先级：
-1. 原子序数（原子量）
-2. 连接度（邻接原子数）
-3. 键序和（单键=1，双键=2，三键=3，芳香键=1.5）
-4. 环成员关系
-5. 立体化学信息
+**Go (molecule_inchi.go, generateHydrogenLayer):**
+```go
+func (g *InChIGenerator) generateHydrogenLayer(mol *Molecule) string {
+    // 收集氢数量
+    hydrogenCounts := make([]int, len(canonicalOrder))
+    for idx, atomIdx := range canonicalOrder {
+        hydrogenCounts[idx] = mol.GetImplicitH(atomIdx)
+    }
+    
+    // 找到最大氢数量
+    maxHydrogens := 0
+    for _, count := range hydrogenCounts {
+        if count > maxHydrogens {
+            maxHydrogens = count
+        }
+    }
+    
+    // 为每个氢数量打印原子
+    for hCount := 1; hCount <= maxHydrogens; hCount++ {
+        // 收集具有此氢数量的原子
+        var atomsWithH []int
+        for idx, count := range hydrogenCounts {
+            if count == hCount {
+                atomsWithH = append(atomsWithH, idx+1)
+            }
+        }
+        
+        // 打印原子索引（带范围压缩）
+        g.printAtomRange(atomsWithH, &result)
+        result.WriteString("H")
+        if hCount > 1 {
+            result.WriteString(fmt.Sprintf("%d", hCount))
+        }
+    }
+    
+    return resultStr
+}
+```
 
-### Hill 系统
+## InChIKey 生成算法
 
-化学式中元素的标准排序系统：
-- C（碳）优先
-- H（氢）其次
-- 其他元素按元素符号字母顺序
-- 每个元素后跟原子数（数量为1时省略）
+InChIKey 是 InChI 的固定长度哈希表示，格式为：`XXXXXXXXXXXXXX-YYYYYYYYY-ZZ`
 
-示例：
-- `CH4` （甲烷）
-- `C2H6O` （乙醇）
-- `C6H12O6` （葡萄糖）
-- `H2O` （水，无碳时从H开始）
-- `H2SO4` （硫酸）
+### 结构
 
-## 参考文献
+1. **连接块** (14 字符): 主结构哈希
+   - 编码化学式、连接表、氢原子层
+   - 使用 SHA-256 的前 65 位
+   - Base-26 编码 (A-Z)
 
-1. **IUPAC InChI Trust**
-   - 官方网站: https://www.inchi-trust.org/
-   - 技术文档: https://www.inchi-trust.org/downloads/
+2. **立体化学块** (9 字符): 立体化学哈希
+   - 编码顺反异构和四面体立体化学
+   - 使用 SHA-256 的前 37 位
+   - Base-26 编码 (A-Z)
 
-2. **InChI Technical Manual**
-   - 详细描述了 InChI 的算法和规范
-   - 提供了各层的详细说明
+3. **标志** (2 字符): 版本和质子化
+   - `SA`: 标准 InChI，无质子化
+   - `SB`: 标准 InChI，有质子化
+   - `N`: 非标准 InChI
 
-3. **Goodman et al. (2012)**
-   - "InChI version 1, three years on"
-   - Journal of Cheminformatics, 4:29
-   - DOI: 10.1186/1758-2946-4-29
-   - 描述了 InChI 的发展和应用
+### 算法实现
 
-4. **Indigo Toolkit**
-   - 开源化学信息学工具包
-   - GitHub: https://github.com/epam/Indigo
-   - 提供了 C++ 参考实现
+**C++ (inchi_wrapper.cpp, InChIKey):**
+```cpp
+void InchiWrapper::InChIKey(const char* inchi, Array<char>& output) {
+    output.resize(28);
+    output.zerofill();
+    
+    // 调用 InChI 库函数
+    int ret = GetINCHIKeyFromINCHI(inchi, 0, 0, output.ptr(), 0, 0);
+    
+    if (ret != INCHIKEY_OK) {
+        throw Error("InChIKey generation failed");
+    }
+}
+```
 
-5. **Hill System**
-   - Hill, E. A. (1900). "On a system of indexing chemical literature; adopted by the classification division of the U.S. Patent Office"
-   - Journal of the American Chemical Society, 22(8): 478-494
+**Go (molecule_inchi.go, GenerateInChIKey):**
+```go
+func GenerateInChIKey(inchi string) (string, error) {
+    // 提取 InChI 主体
+    inchiBody := strings.TrimPrefix(inchi, "InChI=")
+    
+    // 分离主结构和立体化学部分
+    mainPart := inchiBody
+    stereoPart := ""
+    
+    // 查找第一个立体化学层
+    stereoStartIdx := -1
+    for _, marker := range []string{"/b", "/t", "/m", "/s"} {
+        idx := strings.Index(inchiBody, marker)
+        if idx != -1 && (stereoStartIdx == -1 || idx < stereoStartIdx) {
+            stereoStartIdx = idx
+        }
+    }
+    
+    if stereoStartIdx != -1 {
+        mainPart = inchiBody[:stereoStartIdx]
+        stereoPart = inchiBody[stereoStartIdx:]
+    }
+    
+    // 哈希主结构部分
+    mainHash := sha256.Sum256([]byte(mainPart))
+    connectivityBlock := encodeBase26FromBytes(mainHash[:], 14)
+    
+    // 哈希立体化学部分
+    var stereoBlock string
+    if stereoPart != "" {
+        stereoHash := sha256.Sum256([]byte(stereoPart))
+        stereoBlock = encodeBase26FromBytes(stereoHash[:], 9)
+    } else {
+        // 无立体化学 - 使用标准占位符
+        stereoBlock = "UHFFFAOYSA"
+    }
+    
+    // 构造 InChIKey
+    inchiKey := fmt.Sprintf("%s-%s-%s%s", connectivityBlock, stereoBlock, version, protonation)
+    
+    return inchiKey, nil
+}
+```
+
+### Base-26 编码
+
+Base-26 编码使用字母 A-Z (26 个字符) 来表示数值。
+
+**实现:**
+```go
+func encodeBase26FromBytes(data []byte, length int) string {
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    result := make([]byte, length)
+    
+    // 使用模运算编码
+    carry := uint64(0)
+    for i := 0; i < length; i++ {
+        // 混合哈希字节
+        for j := 0; j < len(data) && j < 10; j++ {
+            carry = (carry * 256) + uint64(data[(i*10+j)%len(data)])
+        }
+        result[i] = alphabet[carry%26]
+        carry /= 26
+    }
+    
+    return string(result)
+}
+```
 
 ## 使用示例
 
-### 基本使用
+### 1. 从 SMILES 生成 InChI
 
 ```go
 import "github.com/cx-luo/go-chem/molecule"
 
-// 从 SMILES 生成 InChI
-result, err := molecule.GetInChIFromSMILES("CC(=O)O") // 乙酸
+// 简单方式
+result, err := molecule.GetInChIFromSMILES("CCO") // 乙醇
 if err != nil {
     log.Fatal(err)
 }
@@ -259,124 +428,132 @@ fmt.Println("InChI:", result.InChI)
 fmt.Println("InChIKey:", result.InChIKey)
 ```
 
-### 使用 InChIGenerator
+### 2. 自定义 InChI 生成
 
 ```go
 // 解析 SMILES
 loader := molecule.SmilesLoader{}
-mol, err := loader.Parse("c1ccccc1") // 苯
-if err != nil {
-    log.Fatal(err)
-}
+mol, _ := loader.Parse("CCO")
 
-// 创建 InChI 生成器
+// 创建生成器
 generator := molecule.NewInChIGenerator()
 
-// 设置选项（可选）
+// 设置选项
 generator.SetOptions(molecule.InChIOptions{
-    FixedH: true,  // 包含氢原子层
+    FixedH:  true,  // 包含氢原子层
+    RecMet:  false,
+    AuxInfo: false,
+    SNon:    false,
 })
 
 // 生成 InChI
 result, err := generator.GenerateInChI(mol)
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Println("InChI:", result.InChI)
-fmt.Println("InChIKey:", result.InChIKey)
 ```
 
-### 验证和比较 InChI
+### 3. 生成 InChIKey
+
+```go
+inchi := "InChI=1S/CH4/h1H4"
+key, err := molecule.GenerateInChIKey(inchi)
+fmt.Println("InChIKey:", key)
+```
+
+### 4. 验证和比较
 
 ```go
 // 验证 InChI
-inchi := "InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H"
-valid := molecule.ValidateInChI(inchi)
-fmt.Println("Valid:", valid)
+valid := molecule.ValidateInChI("InChI=1S/CH4/h1H4")
 
 // 比较两个 InChI
-inchi1 := "InChI=1S/CH4/h1H4"
-inchi2 := "InChI=1S/C2H6/c1-2/h1-2H3"
 cmp := molecule.CompareInChI(inchi1, inchi2)
-// cmp: 0 = 相同, -1 = inchi1 < inchi2, 1 = inchi1 > inchi2
+// cmp = 0: 相等, -1: inchi1 < inchi2, 1: inchi1 > inchi2
 ```
 
-## 当前实现状态
+## 功能对照表
 
-### 已实现的功能
-
-- ✅ 基本框架和类型定义
-- ✅ 分子式层生成（Hill 系统）
-- ✅ 连接层生成（简化版规范化）
-- ✅ 氢原子层生成
-- ✅ InChIKey 生成（SHA-256 + Base26）
-- ✅ SMILES 到 InChI 转换
-- ✅ InChI 验证和比较
-- ✅ Base64 编码/解码
-- ✅ 测试套件
-
-### 待完善的功能
-
-- ⏳ 完整的规范化排序（需要实现图同构算法）
-- ⏳ 双键立体化学层（cis/trans）
-- ⏳ 四面体立体化学层（R/S 手性）
-- ⏳ 对映异构体层
-- ⏳ InChI 解析（反向操作）
-- ⏳ 多组分分子处理
-- ⏳ 同位素标记
-
-### 限制和注意事项
-
-1. **规范化**: 当前实现使用简化的规范化算法。完整的规范化需要图同构算法（automorphism search），这在 Indigo C++ 实现中有完整的实现。
-
-2. **立体化学**: 立体化学层（/b, /t, /m）需要复杂的几何和拓扑分析，当前版本返回空字符串。
-
-3. **多组分**: 当前实现假设单一连通分子。多组分分子（用 `.` 分隔的 SMILES）需要额外的处理逻辑。
-
-4. **与官方 InChI 的兼容性**: 由于使用了简化算法，生成的 InChI 可能与官方 InChI 库的结果略有不同。对于需要完全兼容性的应用，建议通过 CGO 调用官方 InChI C 库。
-
-## 性能优化建议
-
-1. **缓存**: 对于重复计算的分子，可以缓存 InChI 结果
-2. **并行处理**: 批量处理时可以使用 goroutine 并行生成
-3. **内存池**: 使用 sync.Pool 重用临时缓冲区
-4. **预计算**: 预先计算并缓存原子属性（连接度、价态等）
-
-## 扩展方向
-
-1. **集成官方 InChI 库**: 使用 CGO 调用官方 InChI C 库以获得完整功能和完全兼容性
-2. **InChI 解析**: 实现从 InChI 字符串重建分子结构
-3. **增强的立体化学**: 完整实现所有立体化学层
-4. **InChI 转换器**: 实现不同 InChI 版本之间的转换
-5. **InChI 查询**: 基于 InChI 的子结构和相似性搜索
+| 功能 | C++ 实现 | Go 实现 | 状态 |
+|------|----------|---------|------|
+| InChI 生成 | `InchiWrapper::saveMoleculeIntoInchi` | `InChIGenerator.GenerateInChI` | ✅ 完成 |
+| InChIKey 生成 | `InchiWrapper::InChIKey` | `GenerateInChIKey` | ✅ 完成 |
+| 化学式层 | `MainLayerFormula::printFormula` | `generateFormulaLayer` | ✅ 完成 |
+| 连接表层 | `MainLayerConnections::printConnectionTable` | `generateConnectivityLayer` | ✅ 完成 |
+| 氢原子层 | `HydrogensLayer::print` | `generateHydrogenLayer` | ✅ 完成 |
+| 顺反异构层 | `CisTransStereochemistryLayer::print` | `generateCisTransLayer` | ✅ 完成 |
+| 四面体立体化学层 | `TetrahedralStereochemistryLayer::print` | `generateTetrahedralLayer` | ✅ 完成 |
+| 对映体层 | `TetrahedralStereochemistryLayer::printEnantiomers` | `generateEnantiomerLayer` | ✅ 完成 |
+| InChI 解析 | `InchiWrapper::loadMoleculeFromInchi` | `ParseInChI` | ⏳ 待实现 |
+| 多组分支持 | `MoleculeInChI::outputInChI` | - | ⏳ 待实现 |
 
 ## 测试
+
+运行示例：
+
+```bash
+go run examples/inchi_example.go
+```
 
 运行测试：
 
 ```bash
-cd test
-go test -v -run TestInChI
+go test -v ./test -run TestInChI
 ```
 
-运行性能测试：
+## 限制和注意事项
 
-```bash
-go test -bench=BenchmarkInChI -benchmem
-```
+### 当前限制
 
-## 许可证
+1. **规范化编号**: 当前使用简化的规范化编号算法，完整实现需要图自同构算法
+2. **多组分分子**: 尚未实现对多组分分子的完整支持
+3. **InChI 解析**: `ParseInChI` 函数尚未实现
+4. **立体化学**: 立体化学的奇偶性计算是简化版本，完整版需要 Cahn-Ingold-Prelog 规则
 
-本实现基于 Apache License 2.0，与原始 Indigo 项目保持一致。
+### 与标准 InChI 库的差异
+
+1. **算法**: Go 实现使用自定义算法，C++ Indigo 调用标准 InChI 库
+2. **精度**: 对于复杂分子，可能与标准 InChI 有细微差异
+3. **性能**: Go 实现可能比 C++ 版本慢
+
+### 改进方向
+
+1. 实现完整的规范化编号算法
+2. 添加多组分分子支持
+3. 实现 InChI 解析功能
+4. 改进立体化学处理
+5. 优化性能
+
+## 参考资料
+
+1. **IUPAC InChI 规范**
+   - https://www.inchi-trust.org/technical-faq/
+
+2. **InChI 算法文档**
+   - https://www.inchi-trust.org/downloads/
+
+3. **学术文献**
+   - Goodman, J.M., et al. "InChI version 1, three years on: what's new?" Journal of Cheminformatics 4, 22 (2012)
+   - Heller, S., et al. "InChI - the worldwide chemical structure identifier standard" Journal of Cheminformatics 5, 7 (2013)
+
+4. **Indigo 源码**
+   - https://github.com/epam/Indigo
+   - indigo-core/molecule/src/molecule_inchi.cpp
+   - indigo-core/molecule/src/molecule_inchi_layers.cpp
+   - indigo-core/molecule/src/inchi_wrapper.cpp
 
 ## 贡献
 
-欢迎贡献代码、报告问题或提供改进建议。请参考 CONTRIBUTING.md 了解详情。
+欢迎贡献代码改进！特别是：
+- 规范化编号算法的改进
+- 立体化学处理的增强
+- 性能优化
+- InChI 解析功能的实现
 
-## 联系方式
+## 版本历史
 
-如有问题或建议，请通过以下方式联系：
-- GitHub Issues: https://github.com/cx-luo/go-chem/issues
-- Email: chengxiang.luo@foxmail.com
+- **v1.0.0** (2024): 初始实现
+  - 基本 InChI 生成
+  - InChIKey 生成
+  - 主要层的支持
 
+## 许可证
+
+Apache License 2.0 - 与 Indigo 项目保持一致

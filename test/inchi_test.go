@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -65,6 +66,8 @@ func TestInChIGeneration(t *testing.T) {
 			// Generate InChI
 			generator := molecule.NewInChIGenerator()
 			result, err := generator.GenerateInChI(mol)
+
+			fmt.Println(result.InChI)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateInChI() error = %v, wantErr %v", err, tt.wantErr)
