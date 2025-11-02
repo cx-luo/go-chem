@@ -499,12 +499,3 @@ func GenerateInChIKeyCGO(inchi string) (string, error) {
 	// Convert result to Go string
 	return C.GoString((*C.char)(unsafe.Pointer(&keyBuffer[0]))), nil
 }
-
-// GetInChIVersion returns the version of the InChI library
-func GetInChIVersion() string {
-	version := C.GetINCHI_Version()
-	if version == nil {
-		return "unknown"
-	}
-	return C.GoString(version)
-}

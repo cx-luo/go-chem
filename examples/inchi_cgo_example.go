@@ -23,9 +23,6 @@ import (
 func main() {
 	fmt.Println("=== InChI CGO Examples ===\n")
 
-	// Print InChI library version
-	printVersion()
-
 	// Example 1: Generate InChI from SMILES using CGO
 	example1()
 
@@ -37,14 +34,6 @@ func main() {
 
 	// Example 4: Advanced molecules
 	example4()
-}
-
-// Print InChI library version
-func printVersion() {
-	fmt.Println("InChI Library Version")
-	fmt.Println("---------------------")
-	version := molecule.GetInChIVersion()
-	fmt.Printf("Version: %s\n\n", version)
 }
 
 // Example 1: Simple InChI generation using CGO
