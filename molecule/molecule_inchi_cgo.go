@@ -10,7 +10,7 @@ package molecule
 /*
 #cgo CFLAGS: -I${SRCDIR}/../3rd
 #cgo windows LDFLAGS: -L${SRCDIR}/../3rd/win -linchi
-#cgo linux LDFLAGS: -L${SRCDIR}/../3rd/linux -linchi -Wl,-rpath,${SRCDIR}/../3rd
+#cgo linux LDFLAGS: -L${SRCDIR}/../3rd/linux -linchi -Wl,-rpath,${SRCDIR}/../3rd/linux
 
 #include <stdlib.h>
 #include <string.h>
