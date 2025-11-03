@@ -281,14 +281,6 @@ func ElementFromString(symbol string) (int, error) {
 	return -1, fmt.Errorf("unknown element: %s", symbol)
 }
 
-// ElementFromString2 is a non-throwing version; returns -1 if unknown
-func ElementFromString2(symbol string) int {
-	if n, ok := symbolToNumber[symbol]; ok {
-		return n
-	}
-	return -1
-}
-
 // ElementSymbol maps atomic number to element symbol; falls back to Elem%d
 func ElementSymbol(number int) string {
 	if number >= 0 && number < len(elementData) && elementData[number].Name != "" {
@@ -326,7 +318,7 @@ func ElementCanBeAromatic(number int) bool {
 	return false
 }
 
-// Radical helpers compatible with molecule radical constants
+// RadicalElectrons Radical helpers compatible with molecule radical constants
 func RadicalElectrons(radical int) int {
 	if radical == RADICAL_DOUBLET {
 		return 1
