@@ -19,20 +19,20 @@ The reaction package requires several DLL files from the Indigo library:
 - `vcruntime140.dll`
 - `vcruntime140_1.dll`
 
-These files are located in the `3rd` directory. You have two options:
+These files are located in the `3rd/win` directory. You have two options:
 
 **Option A: Add to System PATH (Recommended)**
 
 ```cmd
-set PATH=%PATH%;D:\for_github\go-chem\3rd
+set PATH=%PATH%;D:\for_github\go-chem\3rd\win
 ```
 
-Or permanently add the `3rd` directory to your system PATH through System Properties.
+Or permanently add the `3rd/win` directory to your system PATH through System Properties.
 
 **Option B: Copy DLLs to executable directory**
 
 ```cmd
-copy 3rd\*.dll <your_project_directory>\
+copy 3rd\win\*.dll <your_project_directory>\
 ```
 
 ### 2. Set CGO environment variables
@@ -40,7 +40,7 @@ copy 3rd\*.dll <your_project_directory>\
 ```cmd
 set CGO_ENABLED=1
 set CGO_CFLAGS=-ID:/for_github/go-chem/3rd
-set CGO_LDFLAGS=-LD:/for_github/go-chem/3rd
+set CGO_LDFLAGS=-LD:/for_github/go-chem/3rd/win
 ```
 
 ### 3. Build and run
@@ -55,13 +55,13 @@ go build
 ### 1. Ensure shared libraries are accessible
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd/linux
 ```
 
 Or add to `~/.bashrc`:
 
 ```bash
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd/linux' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -70,7 +70,7 @@ source ~/.bashrc
 ```bash
 export CGO_ENABLED=1
 export CGO_CFLAGS="-I/path/to/go-chem/3rd"
-export CGO_LDFLAGS="-L/path/to/go-chem/3rd -lindigo"
+export CGO_LDFLAGS="-L/path/to/go-chem/3rd/linux -lindigo"
 ```
 
 ### 3. Build and run
@@ -86,7 +86,7 @@ go build
 
 ```bash
 # Set PATH first (Windows)
-set PATH=%PATH%;D:\for_github\go-chem\3rd
+set PATH=%PATH%;D:\for_github\go-chem\3rd\win
 
 # Run tests
 cd test/reaction
@@ -110,7 +110,7 @@ go tool cover -html=coverage.out
 
 ```bash
 # Set PATH first (Windows)
-set PATH=%PATH%;D:\for_github\go-chem\3rd
+set PATH=%PATH%;D:\for_github\go-chem\3rd\win
 
 # Run example
 cd reaction
@@ -123,17 +123,17 @@ go run example_reaction.go
 
 This error means a required DLL cannot be found. Solutions:
 
-1. Add the `3rd` directory to your PATH
-2. Copy all DLL files to the same directory as your executable
+1. Add the `3rd/win` directory to your PATH
+2. Copy all DLL files from `3rd/win` to the same directory as your executable
 3. Use a tool like Dependency Walker to identify missing DLLs
 
 ### Error: `cannot find -lindigo` (Linux)
 
 This means the linker cannot find the Indigo library. Solutions:
 
-1. Verify `libindigo.so` exists in the `3rd` directory
+1. Verify `libindigo.so` exists in the `3rd/linux` directory
 2. Set `LD_LIBRARY_PATH` correctly
-3. Check CGO_LDFLAGS includes the correct path
+3. Check CGO_LDFLAGS includes the correct path (`-L${SRCDIR}/../3rd/linux`)
 
 ### Error: `undefined reference to 'indigoCreateReaction'`
 
@@ -162,7 +162,7 @@ Add to `.vscode/settings.json`:
     "go.toolsEnvVars": {
         "CGO_ENABLED": "1",
         "CGO_CFLAGS": "-ID:/for_github/go-chem/3rd",
-        "CGO_LDFLAGS": "-LD:/for_github/go-chem/3rd"
+        "CGO_LDFLAGS": "-LD:/for_github/go-chem/3rd/win"
     }
 }
 ```
@@ -173,7 +173,7 @@ Add to `.vscode/settings.json`:
 2. Add custom environment variables:
    - `CGO_ENABLED=1`
    - `CGO_CFLAGS=-ID:/for_github/go-chem/3rd`
-   - `CGO_LDFLAGS=-LD:/for_github/go-chem/3rd`
+   - `CGO_LDFLAGS=-LD:/for_github/go-chem/3rd/win` (Windows) or `-LD:/for_github/go-chem/3rd/linux` (Linux)
 
 ## Testing Indigo Installation
 

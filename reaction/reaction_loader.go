@@ -10,8 +10,8 @@ package reaction
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../3rd
-#cgo windows LDFLAGS: -L${SRCDIR}/../3rd -lindigo
-#cgo linux LDFLAGS: -L${SRCDIR}/../3rd -lindigo -Wl,-rpath,${SRCDIR}/../3rd
+#cgo windows LDFLAGS: -L${SRCDIR}/../3rd/win -lindigo
+#cgo linux LDFLAGS: -L${SRCDIR}/../3rd/linux -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux
 
 #include <stdlib.h>
 #include "indigo.h"
