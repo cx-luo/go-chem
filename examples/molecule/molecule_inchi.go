@@ -43,7 +43,7 @@ func main() {
 
 	// Example 3: Load molecule from InChI
 	fmt.Println("3. Loading molecule from InChI:")
-	m2, err := molecule.LoadInChI(inchi)
+	m2, err := molecule.LoadFromInChI(inchi)
 	if err != nil {
 		log.Fatalf("Failed to load from InChI: %v", err)
 	}
@@ -105,7 +105,7 @@ func main() {
 	inchi1, _ := original.ToInChI()
 	fmt.Printf("   Original InChI: %s\n", inchi1)
 
-	reloaded, _ := molecule.LoadInChI(inchi1)
+	reloaded, _ := molecule.LoadFromInChI(inchi1)
 	defer reloaded.Close()
 
 	inchi2, _ := reloaded.ToInChI()
@@ -124,9 +124,9 @@ func main() {
 
 	m3.ToInChI()
 
-	warning := molecule.GetInChIWarning()
-	log := molecule.GetInChILog()
-	auxInfo := molecule.GetInChIAuxInfo()
+	warning := molecule.InChIWarning()
+	linchiog := molecule.InChILog()
+	auxInfo := molecule.InChIAuxInfo()
 
 	if warning != "" {
 		fmt.Printf("   Warning: %s\n", warning)
@@ -134,8 +134,8 @@ func main() {
 		fmt.Println("   No warnings")
 	}
 
-	if log != "" {
-		fmt.Printf("   Log: %s\n", log)
+	if linchiog != "" {
+		fmt.Printf("   Log: %s\n", linchiog)
 	}
 
 	if auxInfo != "" {

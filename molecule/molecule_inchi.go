@@ -23,11 +23,77 @@ import (
 	"unsafe"
 )
 
+// inchiInitialized tracks whether InChI module has been initialized
+var inchiInitialized = false
+
+// InChIVersion returns the version of the InChI library
+func InChIVersion() string {
+	cStr := C.indigoInchiVersion()
+	if cStr == nil {
+		return ""
+	}
+	return C.GoString(cStr)
+}
+
+// InitInChI initializes the InChI module for the current session
+// This should be called before using InChI functions
+func InitInChI() error {
+	if inchiInitialized {
+		return nil // Already initialized
+	}
+
+	ret := int(C.indigoInchiInit(indigoSessionID))
+	if ret < 0 {
+		return fmt.Errorf("failed to initialize InChI: %s", getLastError())
+	}
+
+	inchiInitialized = true
+	return nil
+}
+
+// DisposeInChI disposes the InChI module
+// This should be called when done using InChI functions
+func DisposeInChI() error {
+	if !inchiInitialized {
+		return nil // Not initialized
+	}
+
+	ret := int(C.indigoInchiDispose(indigoSessionID))
+	if ret < 0 {
+		return fmt.Errorf("failed to dispose InChI: %s", getLastError())
+	}
+
+	inchiInitialized = false
+	return nil
+}
+
+// ResetInChIOptions resets InChI options to default
+func ResetInChIOptions() error {
+	ret := int(C.indigoInchiResetOptions())
+	if ret < 0 {
+		return fmt.Errorf("failed to reset InChI options: %s", getLastError())
+	}
+	return nil
+}
+
 // ToInChI converts the molecule to InChI format
 // This uses Indigo's InChI plugin
 func (m *Molecule) ToInChI() (string, error) {
+	if m == nil {
+		return "", fmt.Errorf("molecule is nil")
+	}
 	if m.closed {
 		return "", fmt.Errorf("molecule is closed")
+	}
+	if m.handle < 0 {
+		return "", fmt.Errorf("invalid molecule handle")
+	}
+
+	// Ensure InChI module is initialized
+	if !inchiInitialized {
+		if err := InitInChI(); err != nil {
+			return "", fmt.Errorf("failed to initialize InChI: %w", err)
+		}
 	}
 
 	cStr := C.indigoInchiGetInchi(C.int(m.handle))
@@ -40,17 +106,39 @@ func (m *Molecule) ToInChI() (string, error) {
 
 // ToInChIKey converts the molecule to InChI Key format
 func (m *Molecule) ToInChIKey() (string, error) {
+	if m == nil {
+		return "", fmt.Errorf("molecule is nil")
+	}
 	if m.closed {
 		return "", fmt.Errorf("molecule is closed")
+	}
+	if m.handle < 0 {
+		return "", fmt.Errorf("invalid molecule handle")
 	}
 
 	// First get the InChI
 	inchi, err := m.ToInChI()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get InChI: %w", err)
 	}
 
 	// Generate InChI Key from InChI
+	return InChIToKey(inchi)
+}
+
+// InChIToKey converts an InChI string to InChIKey
+func InChIToKey(inchi string) (string, error) {
+	if inchi == "" {
+		return "", fmt.Errorf("empty InChI string")
+	}
+
+	// Ensure InChI module is initialized
+	if !inchiInitialized {
+		if err := InitInChI(); err != nil {
+			return "", fmt.Errorf("failed to initialize InChI: %w", err)
+		}
+	}
+
 	cInchi := C.CString(inchi)
 	defer C.free(unsafe.Pointer(cInchi))
 
@@ -62,8 +150,8 @@ func (m *Molecule) ToInChIKey() (string, error) {
 	return C.GoString(cKey), nil
 }
 
-// GetInChIWarning returns any warnings from the last InChI generation
-func GetInChIWarning() string {
+// InChIWarning returns any warnings from the last InChI generation
+func InChIWarning() string {
 	cStr := C.indigoInchiGetWarning()
 	if cStr == nil {
 		return ""
@@ -71,8 +159,8 @@ func GetInChIWarning() string {
 	return C.GoString(cStr)
 }
 
-// GetInChILog returns log messages from the last InChI generation
-func GetInChILog() string {
+// InChILog returns log messages from the last InChI generation
+func InChILog() string {
 	cStr := C.indigoInchiGetLog()
 	if cStr == nil {
 		return ""
@@ -80,8 +168,8 @@ func GetInChILog() string {
 	return C.GoString(cStr)
 }
 
-// GetInChIAuxInfo returns auxiliary information from the last InChI generation
-func GetInChIAuxInfo() string {
+// InChIAuxInfo returns auxiliary information from the last InChI generation
+func InChIAuxInfo() string {
 	cStr := C.indigoInchiGetAuxInfo()
 	if cStr == nil {
 		return ""
@@ -89,8 +177,19 @@ func GetInChIAuxInfo() string {
 	return C.GoString(cStr)
 }
 
-// LoadInChI loads a molecule from InChI string
-func LoadInChI(inchi string) (*Molecule, error) {
+// LoadFromInChI loads a molecule from InChI string
+func LoadFromInChI(inchi string) (*Molecule, error) {
+	if inchi == "" {
+		return nil, fmt.Errorf("empty InChI string")
+	}
+
+	// Ensure InChI module is initialized
+	if !inchiInitialized {
+		if err := InitInChI(); err != nil {
+			return nil, fmt.Errorf("failed to initialize InChI: %w", err)
+		}
+	}
+
 	cInchi := C.CString(inchi)
 	defer C.free(unsafe.Pointer(cInchi))
 
@@ -105,4 +204,36 @@ func LoadInChI(inchi string) (*Molecule, error) {
 	}
 
 	return m, nil
+}
+
+// InChIResult contains the result of InChI generation
+type InChIResult struct {
+	InChI   string // The InChI string
+	Key     string // The InChIKey
+	Warning string // Warning messages
+	Log     string // Log messages
+	AuxInfo string // Auxiliary information
+}
+
+// ToInChIWithInfo converts the molecule to InChI format and returns detailed information
+func (m *Molecule) ToInChIWithInfo() (*InChIResult, error) {
+	inchi, err := m.ToInChI()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := InChIToKey(inchi)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate InChIKey: %w", err)
+	}
+
+	result := &InChIResult{
+		InChI:   inchi,
+		Key:     key,
+		Warning: InChIWarning(),
+		Log:     InChILog(),
+		AuxInfo: InChIAuxInfo(),
+	}
+
+	return result, nil
 }

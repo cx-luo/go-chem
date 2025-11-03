@@ -4,7 +4,7 @@
 // @Time    : 2025/11/03
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
-// @File    : molecule_properties_cgo.go
+// @File    : molecule_properties.go
 // @Software: GoLand
 package molecule
 
