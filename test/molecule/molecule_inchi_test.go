@@ -83,7 +83,7 @@ func TestLoadInChI(t *testing.T) {
 	}
 
 	// Load from InChI
-	m2, err := molecule.LoadInChI(inchi)
+	m2, err := molecule.LoadFromInChI(inchi)
 	if err != nil {
 		t.Fatalf("failed to load from InChI: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestInChIRoundtrip(t *testing.T) {
 			}
 
 			// Load from InChI
-			m2, err := molecule.LoadInChI(inchi)
+			m2, err := molecule.LoadFromInChI(inchi)
 			if err != nil {
 				t.Fatalf("failed to load from InChI: %v", err)
 			}
@@ -183,9 +183,9 @@ func TestInChIHelperFunctions(t *testing.T) {
 	}
 
 	// These functions should not panic
-	warning := molecule.GetInChIWarning()
-	log := molecule.GetInChILog()
-	auxInfo := molecule.GetInChIAuxInfo()
+	warning := molecule.InChIWarning()
+	log := molecule.InChILog()
+	auxInfo := molecule.InChIAuxInfo()
 
 	// Just verify they return strings (may be empty)
 	_ = warning
@@ -211,7 +211,7 @@ func TestInChIOnClosedMolecule(t *testing.T) {
 
 // TestLoadInvalidInChI tests loading from invalid InChI
 func TestLoadInvalidInChI(t *testing.T) {
-	_, err := molecule.LoadInChI("invalid inchi string")
+	_, err := molecule.LoadFromInChI("invalid inchi string")
 	if err == nil {
 		t.Error("expected error when loading from invalid InChI")
 	}

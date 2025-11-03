@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 // Example program demonstrating reaction package usage
 // Build and run: go run example_reaction.go
 package main
