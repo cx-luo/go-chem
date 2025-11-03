@@ -56,15 +56,17 @@ func example1() {
 
 	for _, mol := range molecules {
 		// Parse SMILES
-		loader := molecule.SmilesLoader{}
-		m, err := loader.Parse(mol.smiles)
+		moleculeFromString, err := molecule.LoadMoleculeFromString(mol.smiles)
+		if err != nil {
+			return
+		}
 		if err != nil {
 			log.Printf("Error parsing SMILES %s: %v\n", mol.name, err)
 			continue
 		}
 
 		// Generate InChI using CGO
-		result, err := generator.GenerateInChI(m)
+		result, err := generator.GenerateInChI(moleculeFromString)
 		if err != nil {
 			log.Printf("Error generating InChI for %s: %v\n", mol.name, err)
 			continue
@@ -90,8 +92,10 @@ func example2() {
 	smiles := "CCO" // Ethanol
 
 	// Parse SMILES
-	loader := molecule.SmilesLoader{}
-	mol, err := loader.Parse(smiles)
+	mol, err := molecule.LoadMoleculeFromString(smiles)
+	if err != nil {
+		return
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,8 +153,7 @@ func example4() {
 	generator := molecule.NewInChIGeneratorCGO()
 
 	for _, mol := range molecules {
-		loader := molecule.SmilesLoader{}
-		m, err := loader.Parse(mol.smiles)
+		m, err := molecule.LoadMoleculeFromString(mol.smiles)
 		if err != nil {
 			log.Printf("Error parsing SMILES %s: %v\n", mol.name, err)
 			continue
@@ -184,11 +187,10 @@ func exampleBatchProcessing() {
 	}
 
 	generator := molecule.NewInChIGeneratorCGO()
-	loader := molecule.SmilesLoader{}
 
 	successCount := 0
 	for i, smiles := range smilesList {
-		mol, err := loader.Parse(smiles)
+		mol, err := molecule.LoadMoleculeFromString(smiles)
 		if err != nil {
 			fmt.Printf("%d. Error parsing: %v\n", i+1, err)
 			continue
@@ -213,9 +215,8 @@ func exampleWithOptions() {
 	fmt.Println("-----------------------------------")
 
 	smiles := "CCO"
-	loader := molecule.SmilesLoader{}
-	mol, _ := loader.Parse(smiles)
 
+	mol, _ := molecule.LoadMoleculeFromString(smiles)
 	// Standard InChI
 	gen1 := molecule.NewInChIGeneratorCGO()
 	result1, _ := gen1.GenerateInChI(mol)
