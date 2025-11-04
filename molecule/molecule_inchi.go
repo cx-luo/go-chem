@@ -10,8 +10,18 @@ package molecule
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../3rd
-#cgo windows LDFLAGS: -L${SRCDIR}/../3rd/win -lindigo -lindigo-inchi
-#cgo linux LDFLAGS: -L${SRCDIR}/../3rd/linux -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/linux
+
+// Windows platforms
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../3rd/windows-x86_64 -lindigo -lindigo-inchi
+#cgo windows,386 LDFLAGS: -L${SRCDIR}/../3rd/windows-i386 -lindigo -lindigo-inchi
+
+// Linux platforms
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/linux-x86_64
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/linux-aarch64
+
+// macOS platforms
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/darwin-aarch64
 
 #include <stdlib.h>
 #include "indigo.h"

@@ -9,6 +9,7 @@
 ## 已实现功能
 
 ### 核心分子操作 (`src/molecule.go`)
+
 - ✅ 基本分子结构（原子、化学键、顶点）
 - ✅ 原子属性管理（电荷、同位素、自由基）
 - ✅ 化学键管理（单键、双键、三键、芳香键）
@@ -20,6 +21,7 @@
 - ✅ 伪原子和模板原子支持
 
 ### 元素数据 (`src/elements.go`)
+
 - ✅ 完整的元素周期表数据
 - ✅ 元素符号与原子序数转换
 - ✅ 元素属性查询（族、周期、芳香性）
@@ -28,6 +30,7 @@
 ### 立体化学
 
 #### 立体中心 (`src/molecule_stereocenters.go`)
+
 - ✅ 立体中心检测和管理
 - ✅ 金字塔构型表示
 - ✅ 立体中心类型（ABS、OR、AND、ANY）
@@ -36,6 +39,7 @@
 - ✅ 立体中心反转和操作
 
 #### 顺反异构 (`src/molecule_cis_trans.go`)
+
 - ✅ 顺反（E/Z）立体化学管理
 - ✅ 几何立体化学键检测
 - ✅ 从3D坐标确定构型
@@ -45,6 +49,7 @@
 ### 文件格式支持
 
 #### MOL文件 (`src/molfile_loader.go`, `src/molfile_saver.go`)
+
 - ✅ MDL Molfile V2000格式加载
 - ✅ MOL文件保存
 - ✅ 原子属性解析（坐标、电荷、同位素、自由基）
@@ -53,22 +58,26 @@
 - ✅ 手性标志支持
 
 #### SDF文件 (`src/sdf_loader.go`)
+
 - ✅ SDF（结构数据文件）多分子加载
 - ✅ 数据字段解析
 - ✅ 批量分子加载
 
 ### 芳香化处理
+
 - ✅ 芳香化算法 (`src/aromatizer.go`)
 - ✅ 去芳香化算法 (`src/dearomatizer.go`)
 - ✅ 苯环识别和处理
 
 ### 分子性质计算
+
 - ✅ Lipinski五规则 (`src/lipinski.go`)
 - ✅ TPSA（拓扑极性表面积）(`src/tpsa.go`)
 - ✅ 总分子式生成 (`src/gross_formula.go`)
 - ✅ 分子哈希 (`src/molecule_hash.go`)
 
 ### InChI支持 (`molecule/molecule_inchi.go`) ⭐ **新功能**
+
 - ✅ InChI (IUPAC International Chemical Identifier) 生成
 - ✅ InChIKey 生成和验证
 - ✅ 分子式层 (Hill系统排序)
@@ -80,17 +89,20 @@
 - ⏳ 立体化学层 (待完善)
 
 ### SMILES支持
+
 - ✅ SMILES加载器 (`src/smiles_loader.go`)
 - ✅ 芳香原子和化学键解析
 - ✅ 环结构识别
 
 ### 其他格式
+
 - ✅ CML（化学标记语言）基础支持 (`src/cml.go`)
 - ✅ CDXML格式基础支持 (`src/cdxml.go`)
 
 ## 测试覆盖
 
 ### 分子基础测试 (`test/molecule_test.go`)
+
 - ✅ 基本分子操作测试
 - ✅ 原子属性测试
 - ✅ 化学键操作测试
@@ -100,6 +112,7 @@
 - ✅ 隐式氢测试
 
 ### MOL文件测试 (`test/molfile_test.go`)
+
 - ✅ MOL文件加载测试
 - ✅ 带电荷的分子测试
 - ✅ 同位素测试
@@ -110,6 +123,7 @@
 - ✅ 立体化学测试
 
 ### 立体化学测试 (`test/stereochemistry_test.go`)
+
 - ✅ 立体中心基础操作
 - ✅ 金字塔构型测试
 - ✅ 不同立体中心类型
@@ -120,6 +134,7 @@
 - ✅ 构型字符串表示
 
 ### 现有测试优化
+
 - ✅ 芳香化测试 (`test/aromatizer_test.go`)
 - ✅ 化学基础测试 (`test/chem_test.go`)
 - ✅ 总分子式测试 (`test/gross_formula_test.go`)
@@ -297,6 +312,8 @@ if result1.InChIKey == result2.InChIKey {
 
 ## 运行测试
 
+注意：需要安装`fontconfig`
+
 ```bash
 # 运行所有测试
 go test ./test/...
@@ -309,6 +326,7 @@ go test -v ./test/...
 ```
 
 ### 分子指纹 (`src/molecule_fingerprint.go`)
+
 - ✅ 基于路径的指纹（类似Daylight）
 - ✅ ECFP（Extended Connectivity Fingerprints）支持
 - ✅ ECFP2, ECFP4, ECFP6多种半径
@@ -319,6 +337,7 @@ go test -v ./test/...
 - ✅ 十六进制字符串转换
 
 ### 子结构匹配 (`src/molecule_substructure_matcher.go`)
+
 - ✅ 完整的子图同构算法
 - ✅ 递归回溯搜索
 - ✅ 原子和化学键匹配
@@ -329,6 +348,7 @@ go test -v ./test/...
 - ✅ 最大公共子结构框架
 
 ### S-Groups支持 (`src/molecule_sgroups.go`)
+
 - ✅ 通用S-Group（GEN）
 - ✅ 数据S-Group（DAT）
 - ✅ 超原子/缩写（SUP）
@@ -340,6 +360,7 @@ go test -v ./test/...
 - ✅ 原子和化学键移除时的更新
 
 ### InChI 测试 (`test/inchi_test.go`)
+
 - ✅ InChI 生成测试（8个分子案例）
 - ✅ InChIKey 生成测试
 - ✅ InChIKey 唯一性测试
@@ -390,4 +411,3 @@ go test -v ./test/...
 ## 致谢
 
 本项目的设计和API受到[EPAM Indigo toolkit](https://github.com/epam/Indigo)的启发。
-
