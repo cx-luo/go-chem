@@ -21,11 +21,8 @@ func ExampleBasicRender() {
 	}
 	defer mol.Close()
 
-	// Initialize renderer
-	if err := render.InitRenderer(); err != nil {
-		log.Fatal(err)
-	}
-	defer render.DisposeRenderer()
+	// Reset renderer settings to defaults
+	render.ResetRenderer()
 
 	// Set PNG format and size
 	render.SetRenderOption("render-output-format", "png")
@@ -40,11 +37,14 @@ func ExampleBasicRender() {
 
 // Example 2: Using RenderOptions
 func ExampleWithOptions() {
-	mol, _ := molecule.LoadMoleculeFromString("CCO")
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Configure render options
 	opts := render.DefaultRenderOptions()
@@ -61,7 +61,9 @@ func ExampleWithOptions() {
 	}
 
 	// Render
-	render.RenderToFile(mol.Handle(), "ethanol.svg")
+	if err := render.RenderToFile(mol.Handle(), "ethanol.svg"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Example 3: Grid rendering
@@ -76,17 +78,26 @@ func ExampleGridRender() {
 		"CCN",         // Ethylamine
 	}
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Create array
-	array, _ := render.CreateArray()
+	array, err := render.CreateArray()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer render.FreeObject(array)
 
 	// Load and add molecules to array
 	for _, smiles := range molecules {
-		mol, _ := molecule.LoadMoleculeFromString(smiles)
-		render.ArrayAdd(array, mol.Handle())
+		mol, err := molecule.LoadMoleculeFromString(smiles)
+		if err != nil {
+			log.Printf("Warning: failed to load %s: %v", smiles, err)
+			continue
+		}
+		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+			log.Printf("Warning: failed to add molecule: %v", err)
+		}
 		// Note: molecules should be kept alive until rendering is done
 		defer mol.Close()
 	}
@@ -95,20 +106,27 @@ func ExampleGridRender() {
 	opts := render.DefaultRenderOptions()
 	opts.ImageWidth = 1200
 	opts.ImageHeight = 800
-	opts.Apply()
+	if err := opts.Apply(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Render grid (3 columns)
-	render.RenderGridToFile(array, nil, 3, "molecules_grid.png")
+	if err := render.RenderGridToFile(array, nil, 3, "molecules_grid.png"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Example 4: Rendering a reaction
 func ExampleReactionRender() {
 	// Load a reaction
-	rxn, _ := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rxn.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Configure for reaction rendering
 	render.SetRenderOption("render-output-format", "png")
@@ -117,23 +135,33 @@ func ExampleReactionRender() {
 	render.SetRenderOption("render-background-color", "1.0, 1.0, 1.0")
 
 	// Render reaction
-	render.RenderToFile(rxn.Handle(), "oxidation_reaction.png")
+	if err := render.RenderToFile(rxn.Handle(), "oxidation_reaction.png"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Example 5: Render to memory buffer
 func ExampleBufferRender() {
-	mol, _ := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Create write buffer
-	buffer, _ := render.CreateWriteBuffer()
+	buffer, err := render.CreateWriteBuffer()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer render.FreeObject(buffer)
 
 	// Set format
-	render.SetRenderOption("render-output-format", "png")
+	if err := render.SetRenderOption("render-output-format", "png"); err != nil {
+		log.Fatal(err)
+	}
 
 	// Render to buffer
 	if err := render.Render(mol.Handle(), buffer); err != nil {
@@ -141,19 +169,29 @@ func ExampleBufferRender() {
 	}
 
 	// Get image data
-	imageData, _ := render.GetBufferData(buffer)
+	imageData, err := render.GetBufferData(buffer)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Now you can use imageData ([]byte) - write to file, send over network, etc.
-	os.WriteFile("benzene_from_buffer.png", imageData, 0644)
+	if err := os.WriteFile("benzene_from_buffer.png", imageData, 0644); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Buffer render: Generated", len(imageData), "bytes")
 }
 
 // Example 6: Batch rendering with different styles
 func ExampleBatchRender() {
-	mol, _ := molecule.LoadMoleculeFromString("CC(C)(C)C")
+	mol, err := molecule.LoadMoleculeFromString("CC(C)(C)C")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Render with different styles
 	styles := map[string]string{
@@ -164,18 +202,26 @@ func ExampleBatchRender() {
 	}
 
 	for name, labelMode := range styles {
-		render.SetRenderOption("render-label-mode", labelMode)
-		render.RenderToFile(mol.Handle(), fmt.Sprintf("neopentane_%s.png", name))
+		if err := render.SetRenderOption("render-label-mode", labelMode); err != nil {
+			log.Printf("Warning: failed to set label mode %s: %v", labelMode, err)
+			continue
+		}
+		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("neopentane_%s.png", name)); err != nil {
+			log.Printf("Warning: failed to render %s: %v", name, err)
+		}
 	}
 }
 
 // Example 7: High-quality rendering
 func ExampleHighQualityRender() {
-	mol, _ := molecule.LoadMoleculeFromString("c1ccc(cc1)C(=O)O") // Benzoic acid
+	mol, err := molecule.LoadMoleculeFromString("c1ccc(cc1)C(=O)O") // Benzoic acid
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// High-quality settings
 	opts := &render.RenderOptions{
@@ -191,26 +237,38 @@ func ExampleHighQualityRender() {
 		StereoStyle:       "ext",
 		LabelMode:         "hetero",
 	}
-	opts.Apply()
+	if err := opts.Apply(); err != nil {
+		log.Fatal(err)
+	}
 
-	render.RenderToFile(mol.Handle(), "benzoic_acid_hq.svg")
+	if err := render.RenderToFile(mol.Handle(), "benzoic_acid_hq.svg"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Example 8: Rendering with stereochemistry
 func ExampleStereoRender() {
 	// L-Alanine
-	mol, _ := molecule.LoadMoleculeFromString("C[C@H](N)C(=O)O")
+	mol, err := molecule.LoadMoleculeFromString("C[C@H](N)C(=O)O")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Different stereo styles
-	stereoStyles := []string{"old", "ext", "bondmark"}
+	stereoStyles := []string{"old", "ext", "none"}
 
 	for _, style := range stereoStyles {
-		render.SetRenderOption("render-stereo-style", style)
-		render.RenderToFile(mol.Handle(), fmt.Sprintf("alanine_%s.png", style))
+		if err := render.SetRenderOption("render-stereo-style", style); err != nil {
+			log.Printf("Warning: failed to set stereo style %s: %v", style, err)
+			continue
+		}
+		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("alanine_%s.png", style)); err != nil {
+			log.Printf("Warning: failed to render %s: %v", style, err)
+		}
 	}
 }
 
@@ -219,17 +277,26 @@ func ExampleAlignedGrid() {
 	// Series of alcohols - align on oxygen
 	alcohols := []string{"CO", "CCO", "CCCO", "CC(C)O"}
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
-	array, _ := render.CreateArray()
+	array, err := render.CreateArray()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer render.FreeObject(array)
 
 	var mols []*molecule.Molecule
 	for _, smiles := range alcohols {
-		mol, _ := molecule.LoadMoleculeFromString(smiles)
+		mol, err := molecule.LoadMoleculeFromString(smiles)
+		if err != nil {
+			log.Printf("Warning: failed to load %s: %v", smiles, err)
+			continue
+		}
 		mols = append(mols, mol)
-		render.ArrayAdd(array, mol.Handle())
+		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+			log.Printf("Warning: failed to add molecule: %v", err)
+		}
 	}
 	defer func() {
 		for _, mol := range mols {
@@ -241,16 +308,21 @@ func ExampleAlignedGrid() {
 	// This aligns all molecules on their oxygen atoms
 	refAtoms := []int{0, 2, 3, 2} // Oxygen positions
 
-	render.RenderGridToFile(array, refAtoms, 2, "alcohols_aligned.png")
+	if err := render.RenderGridToFile(array, refAtoms, 2, "alcohols_aligned.png"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Example 10: Custom colors and styling
 func ExampleCustomColors() {
-	mol, _ := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer mol.Close()
 
-	render.InitRenderer()
-	defer render.DisposeRenderer()
+	// Reset renderer settings
+	render.ResetRenderer()
 
 	// Custom background color (light blue)
 	render.SetRenderOption("render-background-color", "0.9, 0.95, 1.0")
@@ -261,5 +333,50 @@ func ExampleCustomColors() {
 	// Larger bonds
 	render.SetRenderOptionInt("render-bond-length", 60)
 
-	render.RenderToFile(mol.Handle(), "benzene_custom.png")
+	if err := render.RenderToFile(mol.Handle(), "benzene_custom.png"); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func main() {
+	fmt.Println("=== Render Package Example ===")
+
+	// Initialize renderer once at the start
+	if err := render.InitRenderer(); err != nil {
+		log.Fatalf("Failed to initialize renderer: %v", err)
+	}
+	defer render.DisposeRenderer()
+
+	// Run all examples
+	ExampleBasicRender()
+	fmt.Println("✓ Basic render completed")
+
+	ExampleWithOptions()
+	fmt.Println("✓ With options completed")
+
+	ExampleGridRender()
+	fmt.Println("✓ Grid render completed")
+
+	ExampleReactionRender()
+	fmt.Println("✓ Reaction render completed")
+
+	ExampleBufferRender()
+	fmt.Println("✓ Buffer render completed")
+
+	ExampleBatchRender()
+	fmt.Println("✓ Batch render completed")
+
+	ExampleHighQualityRender()
+	fmt.Println("✓ High-quality render completed")
+
+	ExampleStereoRender()
+	fmt.Println("✓ Stereo render completed")
+
+	ExampleAlignedGrid()
+	fmt.Println("✓ Aligned grid completed")
+
+	ExampleCustomColors()
+	fmt.Println("✓ Custom colors completed")
+
+	fmt.Println("\n=== All examples completed successfully! ===")
 }

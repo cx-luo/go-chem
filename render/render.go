@@ -163,7 +163,7 @@ func RenderGridToFile(arrayHandle int, refAtoms []int, nColumns int, filename st
 	defer C.free(unsafe.Pointer(cFilename))
 
 	var refAtomsPtr *C.int
-	if refAtoms != nil && len(refAtoms) > 0 {
+	if len(refAtoms) > 0 {
 		// Convert Go slice to C array without C.malloc (to avoid cgo malloc issues)
 		cRefAtoms := make([]C.int, len(refAtoms))
 		for i, v := range refAtoms {
@@ -204,7 +204,7 @@ func RenderGrid(arrayHandle int, refAtoms []int, nColumns int, outputHandle int)
 	}
 
 	var refAtomsPtr *C.int
-	if refAtoms != nil && len(refAtoms) > 0 {
+	if len(refAtoms) > 0 {
 		// Convert Go slice to C array
 		cRefAtoms := make([]C.int, len(refAtoms))
 		for i, v := range refAtoms {
@@ -458,9 +458,9 @@ func GetBufferData(bufferHandle int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get buffer data: %s", getLastError())
 	}
 
-	defer C.free(unsafe.Pointer(dataPtr))
 	// Copy C data to Go slice
-	data := C.GoBytes(unsafe.Pointer(dataPtr), C.int(size))
+	// Note: dataPtr is managed by Indigo internally, don't free it
+	data := C.GoBytes(unsafe.Pointer(dataPtr), size)
 	return data, nil
 }
 
