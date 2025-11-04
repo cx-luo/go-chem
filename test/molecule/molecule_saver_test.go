@@ -1,6 +1,7 @@
 package molecule_test
 
 import (
+	"encoding/base64"
 	"os"
 	"strings"
 	"testing"
@@ -252,13 +253,22 @@ func TestToBase64String(t *testing.T) {
 	}
 	defer m.Close()
 
-	base64, err := m.ToBase64String()
+	base64Str, err := m.ToBase64String()
 	if err != nil {
-		t.Errorf("failed to convert to base64: %v", err)
+		t.Fatalf("failed to convert to base64: %v", err)
 	}
 
-	if base64 == "" {
+	if len(base64Str) == 0 {
 		t.Error("expected non-empty base64 string")
+	}
+
+	// Check valid base64
+	decoded, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		t.Errorf("resulting string is not valid base64: %v", err)
+	}
+	if len(decoded) == 0 {
+		t.Error("decoded base64 result is empty")
 	}
 }
 
