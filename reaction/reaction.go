@@ -247,54 +247,6 @@ func (r *Reaction) Optimize(options string) error {
 	return nil
 }
 
-// Normalize normalizes the reaction structure
-// It neutralizes charges, resolves 5-valence Nitrogen, removes hydrogens, etc.
-// options is a string with normalization options (empty string for defaults)
-func (r *Reaction) Normalize(options string) error {
-	if r.closed {
-		return fmt.Errorf("reaction is closed")
-	}
-
-	cOptions := C.CString(options)
-	defer C.free(unsafe.Pointer(cOptions))
-
-	ret := int(C.indigoNormalize(C.int(r.handle), cOptions))
-	if ret < 0 {
-		return fmt.Errorf("failed to normalize reaction: %s", getLastError())
-	}
-
-	return nil
-}
-
-// Standardize standardizes the reaction structure
-// It standardizes charges, stereo, etc.
-func (r *Reaction) Standardize() error {
-	if r.closed {
-		return fmt.Errorf("reaction is closed")
-	}
-
-	ret := int(C.indigoStandardize(C.int(r.handle)))
-	if ret < 0 {
-		return fmt.Errorf("failed to standardize reaction: %s", getLastError())
-	}
-
-	return nil
-}
-
-// Ionize ionizes the reaction at specified pH and pH tolerance
-func (r *Reaction) Ionize(pH float32, pHTolerance float32) error {
-	if r.closed {
-		return fmt.Errorf("reaction is closed")
-	}
-
-	ret := int(C.indigoIonize(C.int(r.handle), C.float(pH), C.float(pHTolerance)))
-	if ret < 0 {
-		return fmt.Errorf("failed to ionize reaction: %s", getLastError())
-	}
-
-	return nil
-}
-
 // getLastError retrieves the last error message from Indigo
 func getLastError() string {
 	errMsg := C.indigoGetLastError()

@@ -130,57 +130,6 @@ func TestReactionOptimize(t *testing.T) {
 	}
 }
 
-// TestReactionNormalize tests normalizing a reaction
-func TestReactionNormalize(t *testing.T) {
-	// Load a reaction
-	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
-	if err != nil {
-		t.Fatalf("failed to load reaction: %v", err)
-	}
-	defer r.Close()
-
-	// Normalize with default options
-	err = r.Normalize("")
-	if err != nil {
-		t.Errorf("failed to normalize reaction: %v", err)
-	}
-}
-
-// TestReactionStandardize tests standardizing a reaction
-func TestReactionStandardize(t *testing.T) {
-	// Load a reaction
-	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
-	if err != nil {
-		t.Fatalf("failed to load reaction: %v", err)
-	}
-	defer r.Close()
-
-	// Standardize
-	err = r.Standardize()
-	if err != nil {
-		t.Errorf("failed to standardize reaction: %v", err)
-	}
-}
-
-// TestReactionIonize tests ionizing a reaction at specified pH
-func TestReactionIonize(t *testing.T) {
-	// Load a reaction with an acid
-	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
-	if err != nil {
-		t.Fatalf("failed to load reaction: %v", err)
-	}
-	defer r.Close()
-
-	// Ionize at pH 7.0 with tolerance 0.5
-	err = r.Ionize(7.0, 0.5)
-	if err != nil {
-		t.Errorf("failed to ionize reaction: %v", err)
-	}
-}
-
 // TestReactionCountMolecules tests counting total molecules in a reaction
 func TestReactionCountMolecules(t *testing.T) {
 	// Load a reaction: 2 reactants + 2 products = 4 molecules
