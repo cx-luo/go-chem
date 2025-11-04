@@ -164,7 +164,7 @@ func RenderGridToFile(arrayHandle int, refAtoms []int, nColumns int, filename st
 
 	var refAtomsPtr *C.int
 	if refAtoms != nil && len(refAtoms) > 0 {
-		// Convert Go slice to C array
+		// Convert Go slice to C array without C.malloc (to avoid cgo malloc issues)
 		cRefAtoms := make([]C.int, len(refAtoms))
 		for i, v := range refAtoms {
 			cRefAtoms[i] = C.int(v)
@@ -452,13 +452,15 @@ func GetBufferData(bufferHandle int) ([]byte, error) {
 	}
 
 	var size C.int
-	dataPtr := C.indigoToBuffer(C.int(bufferHandle), &size)
-	if dataPtr == nil {
+	var dataPtr *C.char
+	ret := C.indigoToBuffer(C.int(bufferHandle), &dataPtr, &size)
+	if ret < 0 || dataPtr == nil {
 		return nil, fmt.Errorf("failed to get buffer data: %s", getLastError())
 	}
 
+	defer C.free(unsafe.Pointer(dataPtr))
 	// Copy C data to Go slice
-	data := C.GoBytes(unsafe.Pointer(dataPtr), size)
+	data := C.GoBytes(unsafe.Pointer(dataPtr), C.int(size))
 	return data, nil
 }
 
