@@ -18,7 +18,6 @@ package reaction
 // Linux platforms
 #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-x86_64
 #cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-aarch64
-#cgo linux LDFLAGS: -L${SRCDIR}/../3rd/linux -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux
 
 // macOS platforms
 #cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
@@ -66,13 +65,7 @@ func CreateReaction() (*Reaction, error) {
 		return nil, fmt.Errorf("failed to create reaction: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // CreateQueryReaction creates a new empty query reaction
@@ -82,13 +75,7 @@ func CreateQueryReaction() (*Reaction, error) {
 		return nil, fmt.Errorf("failed to create query reaction: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // Close frees the Indigo reaction object
@@ -239,13 +226,7 @@ func (r *Reaction) Clone() (*Reaction, error) {
 		return nil, fmt.Errorf("failed to clone reaction: %s", getLastError())
 	}
 
-	newReaction := &Reaction{
-		handle: newHandle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(newReaction, (*Reaction).Close)
-	return newReaction, nil
+	return newReaction(newHandle), nil
 }
 
 // Optimize optimizes the query reaction for faster substructure search
@@ -321,4 +302,15 @@ func getLastError() string {
 		return "unknown error"
 	}
 	return C.GoString(errMsg)
+}
+
+// newReaction is a helper function to create a Reaction object from a handle
+// It sets up the finalizer to ensure proper cleanup
+func newReaction(handle int) *Reaction {
+	r := &Reaction{
+		handle: handle,
+		closed: false,
+	}
+	runtime.SetFinalizer(r, (*Reaction).Close)
+	return r
 }

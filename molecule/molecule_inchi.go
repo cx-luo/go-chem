@@ -208,12 +208,7 @@ func LoadFromInChI(inchi string) (*Molecule, error) {
 		return nil, fmt.Errorf("failed to load molecule from InChI: %s", getLastError())
 	}
 
-	m := &Molecule{
-		handle: handle,
-		closed: false,
-	}
-
-	return m, nil
+	return newMolecule(handle), nil
 }
 
 // InChIResult contains the result of InChI generation

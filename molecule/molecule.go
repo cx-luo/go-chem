@@ -69,13 +69,7 @@ func CreateMolecule() (*Molecule, error) {
 		return nil, fmt.Errorf("failed to create molecule: %s", getLastError())
 	}
 
-	m := &Molecule{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(m, (*Molecule).Close)
-	return m, nil
+	return newMolecule(handle), nil
 }
 
 // CreateQueryMolecule creates a new empty query molecule
@@ -85,13 +79,7 @@ func CreateQueryMolecule() (*Molecule, error) {
 		return nil, fmt.Errorf("failed to create query molecule: %s", getLastError())
 	}
 
-	m := &Molecule{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(m, (*Molecule).Close)
-	return m, nil
+	return newMolecule(handle), nil
 }
 
 // Close frees the Indigo molecule object
@@ -342,4 +330,15 @@ func getLastError() string {
 		return "unknown error"
 	}
 	return C.GoString(errMsg)
+}
+
+// newMolecule is a helper function to create a Molecule object from a handle
+// It sets up the finalizer to ensure proper cleanup
+func newMolecule(handle int) *Molecule {
+	m := &Molecule{
+		handle: handle,
+		closed: false,
+	}
+	runtime.SetFinalizer(m, (*Molecule).Close)
+	return m
 }

@@ -9,27 +9,12 @@
 package reaction
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../3rd
-
-// Windows platforms
-#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../3rd/windows-x86_64 -lindigo
-#cgo windows,386 LDFLAGS: -L${SRCDIR}/../3rd/windows-i386 -lindigo
-
-// Linux platforms
-#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-x86_64
-#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-aarch64
-
-// macOS platforms
-#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
-#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-aarch64
-
 #include <stdlib.h>
 #include "indigo.h"
 */
 import "C"
 import (
 	"fmt"
-	"runtime"
 	"unsafe"
 )
 
@@ -44,13 +29,7 @@ func LoadReactionFromString(data string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction from string: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionFromFile loads a reaction from a file
@@ -63,13 +42,7 @@ func LoadReactionFromFile(filename string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction from file %s: %s", filename, getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionFromBuffer loads a reaction from a byte buffer
@@ -84,13 +57,7 @@ func LoadReactionFromBuffer(buffer []byte) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction from buffer: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionFromString loads a query reaction from a string
@@ -103,13 +70,7 @@ func LoadQueryReactionFromString(data string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load query reaction from string: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionFromFile loads a query reaction from a file
@@ -122,13 +83,7 @@ func LoadQueryReactionFromFile(filename string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load query reaction from file %s: %s", filename, getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionFromBuffer loads a query reaction from a byte buffer
@@ -143,13 +98,7 @@ func LoadQueryReactionFromBuffer(buffer []byte) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load query reaction from buffer: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionSmartsFromString loads a reaction SMARTS from a string
@@ -162,13 +111,7 @@ func LoadReactionSmartsFromString(smarts string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction SMARTS from string: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionSmartsFromFile loads a reaction SMARTS from a file
@@ -181,13 +124,7 @@ func LoadReactionSmartsFromFile(filename string) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction SMARTS from file %s: %s", filename, getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionSmartsFromBuffer loads a reaction SMARTS from a byte buffer
@@ -202,13 +139,7 @@ func LoadReactionSmartsFromBuffer(buffer []byte) (*Reaction, error) {
 		return nil, fmt.Errorf("failed to load reaction SMARTS from buffer: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionWithLibFromString loads a reaction from a string with a monomer library
@@ -221,13 +152,7 @@ func LoadReactionWithLibFromString(data string, monomerLibraryHandle int) (*Reac
 		return nil, fmt.Errorf("failed to load reaction with library from string: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionWithLibFromFile loads a reaction from a file with a monomer library
@@ -240,13 +165,7 @@ func LoadReactionWithLibFromFile(filename string, monomerLibraryHandle int) (*Re
 		return nil, fmt.Errorf("failed to load reaction with library from file %s: %s", filename, getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadReactionWithLibFromBuffer loads a reaction from a byte buffer with a monomer library
@@ -261,13 +180,7 @@ func LoadReactionWithLibFromBuffer(buffer []byte, monomerLibraryHandle int) (*Re
 		return nil, fmt.Errorf("failed to load reaction with library from buffer: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionWithLibFromString loads a query reaction from a string with a monomer library
@@ -280,13 +193,7 @@ func LoadQueryReactionWithLibFromString(data string, monomerLibraryHandle int) (
 		return nil, fmt.Errorf("failed to load query reaction with library from string: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionWithLibFromFile loads a query reaction from a file with a monomer library
@@ -299,13 +206,7 @@ func LoadQueryReactionWithLibFromFile(filename string, monomerLibraryHandle int)
 		return nil, fmt.Errorf("failed to load query reaction with library from file %s: %s", filename, getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
 
 // LoadQueryReactionWithLibFromBuffer loads a query reaction from a byte buffer with a monomer library
@@ -320,11 +221,5 @@ func LoadQueryReactionWithLibFromBuffer(buffer []byte, monomerLibraryHandle int)
 		return nil, fmt.Errorf("failed to load query reaction with library from buffer: %s", getLastError())
 	}
 
-	r := &Reaction{
-		handle: handle,
-		closed: false,
-	}
-
-	runtime.SetFinalizer(r, (*Reaction).Close)
-	return r, nil
+	return newReaction(handle), nil
 }
