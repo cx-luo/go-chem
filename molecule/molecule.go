@@ -20,8 +20,8 @@ package molecule
 #cgo linux,arm64 LDFLAGS: -L../lib/linux-aarch64 -lindigo -Wl,-rpath,$ORIGIN/../lib/linux-aarch64
 
 // macOS platforms
-#cgo darwin,amd64 LDFLAGS: -L../lib/darwin-x86_64 -lindigo -Wl,-rpath,$ORIGIN/../lib/darwin-x86_64
-#cgo darwin,arm64 LDFLAGS: -L../lib/darwin-aarch64 -lindigo -Wl,-rpath,$ORIGIN/../lib/darwin-aarch64
+#cgo darwin,amd64 LDFLAGS: -L../lib/darwin-x86_64 -lindigo -Wl,-rpath,@loader_path/../lib/darwin-x86_64
+#cgo darwin,arm64 LDFLAGS: -L../lib/darwin-aarch64 -lindigo -Wl,-rpath,@loader_path/../lib/darwin-aarch64
 
 #include <stdlib.h>
 #include "indigo.h"
