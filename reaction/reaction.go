@@ -9,19 +9,19 @@
 package reaction
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../3rd
+#cgo CFLAGS: -I../include
 
 // Windows platforms
-#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../3rd/windows-x86_64 -lindigo
-#cgo windows,386 LDFLAGS: -L${SRCDIR}/../3rd/windows-i386 -lindigo
+#cgo windows,amd64 LDFLAGS: -L../lib/windows-x86_64 -lindigo
+#cgo windows,386 LDFLAGS: -L../lib/windows-i386 -lindigo
 
 // Linux platforms
-#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-x86_64
-#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-aarch64
+#cgo linux,amd64 LDFLAGS: -L../lib/linux-x86_64 -lindigo -Wl,-rpath,$ORIGIN/../lib/linux-x86_64
+#cgo linux,arm64 LDFLAGS: -L../lib/linux-aarch64 -lindigo -Wl,-rpath,$ORIGIN/../lib/linux-aarch64
 
 // macOS platforms
-#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
-#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-aarch64
+#cgo darwin,amd64 LDFLAGS: -L../lib/darwin-x86_64 -lindigo -Wl,-rpath,$ORIGIN/../lib/darwin-x86_64
+#cgo darwin,arm64 LDFLAGS: -L../lib/darwin-aarch64 -lindigo -Wl,-rpath,$ORIGIN/../lib/darwin-aarch64
 
 #include <stdlib.h>
 #include "indigo.h"
