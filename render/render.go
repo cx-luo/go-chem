@@ -9,19 +9,19 @@
 package render
 
 /*
-#cgo CFLAGS: -I../include
+#cgo CFLAGS: -I${SRCDIR}/../include
 
-// Windows platforms
-#cgo windows,amd64 LDFLAGS: -L../lib/windows-x86_64 -lindigo -lindigo-renderer
-#cgo windows,386 LDFLAGS: -L../lib/windows-i386 -lindigo -lindigo-renderer
+// Windows: link against import libraries (.lib)
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../lib/windows-x86_64 -lindigo -lindigo-inchi
+#cgo windows,386 LDFLAGS: -L${SRCDIR}/../lib/windows-i386 -lindigo -lindigo-inchi
 
-// Linux platforms
-#cgo linux,amd64 LDFLAGS: -L../lib/linux-x86_64 -lindigo -lindigo-renderer -Wl,-rpath,$ORIGIN/../lib/linux-x86_64
-#cgo linux,arm64 LDFLAGS: -L../lib/linux-aarch64 -lindigo -lindigo-renderer -Wl,-rpath,$ORIGIN/../lib/linux-aarch64
+// Linux: use $ORIGIN for runtime library search
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../lib/linux-x86_64 -lindigo -lindigo-inchi -Wl,-rpath='$ORIGIN/../lib/linux-x86_64'
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../lib/linux-aarch64 -lindigo -lindigo-inchi -Wl,-rpath='$ORIGIN/../lib/linux-aarch64'
 
-// macOS platforms
-#cgo darwin,amd64 LDFLAGS: -L../lib/darwin-x86_64 -lindigo -lindigo-renderer -Wl,-rpath,@loader_path/../lib/darwin-x86_64
-#cgo darwin,arm64 LDFLAGS: -L../lib/darwin-aarch64 -lindigo -lindigo-renderer -Wl,-rpath,@loader_path/../lib/darwin-aarch64
+// macOS: use @loader_path (not @executable_path) for shared libraries
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../lib/darwin-x86_64 -lindigo -lindigo-inchi -Wl,-rpath,'@loader_path/../lib/darwin-x86_64'
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../lib/darwin-aarch64 -lindigo -lindigo-inchi -Wl,-rpath,'@loader_path/../lib/darwin-aarch64'
 
 #include <stdlib.h>
 #include "indigo.h"
