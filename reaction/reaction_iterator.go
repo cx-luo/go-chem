@@ -9,6 +9,20 @@
 package reaction
 
 /*
+#cgo CFLAGS: -I${SRCDIR}/../3rd
+
+// Windows platforms
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../3rd/windows-x86_64 -lindigo
+#cgo windows,386 LDFLAGS: -L${SRCDIR}/../3rd/windows-i386 -lindigo
+
+// Linux platforms
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-x86_64
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/linux-aarch64
+
+// macOS platforms
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -Wl,-rpath,${SRCDIR}/../3rd/darwin-aarch64
+
 #include <stdlib.h>
 #include "indigo.h"
 */

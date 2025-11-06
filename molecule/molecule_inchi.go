@@ -16,12 +16,12 @@ package molecule
 #cgo windows,386 LDFLAGS: -L${SRCDIR}/../3rd/windows-i386 -lindigo -lindigo-inchi
 
 // Linux: use $ORIGIN for runtime library search
-#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -lindigo-inchi -Wl,-rpath='$ORIGIN/../3rd/linux-x86_64'
-#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -lindigo-inchi -Wl,-rpath='$ORIGIN/../3rd/linux-aarch64'
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/../3rd/linux-x86_64 -lindigo -lindigo-inchi -Wl,-rpath=${SRCDIR}/../3rd/linux-x86_64
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/../3rd/linux-aarch64 -lindigo -lindigo-inchi -Wl,-rpath=${SRCDIR}/../3rd/linux-aarch64
 
 // macOS: use @loader_path (not @executable_path) for shared libraries
-#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -lindigo-inchi -Wl,-rpath,'@loader_path/../3rd/darwin-x86_64'
-#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -lindigo-inchi -Wl,-rpath,'@loader_path/../3rd/darwin-aarch64'
+#cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-x86_64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/darwin-x86_64
+#cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/../3rd/darwin-aarch64 -lindigo -lindigo-inchi -Wl,-rpath,${SRCDIR}/../3rd/darwin-aarch64
 
 #include <stdlib.h>
 #include "indigo.h"
