@@ -16,6 +16,26 @@
 - 3D 坐标生成
 - 力场能量计算
 
+## [0.4.0] - 2025-11-06
+
+### 改进
+
+- **构建系统优化**:
+  - 统一跨平台 CGO 构建标志
+  - 优化 macOS 链接器路径和包含目录
+  - 改进第三方依赖结构组织
+- **代码重构**:
+  - 集中化 CGO 配置和对象创建逻辑
+  - 简化反应模块 API（移除 Normalize、Standardize 和 Ionize 方法）
+- **测试增强**:
+  - 改进分子模块 base64 字符串验证测试
+
+### 技术改进
+
+- 更好的跨平台兼容性（Windows/Linux/macOS）
+- 更清晰的 CGO 配置管理
+- 更稳定的构建流程
+
 ## [0.3.0] - 2025-11-04
 
 ### 新增
@@ -231,7 +251,8 @@ defer mol.Close()  // 必须关闭
 
 ---
 
-[Unreleased]: https://github.com/cx-luo/go-chem/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/cx-luo/go-chem/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/cx-luo/go-chem/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/cx-luo/go-chem/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cx-luo/go-chem/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cx-luo/go-chem/compare/v0.0.1...v0.1.0
