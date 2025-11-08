@@ -341,3 +341,13 @@ func newMolecule(handle int) *Molecule {
 	runtime.SetFinalizer(m, (*Molecule).Close)
 	return m
 }
+
+// NewMoleculeFromHandle creates a Molecule object from an existing Indigo handle
+// This is useful when getting molecule handles from reactions or other sources
+// Note: The molecule will take ownership of the handle and will free it on Close()
+func NewMoleculeFromHandle(handle int) (*Molecule, error) {
+	if handle < 0 {
+		return nil, fmt.Errorf("invalid handle: %d", handle)
+	}
+	return newMolecule(handle), nil
+}

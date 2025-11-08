@@ -6,6 +6,7 @@ Examples demonstrating chemical reaction manipulation using go-chem.
 
 - **reaction_basic.go** - Basic reaction operations (loading, counting molecules)
 - **reaction_formats.go** - Format conversion examples (RXN, SMILES, JSON, KET, CML, CDXML)
+- **reaction_molecules.go** - Accessing and manipulating individual molecules from reactions
 
 ## Running Examples
 
@@ -13,6 +14,7 @@ Examples demonstrating chemical reaction manipulation using go-chem.
 cd examples/reaction
 go run reaction_basic.go
 go run reaction_formats.go
+go run reaction_molecules.go
 ```
 
 ## Quick Start
@@ -43,6 +45,42 @@ catalysts, _ := rxn.CountCatalysts()
 
 fmt.Printf("Reactants: %d, Products: %d, Catalysts: %d\n", 
     reactants, products, catalysts)
+```
+
+### Accessing Individual Molecules
+
+```go
+// Get individual reactant as Molecule object
+mol, err := rxn.GetReactantMolecule(0)
+if err != nil {
+    log.Fatal(err)
+}
+defer mol.Close()
+
+// Now you can use all Molecule methods
+smiles, _ := mol.ToSmiles()
+formula, _ := mol.GrossFormula()
+mass, _ := mol.MolecularWeight()
+```
+
+### Batch Access to Molecules
+
+```go
+// Get all reactants at once
+reactants, err := rxn.GetAllReactants()
+if err != nil {
+    log.Fatal(err)
+}
+
+for i, mol := range reactants {
+    smiles, _ := mol.ToSmiles()
+    fmt.Printf("Reactant %d: %s\n", i, smiles)
+    mol.Close() // Don't forget to close!
+}
+
+// Similarly for products and catalysts
+products, _ := rxn.GetAllProducts()
+catalysts, _ := rxn.GetAllCatalysts()
 ```
 
 ### Format Conversion

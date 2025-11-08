@@ -29,6 +29,8 @@ package reaction
 import "C"
 import (
 	"fmt"
+
+	"github.com/cx-luo/go-chem/molecule"
 )
 
 // HasNext checks if an iterator has more items
@@ -191,4 +193,181 @@ func (r *Reaction) Dearomatize() error {
 	}
 
 	return nil
+}
+
+// GetReactantMolecule returns a reactant molecule as a Molecule object by index
+func (r *Reaction) GetReactantMolecule(index int) (*molecule.Molecule, error) {
+	handle, err := r.GetReactant(index)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the molecule to avoid issues with handle ownership
+	clonedHandle := int(C.indigoClone(C.int(handle)))
+	if clonedHandle < 0 {
+		return nil, fmt.Errorf("failed to clone reactant: %s", getLastError())
+	}
+
+	return molecule.NewMoleculeFromHandle(clonedHandle)
+}
+
+// GetProductMolecule returns a product molecule as a Molecule object by index
+func (r *Reaction) GetProductMolecule(index int) (*molecule.Molecule, error) {
+	handle, err := r.GetProduct(index)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the molecule to avoid issues with handle ownership
+	clonedHandle := int(C.indigoClone(C.int(handle)))
+	if clonedHandle < 0 {
+		return nil, fmt.Errorf("failed to clone product: %s", getLastError())
+	}
+
+	return molecule.NewMoleculeFromHandle(clonedHandle)
+}
+
+// GetCatalystMolecule returns a catalyst molecule as a Molecule object by index
+func (r *Reaction) GetCatalystMolecule(index int) (*molecule.Molecule, error) {
+	handle, err := r.GetCatalyst(index)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the molecule to avoid issues with handle ownership
+	clonedHandle := int(C.indigoClone(C.int(handle)))
+	if clonedHandle < 0 {
+		return nil, fmt.Errorf("failed to clone catalyst: %s", getLastError())
+	}
+
+	return molecule.NewMoleculeFromHandle(clonedHandle)
+}
+
+// GetAllReactants returns all reactant molecules as Molecule objects
+func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
+	if r.closed {
+		return nil, fmt.Errorf("reaction is closed")
+	}
+
+	count, err := r.CountReactants()
+	if err != nil {
+		return nil, err
+	}
+
+	reactants := make([]*molecule.Molecule, 0, count)
+
+	iterHandle := int(C.indigoIterateReactants(C.int(r.handle)))
+	if iterHandle < 0 {
+		return nil, fmt.Errorf("failed to iterate reactants: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(iterHandle))
+
+	for C.indigoHasNext(C.int(iterHandle)) != 0 {
+		molHandle := int(C.indigoNext(C.int(iterHandle)))
+		if molHandle < 0 {
+			continue
+		}
+
+		// Clone the molecule to avoid ownership issues
+		clonedHandle := int(C.indigoClone(C.int(molHandle)))
+		if clonedHandle < 0 {
+			continue
+		}
+
+		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		if err != nil {
+			C.indigoFree(C.int(clonedHandle))
+			continue
+		}
+
+		reactants = append(reactants, mol)
+	}
+
+	return reactants, nil
+}
+
+// GetAllProducts returns all product molecules as Molecule objects
+func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
+	if r.closed {
+		return nil, fmt.Errorf("reaction is closed")
+	}
+
+	count, err := r.CountProducts()
+	if err != nil {
+		return nil, err
+	}
+
+	products := make([]*molecule.Molecule, 0, count)
+
+	iterHandle := int(C.indigoIterateProducts(C.int(r.handle)))
+	if iterHandle < 0 {
+		return nil, fmt.Errorf("failed to iterate products: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(iterHandle))
+
+	for C.indigoHasNext(C.int(iterHandle)) != 0 {
+		molHandle := int(C.indigoNext(C.int(iterHandle)))
+		if molHandle < 0 {
+			continue
+		}
+
+		// Clone the molecule to avoid ownership issues
+		clonedHandle := int(C.indigoClone(C.int(molHandle)))
+		if clonedHandle < 0 {
+			continue
+		}
+
+		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		if err != nil {
+			C.indigoFree(C.int(clonedHandle))
+			continue
+		}
+
+		products = append(products, mol)
+	}
+
+	return products, nil
+}
+
+// GetAllCatalysts returns all catalyst molecules as Molecule objects
+func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
+	if r.closed {
+		return nil, fmt.Errorf("reaction is closed")
+	}
+
+	count, err := r.CountCatalysts()
+	if err != nil {
+		return nil, err
+	}
+
+	catalysts := make([]*molecule.Molecule, 0, count)
+
+	iterHandle := int(C.indigoIterateCatalysts(C.int(r.handle)))
+	if iterHandle < 0 {
+		return nil, fmt.Errorf("failed to iterate catalysts: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(iterHandle))
+
+	for C.indigoHasNext(C.int(iterHandle)) != 0 {
+		molHandle := int(C.indigoNext(C.int(iterHandle)))
+		if molHandle < 0 {
+			continue
+		}
+
+		// Clone the molecule to avoid ownership issues
+		clonedHandle := int(C.indigoClone(C.int(molHandle)))
+		if clonedHandle < 0 {
+			continue
+		}
+
+		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		if err != nil {
+			C.indigoFree(C.int(clonedHandle))
+			continue
+		}
+
+		catalysts = append(catalysts, mol)
+	}
+
+	return catalysts, nil
 }
