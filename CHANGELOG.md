@@ -16,6 +16,76 @@
 - 3D 坐标生成
 - 力场能量计算
 
+## [0.4.4] - 2025-11-08
+
+### 新增
+
+- **Reaction 包增强**:
+  - `GetReactantMolecule()` - 获取单个反应物分子
+  - `GetProductMolecule()` - 获取单个产物分子
+  - `GetCatalystMolecule()` - 获取单个催化剂分子
+  - `GetReactantMolecules()` - 批量获取所有反应物分子
+  - `GetProductMolecules()` - 批量获取所有产物分子
+  - `GetCatalystMolecules()` - 批量获取所有催化剂分子
+- **Molecule 包增强**:
+  - `NewMoleculeFromHandle()` - 从 Indigo 句柄创建分子对象
+
+### 文档
+
+- 新增反应分子访问文档 (docs/MOLECULE_ACCESS_IMPROVEMENTS.md)
+- 新增反应分子操作示例 (examples/reaction/reaction_molecules.go)
+- 完整的测试覆盖 (test/reaction/reaction_molecules_test.go)
+
+### 改进
+
+- 简化了反应中分子的访问方式
+- 提供了批量操作接口提升效率
+- 更好的文档和使用示例
+
+## [0.4.3] - 2025-11-08
+
+### 新增
+
+- **格式支持增强**:
+  - KET (Ketcher JSON) 格式支持
+  - ChemAxon CXSmiles 格式增强
+- **Molecule 包新增文件**:
+  - molecule_atom.go: 20+ 原子/键操作方法
+  - molecule_match.go: 模式匹配和高亮显示
+- **Reaction 包辅助方法**:
+  - reaction_helpers.go: 迭代器和布局辅助方法
+
+### 改进
+
+- 修复 SDF 保存实现
+- 重组示例和测试结构
+- 增强文档覆盖
+- 改进 .gitignore 管理
+
+### API 新增
+
+- 原子和键操作方法
+- 子结构匹配功能
+- 反应迭代器辅助方法
+- 分子和反应的 KET 格式方法
+
+## [0.4.2] - 2025-11-08
+
+### 新增
+
+- **分子操作增强**:
+  - 原子操作和键操作方法
+  - 子结构匹配能力
+- **格式转换增强**:
+  - 扩展格式转换功能
+  - 更多输出格式支持
+
+### 改进
+
+- 代码组织优化
+- 示例代码重组
+- 测试覆盖增强
+
 ## [0.4.0] - 2025-11-06
 
 ### 改进
@@ -251,7 +321,10 @@ defer mol.Close()  // 必须关闭
 
 ---
 
-[Unreleased]: https://github.com/cx-luo/go-chem/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/cx-luo/go-chem/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/cx-luo/go-chem/compare/v0.4.3...v0.4.4
+[0.4.3]: https://github.com/cx-luo/go-chem/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/cx-luo/go-chem/compare/v0.4.0...v0.4.2
 [0.4.0]: https://github.com/cx-luo/go-chem/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/cx-luo/go-chem/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cx-luo/go-chem/compare/v0.1.0...v0.2.0
