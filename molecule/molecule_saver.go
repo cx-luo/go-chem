@@ -192,3 +192,433 @@ func (m *Molecule) ToBase64String() (string, error) {
 
 	return C.GoString(cStr), nil
 }
+
+// ToCXSmiles converts the molecule to ChemAxon Extended SMILES format
+func (m *Molecule) ToCXSmiles() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// Set the SMILES saving format to chemaxon
+	cOption := C.CString("smiles-saving-format")
+	cValue := C.CString("chemaxon")
+	cDefaultValue := C.CString("daylight")
+	defer C.free(unsafe.Pointer(cOption))
+	defer C.free(unsafe.Pointer(cValue))
+	defer C.free(unsafe.Pointer(cDefaultValue))
+
+	ret := int(C.indigoSetOption(cOption, cValue))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to set chemaxon format: %s", getLastError())
+	}
+
+	// Reset to default after getting the SMILES
+	defer C.indigoSetOption(cOption, cDefaultValue)
+
+	cStr := C.indigoSmiles(C.int(m.handle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert to CXSmiles: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// ToCanonicalCXSmiles converts the molecule to canonical ChemAxon Extended SMILES format
+// Note: According to Indigo API, canonical SMILES already includes ChemAxon extensions
+func (m *Molecule) ToCanonicalCXSmiles() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// For canonical CXSMILES, we use canonicalSmiles directly
+	// The canonical SMILES in Indigo automatically includes ChemAxon extensions
+	cStr := C.indigoCanonicalSmiles(C.int(m.handle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert to canonical CXSmiles: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// ToCML converts the molecule to CML (Chemical Markup Language) format
+func (m *Molecule) ToCML() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	cStr := C.indigoCml(C.int(m.handle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert to CML: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// ToCDXML converts the molecule to CDXML format
+func (m *Molecule) ToCDXML() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	cStr := C.indigoCdxml(C.int(m.handle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert to CDXML: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// ToCDXBase64 converts the molecule to base64-encoded CDX format
+func (m *Molecule) ToCDXBase64() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// Create a buffer for CDX
+	bufferHandle := int(C.indigoWriteBuffer())
+	if bufferHandle < 0 {
+		return "", fmt.Errorf("failed to create buffer: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(bufferHandle))
+
+	// Save as CDX
+	ret := int(C.indigoSaveCdx(C.int(m.handle), C.int(bufferHandle)))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to save as CDX: %s", getLastError())
+	}
+
+	// Convert to base64
+	cStr := C.indigoToBase64String(C.int(bufferHandle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert CDX to base64: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// SaveToSDF saves the molecule components to an SDF file
+func (m *Molecule) SaveToSDF(filename string) error {
+	if m.closed {
+		return fmt.Errorf("molecule is closed")
+	}
+
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	// Create a file output
+	outputHandle := int(C.indigoWriteFile(cFilename))
+	if outputHandle < 0 {
+		return fmt.Errorf("failed to create output file: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(outputHandle))
+
+	// Create SDF saver
+	cFormat := C.CString("sdf")
+	defer C.free(unsafe.Pointer(cFormat))
+
+	saverHandle := int(C.indigoCreateSaver(C.int(outputHandle), cFormat))
+	if saverHandle < 0 {
+		return fmt.Errorf("failed to create SDF saver: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(saverHandle))
+
+	// Iterate through components and save each
+	iterHandle := int(C.indigoIterateComponents(C.int(m.handle)))
+	if iterHandle < 0 {
+		return fmt.Errorf("failed to iterate components: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(iterHandle))
+
+	for C.indigoHasNext(C.int(iterHandle)) != 0 {
+		compHandle := int(C.indigoNext(C.int(iterHandle)))
+		if compHandle < 0 {
+			return fmt.Errorf("failed to get next component: %s", getLastError())
+		}
+
+		cloneHandle := int(C.indigoClone(C.int(compHandle)))
+		if cloneHandle < 0 {
+			return fmt.Errorf("failed to clone component: %s", getLastError())
+		}
+
+		// Use indigoAppend instead of indigoSdfAppend (following Python API pattern)
+		ret := int(C.indigoAppend(C.int(saverHandle), C.int(cloneHandle)))
+		C.indigoFree(C.int(cloneHandle))
+		if ret < 0 {
+			return fmt.Errorf("failed to append to SDF: %s", getLastError())
+		}
+	}
+
+	// Close the saver
+	ret := int(C.indigoClose(C.int(saverHandle)))
+	if ret < 0 {
+		return fmt.Errorf("failed to close SDF saver: %s", getLastError())
+	}
+
+	return nil
+}
+
+// ToSDF converts the molecule to SDF format string
+func (m *Molecule) ToSDF() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// Create a buffer for SDF
+	bufferHandle := int(C.indigoWriteBuffer())
+	if bufferHandle < 0 {
+		return "", fmt.Errorf("failed to create buffer: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(bufferHandle))
+
+	// Create SDF saver
+	cFormat := C.CString("sdf")
+	defer C.free(unsafe.Pointer(cFormat))
+
+	saverHandle := int(C.indigoCreateSaver(C.int(bufferHandle), cFormat))
+	if saverHandle < 0 {
+		return "", fmt.Errorf("failed to create SDF saver: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(saverHandle))
+
+	// Iterate through components and save each
+	iterHandle := int(C.indigoIterateComponents(C.int(m.handle)))
+	if iterHandle < 0 {
+		return "", fmt.Errorf("failed to iterate components: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(iterHandle))
+
+	for C.indigoHasNext(C.int(iterHandle)) != 0 {
+		compHandle := int(C.indigoNext(C.int(iterHandle)))
+		if compHandle < 0 {
+			return "", fmt.Errorf("failed to get next component: %s", getLastError())
+		}
+
+		cloneHandle := int(C.indigoClone(C.int(compHandle)))
+		if cloneHandle < 0 {
+			return "", fmt.Errorf("failed to clone component: %s", getLastError())
+		}
+
+		// Use indigoAppend instead of indigoSdfAppend (following Python API pattern)
+		ret := int(C.indigoAppend(C.int(saverHandle), C.int(cloneHandle)))
+		C.indigoFree(C.int(cloneHandle))
+		if ret < 0 {
+			return "", fmt.Errorf("failed to append to SDF: %s", getLastError())
+		}
+	}
+
+	// Close the saver
+	ret := int(C.indigoClose(C.int(saverHandle)))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to close SDF saver: %s", getLastError())
+	}
+
+	// Get the string
+	cStr := C.indigoToString(C.int(bufferHandle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to get SDF string: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// SaveToCMLFile saves the molecule to a file in CML format
+func (m *Molecule) SaveToCMLFile(filename string) error {
+	if m.closed {
+		return fmt.Errorf("molecule is closed")
+	}
+
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	ret := int(C.indigoSaveCmlToFile(C.int(m.handle), cFilename))
+	if ret < 0 {
+		return fmt.Errorf("failed to save to CML file %s: %s", filename, getLastError())
+	}
+
+	return nil
+}
+
+// SaveToCDXMLFile saves the molecule to a file in CDXML format
+func (m *Molecule) SaveToCDXMLFile(filename string) error {
+	if m.closed {
+		return fmt.Errorf("molecule is closed")
+	}
+
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	ret := int(C.indigoSaveCdxmlToFile(C.int(m.handle), cFilename))
+	if ret < 0 {
+		return fmt.Errorf("failed to save to CDXML file %s: %s", filename, getLastError())
+	}
+
+	return nil
+}
+
+// SaveToCDXFile saves the molecule to a file in CDX format
+func (m *Molecule) SaveToCDXFile(filename string) error {
+	if m.closed {
+		return fmt.Errorf("molecule is closed")
+	}
+
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	ret := int(C.indigoSaveCdxToFile(C.int(m.handle), cFilename))
+	if ret < 0 {
+		return fmt.Errorf("failed to save to CDX file %s: %s", filename, getLastError())
+	}
+
+	return nil
+}
+
+// ToDaylightSmiles converts the molecule to Daylight SMILES format
+// This explicitly uses the Daylight format (as opposed to ChemAxon)
+func (m *Molecule) ToDaylightSmiles() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// Explicitly set Daylight format
+	cOption := C.CString("smiles-saving-format")
+	cValue := C.CString("daylight")
+	defer C.free(unsafe.Pointer(cOption))
+	defer C.free(unsafe.Pointer(cValue))
+
+	ret := int(C.indigoSetOption(cOption, cValue))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to set daylight format: %s", getLastError())
+	}
+
+	cStr := C.indigoSmiles(C.int(m.handle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to convert to Daylight SMILES: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// ToRDF converts the molecule to RDF (Reaction Data Format) format string
+// Note: This is typically used for reactions, but can work with molecules
+func (m *Molecule) ToRDF() (string, error) {
+	if m.closed {
+		return "", fmt.Errorf("molecule is closed")
+	}
+
+	// Create a buffer for RDF
+	bufferHandle := int(C.indigoWriteBuffer())
+	if bufferHandle < 0 {
+		return "", fmt.Errorf("failed to create buffer: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(bufferHandle))
+
+	// Create RDF saver
+	cFormat := C.CString("rdf")
+	defer C.free(unsafe.Pointer(cFormat))
+
+	saverHandle := int(C.indigoCreateSaver(C.int(bufferHandle), cFormat))
+	if saverHandle < 0 {
+		return "", fmt.Errorf("failed to create RDF saver: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(saverHandle))
+
+	// Append the molecule
+	ret := int(C.indigoAppend(C.int(saverHandle), C.int(m.handle)))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to append to RDF: %s", getLastError())
+	}
+
+	// Close the saver
+	ret = int(C.indigoClose(C.int(saverHandle)))
+	if ret < 0 {
+		return "", fmt.Errorf("failed to close RDF saver: %s", getLastError())
+	}
+
+	// Get the string
+	cStr := C.indigoToString(C.int(bufferHandle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to get RDF string: %s", getLastError())
+	}
+
+	return C.GoString(cStr), nil
+}
+
+// SaveToRDFFile saves the molecule to a file in RDF format
+func (m *Molecule) SaveToRDFFile(filename string) error {
+	if m.closed {
+		return fmt.Errorf("molecule is closed")
+	}
+
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	// Create a file output
+	outputHandle := int(C.indigoWriteFile(cFilename))
+	if outputHandle < 0 {
+		return fmt.Errorf("failed to create output file: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(outputHandle))
+
+	// Create RDF saver
+	cFormat := C.CString("rdf")
+	defer C.free(unsafe.Pointer(cFormat))
+
+	saverHandle := int(C.indigoCreateSaver(C.int(outputHandle), cFormat))
+	if saverHandle < 0 {
+		return fmt.Errorf("failed to create RDF saver: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(saverHandle))
+
+	// Append the molecule
+	ret := int(C.indigoAppend(C.int(saverHandle), C.int(m.handle)))
+	if ret < 0 {
+		return fmt.Errorf("failed to append to RDF: %s", getLastError())
+	}
+
+	// Close the saver
+	ret = int(C.indigoClose(C.int(saverHandle)))
+	if ret < 0 {
+		return fmt.Errorf("failed to close RDF saver: %s", getLastError())
+	}
+
+	return nil
+}
+
+// ToBuffer converts the molecule to a binary buffer
+func (m *Molecule) ToBuffer() ([]byte, error) {
+	if m.closed {
+		return nil, fmt.Errorf("molecule is closed")
+	}
+
+	// Create a buffer
+	bufferHandle := int(C.indigoWriteBuffer())
+	if bufferHandle < 0 {
+		return nil, fmt.Errorf("failed to create buffer: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(bufferHandle))
+
+	// Save molecule to buffer
+	ret := int(C.indigoSaveMolfile(C.int(m.handle), C.int(bufferHandle)))
+	if ret < 0 {
+		return nil, fmt.Errorf("failed to save to buffer: %s", getLastError())
+	}
+
+	// Get the buffer content
+	cStr := C.indigoToString(C.int(bufferHandle))
+	if cStr == nil {
+		return nil, fmt.Errorf("failed to get buffer content: %s", getLastError())
+	}
+
+	return []byte(C.GoString(cStr)), nil
+}
+
+// ToKet converts the molecule to KET (Ketcher JSON) format
+// KET format is the JSON format used by Ketcher editor
+func (m *Molecule) ToKet() (string, error) {
+	return m.ToJSON()
+}
+
+// SaveToKetFile saves the molecule to a file in KET (Ketcher JSON) format
+func (m *Molecule) SaveToKetFile(filename string) error {
+	return m.SaveToJSONFile(filename)
+}
