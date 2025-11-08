@@ -218,8 +218,8 @@ func TestMergeMolecules(t *testing.T) {
 	}
 }
 
-// TestSetCharge tests setting atom charge
-func TestSetCharge(t *testing.T) {
+// TestBuilderSetCharge tests setting atom charge during building
+func TestBuilderSetCharge(t *testing.T) {
 	m, _ := molecule.CreateMolecule()
 	defer m.Close()
 
@@ -232,8 +232,8 @@ func TestSetCharge(t *testing.T) {
 	}
 }
 
-// TestSetIsotope tests setting isotope
-func TestSetIsotope(t *testing.T) {
+// TestBuilderSetIsotope tests setting isotope during building
+func TestBuilderSetIsotope(t *testing.T) {
 	m, _ := molecule.CreateMolecule()
 	defer m.Close()
 

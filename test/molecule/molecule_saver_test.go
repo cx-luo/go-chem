@@ -1,7 +1,14 @@
+// Package molecule_test provides tests for enhanced molecule saving functionality
+// coding=utf-8
+// @Project : go-chem
+// @Time    : 2025/11/08
+// @Author  : chengxiang.luo
+// @Email   : chengxiang.luo@foxmail.com
+// @File    : molecule_saver_enhanced_test.go
+// @Software: GoLand
 package molecule_test
 
 import (
-	"encoding/base64"
 	"os"
 	"strings"
 	"testing"
@@ -9,353 +16,378 @@ import (
 	"github.com/cx-luo/go-chem/molecule"
 )
 
-// TestToSmiles tests converting molecule to SMILES
-func TestToSmiles(t *testing.T) {
-	tests := []struct {
-		name   string
-		smiles string
-	}{
-		{"Ethanol", "CCO"},
-		{"Benzene", "c1ccccc1"},
-		{"Acetic acid", "CC(=O)O"},
+// Test ChemAxon CXSMILES format
+func TestToCXSmiles(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	cxsmiles, err := mol.ToCXSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to CXSmiles: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
-			if err != nil {
-				t.Fatalf("failed to load molecule: %v", err)
-			}
-			defer m.Close()
+	if cxsmiles == "" {
+		t.Error("CXSmiles is empty")
+	}
 
-			smiles, err := m.ToSmiles()
+	t.Logf("CXSmiles: %s", cxsmiles)
+}
+
+// Test Canonical ChemAxon CXSMILES format
+func TestToCanonicalCXSmiles(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	cxsmiles, err := mol.ToCanonicalCXSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to canonical CXSmiles: %v", err)
+	}
+
+	if cxsmiles == "" {
+		t.Error("Canonical CXSmiles is empty")
+	}
+
+	t.Logf("Canonical CXSmiles: %s", cxsmiles)
+}
+
+// Test Daylight SMILES format
+func TestToDaylightSmiles(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	smiles, err := mol.ToDaylightSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to Daylight SMILES: %v", err)
+	}
+
+	if smiles == "" {
+		t.Error("Daylight SMILES is empty")
+	}
+
+	t.Logf("Daylight SMILES: %s", smiles)
+}
+
+// Test CML file saving
+func TestSaveToCMLFile(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	filename := "test_ethanol.cml"
+	defer os.Remove(filename)
+
+	err = mol.SaveToCMLFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to CML file: %v", err)
+	}
+
+	// Check if file exists and has content
+	info, err := os.Stat(filename)
+	if err != nil {
+		t.Fatalf("Failed to stat file: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("CML file is empty")
+	}
+
+	t.Logf("CML file size: %d bytes", info.Size())
+}
+
+// Test CDXML file saving
+func TestSaveToCDXMLFile(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	filename := "test_ethanol.cdxml"
+	defer os.Remove(filename)
+
+	err = mol.SaveToCDXMLFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to CDXML file: %v", err)
+	}
+
+	// Check if file exists and has content
+	info, err := os.Stat(filename)
+	if err != nil {
+		t.Fatalf("Failed to stat file: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("CDXML file is empty")
+	}
+
+	t.Logf("CDXML file size: %d bytes", info.Size())
+}
+
+// Test CDX file saving
+func TestSaveToCDXFile(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	filename := "test_ethanol.cdx"
+	defer os.Remove(filename)
+
+	err = mol.SaveToCDXFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to CDX file: %v", err)
+	}
+
+	// Check if file exists and has content
+	info, err := os.Stat(filename)
+	if err != nil {
+		t.Fatalf("Failed to stat file: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("CDX file is empty")
+	}
+
+	t.Logf("CDX file size: %d bytes", info.Size())
+}
+
+// Test RDF format conversion
+func TestToRDF(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	rdf, err := mol.ToRDF()
+	if err != nil {
+		t.Fatalf("Failed to convert to RDF: %v", err)
+	}
+
+	if rdf == "" {
+		t.Error("RDF is empty")
+	}
+
+	if !strings.Contains(rdf, "$RDFILE") && !strings.Contains(rdf, "$RXN") {
+		t.Logf("Warning: RDF format may not be standard (first 100 chars): %s", rdf[:min(100, len(rdf))])
+	}
+
+	t.Logf("RDF length: %d bytes", len(rdf))
+}
+
+// Test RDF file saving
+func TestSaveToRDFFile(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	filename := "test_ethanol.rdf"
+	defer os.Remove(filename)
+
+	err = mol.SaveToRDFFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to RDF file: %v", err)
+	}
+
+	// Check if file exists and has content
+	info, err := os.Stat(filename)
+	if err != nil {
+		t.Fatalf("Failed to stat file: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("RDF file is empty")
+	}
+
+	t.Logf("RDF file size: %d bytes", info.Size())
+}
+
+// Test buffer conversion
+func TestToBuffer(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	buffer, err := mol.ToBuffer()
+	if err != nil {
+		t.Fatalf("Failed to convert to buffer: %v", err)
+	}
+
+	if len(buffer) == 0 {
+		t.Error("Buffer is empty")
+	}
+
+	// Buffer should contain MOL format data
+	bufferStr := string(buffer)
+	if !strings.Contains(bufferStr, "V2000") && !strings.Contains(bufferStr, "V3000") {
+		t.Errorf("Buffer doesn't seem to contain valid MOL format")
+	}
+
+	t.Logf("Buffer size: %d bytes", len(buffer))
+}
+
+// Test KET format conversion
+func TestToKet(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	ket, err := mol.ToKet()
+	if err != nil {
+		t.Fatalf("Failed to convert to KET: %v", err)
+	}
+
+	if ket == "" {
+		t.Error("KET is empty")
+	}
+
+	// KET should contain JSON structure
+	if !strings.Contains(ket, "{") || !strings.Contains(ket, "}") {
+		t.Error("KET doesn't contain valid JSON structure")
+	}
+
+	t.Logf("KET length: %d bytes", len(ket))
+}
+
+// Test KET file saving
+func TestSaveToKetFile(t *testing.T) {
+	mol, err := molecule.LoadMoleculeFromString("CCO")
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	filename := "test_ethanol.ket"
+	defer os.Remove(filename)
+
+	err = mol.SaveToKetFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to KET file: %v", err)
+	}
+
+	// Check if file exists and has content
+	info, err := os.Stat(filename)
+	if err != nil {
+		t.Fatalf("Failed to stat file: %v", err)
+	}
+
+	if info.Size() == 0 {
+		t.Error("KET file is empty")
+	}
+
+	t.Logf("KET file size: %d bytes", info.Size())
+}
+
+// Test CXSmiles with complex molecule
+func TestCXSmilesWithComplexMolecule(t *testing.T) {
+	// Aspirin with stereochemistry
+	smilesInput := "CC(=O)Oc1ccccc1C(=O)O"
+
+	mol, err := molecule.LoadMoleculeFromString(smilesInput)
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
+	}
+	defer mol.Close()
+
+	// Test regular SMILES
+	smiles, err := mol.ToSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to SMILES: %v", err)
+	}
+	t.Logf("SMILES: %s", smiles)
+
+	// Test canonical SMILES
+	canonicalSmiles, err := mol.ToCanonicalSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to canonical SMILES: %v", err)
+	}
+	t.Logf("Canonical SMILES: %s", canonicalSmiles)
+
+	// Test CXSmiles
+	cxsmiles, err := mol.ToCXSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to CXSmiles: %v", err)
+	}
+	t.Logf("CXSmiles: %s", cxsmiles)
+
+	// Test canonical CXSmiles
+	canonicalCXSmiles, err := mol.ToCanonicalCXSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to canonical CXSmiles: %v", err)
+	}
+	t.Logf("Canonical CXSmiles: %s", canonicalCXSmiles)
+
+	// Test Daylight SMILES
+	daylightSmiles, err := mol.ToDaylightSmiles()
+	if err != nil {
+		t.Fatalf("Failed to convert to Daylight SMILES: %v", err)
+	}
+	t.Logf("Daylight SMILES: %s", daylightSmiles)
+}
+
+// Test format consistency
+func TestFormatConsistency(t *testing.T) {
+	testCases := []string{
+		"CCO",      // Ethanol
+		"c1ccccc1", // Benzene
+		"CC(C)C",   // Isobutane
+		"CC(=O)O",  // Acetic acid
+		"C1CCCCC1", // Cyclohexane
+	}
+
+	for _, smiles := range testCases {
+		t.Run(smiles, func(t *testing.T) {
+			mol, err := molecule.LoadMoleculeFromString(smiles)
 			if err != nil {
-				t.Errorf("failed to convert to SMILES: %v", err)
+				t.Fatalf("Failed to load molecule %s: %v", smiles, err)
+			}
+			defer mol.Close()
+
+			// Test all SMILES variants
+			formats := map[string]func() (string, error){
+				"SMILES":       mol.ToSmiles,
+				"Canonical":    mol.ToCanonicalSmiles,
+				"CXSmiles":     mol.ToCXSmiles,
+				"Canonical CX": mol.ToCanonicalCXSmiles,
+				"Daylight":     mol.ToDaylightSmiles,
 			}
 
-			if smiles == "" {
-				t.Error("expected non-empty SMILES string")
+			for name, fn := range formats {
+				result, err := fn()
+				if err != nil {
+					t.Errorf("Failed to convert to %s: %v", name, err)
+					continue
+				}
+				if result == "" {
+					t.Errorf("%s is empty", name)
+				}
 			}
 		})
 	}
 }
 
-// TestToCanonicalSmiles tests converting molecule to canonical SMILES
-func TestToCanonicalSmiles(t *testing.T) {
-	// Load the same molecule from different SMILES representations
-	smiles1 := "CCO"
-	smiles2 := "OCC"
-
-	m1, _ := molecule.LoadMoleculeFromString(smiles1)
-	defer m1.Close()
-
-	m2, _ := molecule.LoadMoleculeFromString(smiles2)
-	defer m2.Close()
-
-	// Get canonical SMILES
-	canon1, err := m1.ToCanonicalSmiles()
-	if err != nil {
-		t.Errorf("failed to get canonical SMILES: %v", err)
+// Helper function
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-
-	canon2, err := m2.ToCanonicalSmiles()
-	if err != nil {
-		t.Errorf("failed to get canonical SMILES: %v", err)
-	}
-
-	// Both should have the same canonical SMILES
-	if canon1 != canon2 {
-		t.Errorf("canonical SMILES differ: %s vs %s", canon1, canon2)
-	}
-}
-
-// TestToMolfile tests converting molecule to MOL format
-func TestToMolfile(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	molfile, err := m.ToMolfile()
-	if err != nil {
-		t.Errorf("failed to convert to MOL: %v", err)
-	}
-
-	if molfile == "" {
-		t.Error("expected non-empty MOL file string")
-	}
-
-	// Should contain basic MOL file structure
-	if !strings.Contains(molfile, "V2000") && !strings.Contains(molfile, "V3000") {
-		t.Error("MOL file should contain version marker")
-	}
-
-	if !strings.Contains(molfile, "M  END") {
-		t.Error("MOL file should contain M  END marker")
-	}
-}
-
-// TestSaveToFile tests saving molecule to a file
-func TestSaveToFile(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	// Create a temporary file
-	tmpFile, err := os.CreateTemp("", "test_molecule_*.mol")
-	if err != nil {
-		t.Fatalf("failed to create temp file: %v", err)
-	}
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
-
-	// Save to file
-	err = m.SaveToFile(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("failed to save to file: %v", err)
-	}
-
-	// Verify file exists and has content
-	info, err := os.Stat(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("saved file does not exist: %v", err)
-	}
-
-	if info.Size() == 0 {
-		t.Error("saved file is empty")
-	}
-
-	// Try to load the saved file
-	m2, err := molecule.LoadMoleculeFromFile(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("failed to load saved molecule: %v", err)
-	}
-	defer m2.Close()
-
-	// Verify atom counts match
-	count1, _ := m.CountAtoms()
-	count2, _ := m2.CountAtoms()
-	if count1 != count2 {
-		t.Errorf("atom count mismatch: original=%d, loaded=%d", count1, count2)
-	}
-}
-
-// TestSaveLoadRoundtrip tests saving and loading a molecule
-func TestSaveLoadRoundtrip(t *testing.T) {
-	// Load a molecule
-	m, err := molecule.LoadMoleculeFromString("c1ccccc1")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	// Get original properties
-	origAtoms, _ := m.CountAtoms()
-	origBonds, _ := m.CountBonds()
-
-	// Save to file
-	tmpFile, err := os.CreateTemp("", "test_molecule_*.mol")
-	if err != nil {
-		t.Fatalf("failed to create temp file: %v", err)
-	}
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
-
-	err = m.SaveToFile(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("failed to save to file: %v", err)
-	}
-
-	// Load from file
-	m2, err := molecule.LoadMoleculeFromFile(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("failed to load from file: %v", err)
-	}
-	defer m2.Close()
-
-	// Verify properties
-	loadedAtoms, _ := m2.CountAtoms()
-	loadedBonds, _ := m2.CountBonds()
-
-	if origAtoms != loadedAtoms {
-		t.Errorf("atom count mismatch: original=%d, loaded=%d", origAtoms, loadedAtoms)
-	}
-
-	if origBonds != loadedBonds {
-		t.Errorf("bond count mismatch: original=%d, loaded=%d", origBonds, loadedBonds)
-	}
-}
-
-// TestToJSON tests converting molecule to JSON
-func TestToJSON(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	json, err := m.ToJSON()
-	if err != nil {
-		t.Errorf("failed to convert to JSON: %v", err)
-	}
-
-	if json == "" {
-		t.Error("expected non-empty JSON string")
-	}
-
-	// Should contain JSON structure markers
-	if !strings.Contains(json, "{") {
-		t.Error("JSON should contain opening brace")
-	}
-}
-
-// TestSaveToJSONFile tests saving molecule to JSON file
-func TestSaveToJSONFile(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	// Create a temporary file
-	tmpFile, err := os.CreateTemp("", "test_molecule_*.json")
-	if err != nil {
-		t.Fatalf("failed to create temp file: %v", err)
-	}
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
-
-	// Save to JSON file
-	err = m.SaveToJSONFile(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("failed to save to JSON file: %v", err)
-	}
-
-	// Verify file exists and has content
-	info, err := os.Stat(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("saved JSON file does not exist: %v", err)
-	}
-
-	if info.Size() == 0 {
-		t.Error("saved JSON file is empty")
-	}
-}
-
-// TestToBase64String tests converting molecule to base64
-func TestToBase64String(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	base64Str, err := m.ToBase64String()
-	if err != nil {
-		t.Fatalf("failed to convert to base64: %v", err)
-	}
-
-	if len(base64Str) == 0 {
-		t.Error("expected non-empty base64 string")
-	}
-
-	// Check valid base64
-	decoded, err := base64.StdEncoding.DecodeString(base64Str)
-	if err != nil {
-		t.Errorf("resulting string is not valid base64: %v", err)
-	}
-	if len(decoded) == 0 {
-		t.Error("decoded base64 result is empty")
-	}
-}
-
-// TestSaveClosedMolecule tests that saving fails on closed molecule
-func TestSaveClosedMolecule(t *testing.T) {
-	m, _ := molecule.LoadMoleculeFromString("CCO")
-	m.Close()
-
-	// All save methods should return errors
-	_, err := m.ToSmiles()
-	if err == nil {
-		t.Error("expected error when converting closed molecule to SMILES")
-	}
-
-	_, err = m.ToMolfile()
-	if err == nil {
-		t.Error("expected error when converting closed molecule to MOL")
-	}
-
-	err = m.SaveToFile("test.mol")
-	if err == nil {
-		t.Error("expected error when saving closed molecule")
-	}
-}
-
-// TestSmilesRoundtrip tests SMILES conversion roundtrip
-func TestSmilesRoundtrip(t *testing.T) {
-	// Load a molecule
-	m, err := molecule.LoadMoleculeFromString("c1ccccc1")
-	if err != nil {
-		t.Fatalf("failed to load molecule: %v", err)
-	}
-	defer m.Close()
-
-	// Convert to SMILES
-	smiles, err := m.ToSmiles()
-	if err != nil {
-		t.Fatalf("failed to convert to SMILES: %v", err)
-	}
-
-	// Load from SMILES
-	m2, err := molecule.LoadMoleculeFromString(smiles)
-	if err != nil {
-		t.Fatalf("failed to load from SMILES: %v", err)
-	}
-	defer m2.Close()
-
-	// Verify counts
-	count1, _ := m.CountAtoms()
-	count2, _ := m2.CountAtoms()
-	if count1 != count2 {
-		t.Errorf("atom count mismatch after SMILES roundtrip: original=%d, reloaded=%d", count1, count2)
-	}
-}
-
-// TestToSmarts tests converting molecule to SMARTS
-func TestToSmarts(t *testing.T) {
-	m, err := molecule.LoadSmartsFromString("[OH]")
-	if err != nil {
-		t.Fatalf("failed to load SMARTS: %v", err)
-	}
-	defer m.Close()
-
-	smarts, err := m.ToSmarts()
-	if err != nil {
-		t.Errorf("failed to convert to SMARTS: %v", err)
-	}
-
-	if smarts == "" {
-		t.Error("expected non-empty SMARTS string")
-	}
-}
-
-// TestToCanonicalSmarts tests converting molecule to canonical SMARTS
-func TestToCanonicalSmarts(t *testing.T) {
-	m, err := molecule.LoadSmartsFromString("[OH]")
-	if err != nil {
-		t.Fatalf("failed to load SMARTS: %v", err)
-	}
-	defer m.Close()
-
-	smarts, err := m.ToCanonicalSmarts()
-	if err != nil {
-		t.Errorf("failed to convert to canonical SMARTS: %v", err)
-	}
-
-	if smarts == "" {
-		t.Error("expected non-empty canonical SMARTS string")
-	}
+	return b
 }

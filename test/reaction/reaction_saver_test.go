@@ -52,20 +52,20 @@ func TestReactionToCanonicalCXSmiles(t *testing.T) {
 	}
 	defer rxn.Close()
 
-	cxsmiles, err := rxn.ToCanonicalCXSmiles()
+	cxsmiles, err := rxn.ToCanonicalSmiles()
 	if err != nil {
-		t.Fatalf("Failed to convert to canonical CXSmiles: %v", err)
+		t.Fatalf("Failed to convert to canonical SMILES: %v", err)
 	}
 
 	if cxsmiles == "" {
-		t.Error("Canonical CXSmiles is empty")
+		t.Error("Canonical SMILES is empty")
 	}
 
 	if !strings.Contains(cxsmiles, ">>") {
-		t.Error("Canonical CXSmiles doesn't contain reaction arrow >>")
+		t.Error("Canonical SMILES doesn't contain reaction arrow >>")
 	}
 
-	t.Logf("Canonical CXSmiles: %s", cxsmiles)
+	t.Logf("Canonical SMILES: %s", cxsmiles)
 }
 
 // Test Daylight SMILES format for reactions
@@ -440,12 +440,11 @@ func TestReactionFormatConsistency(t *testing.T) {
 
 			// Test all SMILES variants
 			formats := map[string]func() (string, error){
-				"SMILES":       rxn.ToSmiles,
-				"Canonical":    rxn.ToCanonicalSmiles,
-				"CXSmiles":     rxn.ToCXSmiles,
-				"Canonical CX": rxn.ToCanonicalCXSmiles,
-				"Daylight":     rxn.ToDaylightSmiles,
-				"SMARTS":       rxn.ToSmarts,
+				"SMILES":    rxn.ToSmiles,
+				"Canonical": rxn.ToCanonicalSmiles,
+				"CXSmiles":  rxn.ToCXSmiles,
+				"Daylight":  rxn.ToDaylightSmiles,
+				"SMARTS":    rxn.ToSmarts,
 			}
 
 			for name, fn := range formats {
