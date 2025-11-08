@@ -371,20 +371,6 @@ func (r *Reaction) SaveToJSONFile(filename string) error {
 	return nil
 }
 
-// ToBase64String converts the reaction to base64 string
-func (r *Reaction) ToBase64String() (string, error) {
-	if r.closed {
-		return "", fmt.Errorf("reaction is closed")
-	}
-
-	cStr := C.indigoToBase64String(C.int(r.handle))
-	if cStr == nil {
-		return "", fmt.Errorf("failed to convert reaction to base64: %s", getLastError())
-	}
-
-	return C.GoString(cStr), nil
-}
-
 // ToRDF converts the reaction to RDF (Reaction Data Format) format string
 func (r *Reaction) ToRDF() (string, error) {
 	if r.closed {

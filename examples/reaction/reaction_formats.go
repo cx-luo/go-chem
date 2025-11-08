@@ -130,14 +130,6 @@ func main() {
 		fmt.Printf("KET Error: %v\n", err)
 	}
 
-	// 13. Base64 String
-	fmt.Println("\n--- Base64 String ---")
-	if result, err := rxn.ToBase64String(); err == nil {
-		fmt.Printf("Base64 (first 100 chars): %s...\n", truncate(result, 100))
-	} else {
-		fmt.Printf("Base64 Error: %v\n", err)
-	}
-
 	// 14. RDF Format
 	fmt.Println("\n--- RDF Format ---")
 	if result, err := rxn.ToRDF(); err == nil {
