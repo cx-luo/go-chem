@@ -102,6 +102,11 @@ func (m *Molecule) Handle() int {
 	return m.handle
 }
 
+// IsClosed returns true if the molecule is closed
+func (m *Molecule) IsClosed() bool {
+	return m.closed
+}
+
 // Clone creates a deep copy of the molecule
 func (m *Molecule) Clone() (*Molecule, error) {
 	if m.closed {
