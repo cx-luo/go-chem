@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 
 	"github.com/cx-luo/go-chem/molecule"
@@ -10,41 +11,51 @@ import (
 
 func main() {
 	// Initialize Indigo session
-	if err := molecule.InitInChI(); err != nil {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
+	indigoInchi, err := core.InchiInit(indigoInit.GetSessionID())
+	if err != nil {
+		panic(err)
+	}
+
+	if err != nil {
 		log.Fatalf("Failed to initialize Indigo: %v", err)
 	}
-	defer molecule.DisposeInChI()
+	defer core.DisposeInChI(indigoInchi.GetInchiSessionID())
 
 	// Print InChI version
-	fmt.Println("InChI Version:", molecule.InChIVersion())
+	fmt.Println("InChI Version:", indigoInchi.InChIVersion())
 
 	// Example 1: Convert SMILES to InChI
 	fmt.Println("\n=== Example 1: Convert SMILES to InChI ===")
-	if err := example1(); err != nil {
+	if err := example1(indigoInchi); err != nil {
 		log.Printf("Example 1 failed: %v", err)
 	}
 
 	// Example 2: Load molecule from InChI
 	fmt.Println("\n=== Example 2: Load from InChI ===")
-	if err := example2(); err != nil {
+	if err := example2(indigoInchi); err != nil {
 		log.Printf("Example 2 failed: %v", err)
 	}
 
 	// Example 3: Get InChI with detailed information
 	fmt.Println("\n=== Example 3: InChI with Info ===")
-	if err := example3(); err != nil {
+	if err := example3(indigoInchi); err != nil {
 		log.Printf("Example 3 failed: %v", err)
 	}
 
 	// Example 4: Convert InChI to InChIKey
 	fmt.Println("\n=== Example 4: InChI to InChIKey ===")
-	if err := example4(); err != nil {
+	if err := example4(indigoInchi); err != nil {
 		log.Printf("Example 4 failed: %v", err)
 	}
 }
 
 // example1 demonstrates converting SMILES to InChI
-func example1() error {
+func example1(i *core.IndigoInchi) error {
 	// Load molecule from SMILES
 	mol, err := molecule.LoadMoleculeFromString("CCO")
 	if err != nil {
@@ -53,7 +64,7 @@ func example1() error {
 	defer mol.Close()
 
 	// Convert to InChI
-	inchi, err := mol.ToInChI()
+	inchi, err := i.ToInChI(mol)
 	if err != nil {
 		return fmt.Errorf("failed to convert to InChI: %w", err)
 	}
@@ -62,7 +73,7 @@ func example1() error {
 	fmt.Printf("InChI:  %s\n", inchi)
 
 	// Get InChIKey
-	key, err := mol.ToInChIKey()
+	key, err := i.InChIToKey(inchi)
 	if err != nil {
 		return fmt.Errorf("failed to generate InChIKey: %w", err)
 	}
@@ -70,7 +81,7 @@ func example1() error {
 	fmt.Printf("InChIKey: %s\n", key)
 
 	// Check for warnings
-	if warning := molecule.InChIWarning(); warning != "" {
+	if warning := i.InChIWarning(); warning != "" {
 		fmt.Printf("Warning: %s\n", warning)
 	}
 
@@ -78,19 +89,23 @@ func example1() error {
 }
 
 // example2 demonstrates loading a molecule from InChI
-func example2() error {
+func example2(i *core.IndigoInchi) error {
 	// InChI for ethanol (CCO)
 	inchi := "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3"
 
 	// Load molecule from InChI
-	mol, err := molecule.LoadFromInChI(inchi)
+	molHandle, err := i.LoadFromInChI(inchi)
 	if err != nil {
 		return fmt.Errorf("failed to load from InChI: %w", err)
 	}
-	defer mol.Close()
 
 	fmt.Printf("Loaded from InChI: %s\n", inchi)
 
+	mol, err := molecule.LoadMoleculeFromHandle(molHandle)
+	if err != nil {
+		panic(err)
+	}
+	defer mol.Close()
 	// Convert back to SMILES to verify
 	smiles, err := mol.ToSmiles()
 	if err != nil {
@@ -111,7 +126,7 @@ func example2() error {
 }
 
 // example3 demonstrates getting InChI with detailed information
-func example3() error {
+func example3(i *core.IndigoInchi) error {
 	// Load molecule from SMILES (benzene)
 	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
@@ -120,7 +135,7 @@ func example3() error {
 	defer mol.Close()
 
 	// Get InChI with detailed information
-	result, err := mol.ToInChIWithInfo()
+	result, err := i.ToInChIWithInfo(mol)
 	if err != nil {
 		return fmt.Errorf("failed to generate InChI: %w", err)
 	}
@@ -145,7 +160,7 @@ func example3() error {
 }
 
 // example4 demonstrates converting InChI to InChIKey directly
-func example4() error {
+func example4(i *core.IndigoInchi) error {
 	// Various InChI strings
 	inchis := []string{
 		"InChI=1S/CH4/h1H4",                  // Methane
@@ -155,7 +170,7 @@ func example4() error {
 	}
 
 	for _, inchi := range inchis {
-		key, err := molecule.InChIToKey(inchi)
+		key, err := i.InChIToKey(inchi)
 		if err != nil {
 			return fmt.Errorf("failed to generate InChIKey: %w", err)
 		}

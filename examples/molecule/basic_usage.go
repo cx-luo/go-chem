@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
 	defer m.Close()
-	fmt.Printf("   Created molecule with handle: %d\n\n", m.Handle())
+	fmt.Printf("   Created molecule with handle: %d\n\n", m.Handle)
 
 	// Example 2: Load molecule from SMILES
 	fmt.Println("2. Loading molecule from SMILES:")

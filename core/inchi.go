@@ -33,9 +33,6 @@ type IndigoInchi struct {
 	sid uint64
 }
 
-// Molecule represents a chemical molecule in Indigo
-type Molecule molecule.Molecule
-
 // getLastError retrieves the last error message from Indigo
 func getLastError() string {
 	errMsg := C.indigoGetLastError()
@@ -88,7 +85,7 @@ func ResetInChIOptions() error {
 
 // ToInChI converts the molecule to InChI format
 // This uses Indigo's InChI plugin
-func (ii *IndigoInchi) ToInChI(m *Molecule) (string, error) {
+func (ii *IndigoInchi) ToInChI(m *molecule.Molecule) (string, error) {
 	if m == nil {
 		return "", fmt.Errorf("molecule is nil")
 	}
@@ -191,7 +188,7 @@ type InChIResult struct {
 }
 
 // ToInChIWithInfo converts the molecule to InChI format and returns detailed information
-func (ii *IndigoInchi) ToInChIWithInfo(m *Molecule) (*InChIResult, error) {
+func (ii *IndigoInchi) ToInChIWithInfo(m *molecule.Molecule) (*InChIResult, error) {
 	inchi, err := ii.ToInChI(m)
 	if err != nil {
 		return nil, err
