@@ -208,7 +208,7 @@ func (r *Reaction) GetReactantMolecule(index int) (*molecule.Molecule, error) {
 		return nil, fmt.Errorf("failed to clone reactant: %s", getLastError())
 	}
 
-	return molecule.NewMoleculeFromHandle(clonedHandle)
+	return molecule.LoadMoleculeFromHandle(clonedHandle)
 }
 
 // GetProductMolecule returns a product molecule as a Molecule object by index
@@ -224,7 +224,7 @@ func (r *Reaction) GetProductMolecule(index int) (*molecule.Molecule, error) {
 		return nil, fmt.Errorf("failed to clone product: %s", getLastError())
 	}
 
-	return molecule.NewMoleculeFromHandle(clonedHandle)
+	return molecule.LoadMoleculeFromHandle(clonedHandle)
 }
 
 // GetCatalystMolecule returns a catalyst molecule as a Molecule object by index
@@ -240,7 +240,7 @@ func (r *Reaction) GetCatalystMolecule(index int) (*molecule.Molecule, error) {
 		return nil, fmt.Errorf("failed to clone catalyst: %s", getLastError())
 	}
 
-	return molecule.NewMoleculeFromHandle(clonedHandle)
+	return molecule.LoadMoleculeFromHandle(clonedHandle)
 }
 
 // GetAllReactants returns all reactant molecules as Molecule objects
@@ -274,7 +274,7 @@ func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
 		if err != nil {
 			C.indigoFree(C.int(clonedHandle))
 			continue
@@ -317,7 +317,7 @@ func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
 		if err != nil {
 			C.indigoFree(C.int(clonedHandle))
 			continue
@@ -360,7 +360,7 @@ func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.NewMoleculeFromHandle(clonedHandle)
+		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
 		if err != nil {
 			C.indigoFree(C.int(clonedHandle))
 			continue

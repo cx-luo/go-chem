@@ -30,7 +30,7 @@ func TestLoadMoleculeFromString(t *testing.T) {
 			}
 			if err == nil {
 				defer m.Close()
-				if m.Handle() < 0 {
+				if m.handle() < 0 {
 					t.Errorf("invalid molecule handle")
 				}
 			}
@@ -103,7 +103,7 @@ func TestLoadQueryMoleculeFromString(t *testing.T) {
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.handle() < 0 {
 		t.Error("invalid query molecule handle")
 	}
 }
@@ -144,7 +144,7 @@ func TestLoadStructureFromString(t *testing.T) {
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.handle() < 0 {
 		t.Error("invalid molecule handle")
 	}
 }
@@ -244,7 +244,7 @@ func TestLoadMoleculeWithIsotopes(t *testing.T) {
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.handle() < 0 {
 		t.Error("invalid molecule handle")
 	}
 }

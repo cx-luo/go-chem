@@ -38,11 +38,11 @@ type Atom struct {
 
 // GetAtom returns an atom by its index
 func (m *Molecule) GetAtom(index int) (*Atom, error) {
-	if m.closed {
+	if m.Closed {
 		return nil, fmt.Errorf("molecule is closed")
 	}
 
-	handle := int(C.indigoGetAtom(C.int(m.handle), C.int(index)))
+	handle := int(C.indigoGetAtom(C.int(m.Handle), C.int(index)))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to get atom at index %d: %s", index, getLastError())
 	}
@@ -52,11 +52,11 @@ func (m *Molecule) GetAtom(index int) (*Atom, error) {
 
 // GetBond returns a bond by its index
 func (m *Molecule) GetBond(index int) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
-	handle := int(C.indigoGetBond(C.int(m.handle), C.int(index)))
+	handle := int(C.indigoGetBond(C.int(m.Handle), C.int(index)))
 	if handle < 0 {
 		return 0, fmt.Errorf("failed to get bond at index %d: %s", index, getLastError())
 	}

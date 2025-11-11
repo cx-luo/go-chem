@@ -30,7 +30,7 @@ func ExampleBasicRender() {
 	render.SetRenderOptionInt("render-image-height", 800)
 
 	// Render to file
-	if err := render.RenderToFile(mol.Handle(), "benzene.png"); err != nil {
+	if err := render.RenderToFile(mol.handle(), "benzene.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -61,7 +61,7 @@ func ExampleWithOptions() {
 	}
 
 	// Render
-	if err := render.RenderToFile(mol.Handle(), "ethanol.svg"); err != nil {
+	if err := render.RenderToFile(mol.handle(), "ethanol.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -95,7 +95,7 @@ func ExampleGridRender() {
 			log.Printf("Warning: failed to load %s: %v", smiles, err)
 			continue
 		}
-		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+		if err := render.ArrayAdd(array, mol.handle()); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 		// Note: molecules should be kept alive until rendering is done
@@ -164,7 +164,7 @@ func ExampleBufferRender() {
 	}
 
 	// Render to buffer
-	if err := render.Render(mol.Handle(), buffer); err != nil {
+	if err := render.Render(mol.handle(), buffer); err != nil {
 		log.Fatal(err)
 	}
 
@@ -206,7 +206,7 @@ func ExampleBatchRender() {
 			log.Printf("Warning: failed to set label mode %s: %v", labelMode, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("neopentane_%s.png", name)); err != nil {
+		if err := render.RenderToFile(mol.handle(), fmt.Sprintf("neopentane_%s.png", name)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", name, err)
 		}
 	}
@@ -241,7 +241,7 @@ func ExampleHighQualityRender() {
 		log.Fatal(err)
 	}
 
-	if err := render.RenderToFile(mol.Handle(), "benzoic_acid_hq.svg"); err != nil {
+	if err := render.RenderToFile(mol.handle(), "benzoic_acid_hq.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -266,7 +266,7 @@ func ExampleStereoRender() {
 			log.Printf("Warning: failed to set stereo style %s: %v", style, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("alanine_%s.png", style)); err != nil {
+		if err := render.RenderToFile(mol.handle(), fmt.Sprintf("alanine_%s.png", style)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", style, err)
 		}
 	}
@@ -294,7 +294,7 @@ func ExampleAlignedGrid() {
 			continue
 		}
 		mols = append(mols, mol)
-		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+		if err := render.ArrayAdd(array, mol.handle()); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 	}
@@ -333,7 +333,7 @@ func ExampleCustomColors() {
 	// Larger bonds
 	render.SetRenderOptionInt("render-bond-length", 60)
 
-	if err := render.RenderToFile(mol.Handle(), "benzene_custom.png"); err != nil {
+	if err := render.RenderToFile(mol.handle(), "benzene_custom.png"); err != nil {
 		log.Fatal(err)
 	}
 }

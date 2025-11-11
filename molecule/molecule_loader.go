@@ -204,3 +204,13 @@ func LoadStructureFromBuffer(buffer []byte, params string) (*Molecule, error) {
 
 	return newMolecule(handle), nil
 }
+
+// LoadMoleculeFromHandle creates a Molecule object from an existing Indigo handle
+// This is useful when getting molecule handles from reactions or other sources
+// Note: The molecule will take ownership of the handle and will free it on Close()
+func LoadMoleculeFromHandle(handle int) (*Molecule, error) {
+	if handle < 0 {
+		return nil, fmt.Errorf("invalid handle: %d", handle)
+	}
+	return newMolecule(handle), nil
+}

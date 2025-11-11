@@ -12,11 +12,27 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/cx-luo/go-chem/core"
 	"github.com/cx-luo/go-chem/reaction"
 )
 
 func main() {
-	fmt.Println("=== Accessing Molecules from Reactions ===\n")
+	fmt.Println("=== Accessing Molecules from Reactions ===")
+
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
+	indigoInchi, err := core.InchiInit(indigoInit.GetSessionID())
+	if err != nil {
+		panic(err)
+	}
+
+	if err != nil {
+		log.Fatalf("Failed to initialize Indigo: %v", err)
+	}
+	defer core.DisposeInChI(indigoInchi.GetInchiSessionID())
 
 	// Load a reaction: Fischer esterification
 	// ethanol + acetic acid → ethyl acetate + water
@@ -27,7 +43,7 @@ func main() {
 	defer rxn.Close()
 
 	fmt.Println("Reaction: CCO.CC(=O)O>>CC(=O)OCC.O")
-	fmt.Println("(Ethanol + Acetic acid → Ethyl acetate + Water)\n")
+	fmt.Println("(Ethanol + Acetic acid → Ethyl acetate + Water)")
 
 	// Example 1: Get individual molecules by index
 	fmt.Println("1. Getting Individual Molecules by Index:")
@@ -53,7 +69,11 @@ func main() {
 		smiles, _ := reactant1.ToSmiles()
 		formula, _ := reactant1.GrossFormula()
 		mass, _ := reactant1.MolecularWeight()
-		fmt.Printf("  Reactant 1: %s (%s, MW=%.2f)\n", smiles, formula, mass)
+		inChI, err := indigoInchi.ToInChI(reactant1)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("  Reactant 1: %s (%s, MW=%.2f) inchi: %s \n", smiles, formula, mass, inChI)
 	}
 
 	// Get first product (ethyl acetate)
@@ -153,14 +173,11 @@ func main() {
 	// Example 5: Process molecules from a complex reaction
 	fmt.Println("\n5. Processing Complex Reaction:")
 
-	rxn2, err := reaction.LoadReactionFromString("c1ccccc1.Br2>>c1ccc(Br)cc1.HBr")
+	rxn2, err := reaction.LoadReactionFromString("COCC(=O)N1CC(C)(N)C1.COC1=CC=C(Cl)C=C1NC(=O)CN>>OC(=O)C(F)(F)F.O=C1N(C2CCC(=O)NC2=O)C(=O)C2=CC3=C(CNC3)C=C12 |f:2.3,c:18,t:13,15,45,47,53,lp:25:2,27:2,29:3,30:3,31:3,32:2,34:1,39:2,40:1,42:2,44:2,50:1|")
 	if err != nil {
 		log.Fatalf("Failed to load reaction: %v", err)
 	}
 	defer rxn2.Close()
-
-	fmt.Println("  Reaction: Bromination of benzene")
-	fmt.Println("  c1ccccc1.Br2>>c1ccc(Br)cc1.HBr")
 
 	// Aromatize reactants
 	reactants2, _ := rxn2.GetAllReactants()
@@ -170,7 +187,20 @@ func main() {
 		mol.Aromatize()
 		afterSmiles, _ := mol.ToCanonicalSmiles()
 		rings, _ := mol.CountSSSR()
-		fmt.Printf("    %d. %s → %s (rings=%d)\n", i+1, beforeSmiles, afterSmiles, rings)
+
+		inchi, err := indigoInchi.ToInChI(mol)
+		if err != nil {
+			panic(err)
+		}
+
+		inChIKey, err := indigoInchi.InChIToKey(inchi)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("    %d. %s → %s (rings=%d)\n"+
+			"	inchi: %s\n"+
+			"	inchikey: %s\n", i+1, beforeSmiles, afterSmiles, rings, inchi, inChIKey)
 		mol.Close()
 	}
 

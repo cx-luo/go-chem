@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/cx-luo/go-chem/core"
 	"log"
+	"strings"
+	"sync"
 
 	"github.com/cx-luo/go-chem/molecule"
 )
@@ -52,6 +54,8 @@ func main() {
 	if err := example4(indigoInchi); err != nil {
 		log.Printf("Example 4 failed: %v", err)
 	}
+
+	example5(indigoInchi)
 }
 
 // example1 demonstrates converting SMILES to InChI
@@ -180,4 +184,65 @@ func example4(i *core.IndigoInchi) error {
 	}
 
 	return nil
+}
+
+func example5(ii *core.IndigoInchi) {
+	// Create test molecules
+	smilesList := []string{"CCO", "c1ccccc1", "CC(=O)O", "O"}
+	molecules := make([]*molecule.Molecule, 0, len(smilesList))
+
+	for _, smi := range smilesList {
+		// Skip if LoadMoleculeFromString fails (maybe due to other issues)
+		mol, err := molecule.LoadMoleculeFromString(smi)
+		if err != nil {
+			fmt.Printf("Skipping %s due to load error: %v\n", smi, err)
+			continue
+		}
+		molecules = append(molecules, mol)
+	}
+
+	if len(molecules) == 0 {
+		fmt.Println("No molecules loaded successfully")
+	}
+
+	// Concurrently convert to InChI
+	var wg sync.WaitGroup
+	results := make([]string, len(molecules))
+	errors := make([]error, len(molecules))
+
+	for i := range molecules {
+		wg.Add(1)
+		go func(idx int, m *molecule.Molecule) {
+			defer wg.Done()
+			defer m.Close()
+
+			inchi, err := ii.ToInChI(m)
+			results[idx] = inchi
+			errors[idx] = err
+		}(i, molecules[i])
+	}
+
+	wg.Wait()
+
+	// Verify results
+	for i := range molecules {
+		if errors[i] != nil {
+			fmt.Printf("Molecule %d failed: %v", i, errors[i])
+			continue
+		}
+
+		if results[i] == "" {
+			fmt.Printf("Molecule %d: empty InChI", i)
+			continue
+		}
+
+		if !strings.HasPrefix(results[i], "InChI=") {
+			fmt.Printf("Molecule %d: invalid InChI format: %s", i, results[i])
+		}
+	}
+
+	// Clean up molecules
+	for _, mol := range molecules {
+		mol.Close()
+	}
 }

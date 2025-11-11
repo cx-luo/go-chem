@@ -65,7 +65,7 @@ func TestRenderMoleculeToFile(t *testing.T) {
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle(), outputFile)
+	err = render.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to file: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestRenderMoleculeSVG(t *testing.T) {
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle(), outputFile)
+	err = render.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to SVG: %v", err)
 	}
@@ -301,13 +301,13 @@ func TestRenderGrid(t *testing.T) {
 	defer render.FreeObject(arrayHandle)
 
 	// Add molecules to array
-	if err := render.ArrayAdd(arrayHandle, mol1.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol1.Handle); err != nil {
 		t.Fatalf("failed to add mol1 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol2.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol2.Handle); err != nil {
 		t.Fatalf("failed to add mol2 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol3.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol3.Handle); err != nil {
 		t.Fatalf("failed to add mol3 to array: %v", err)
 	}
 
@@ -348,8 +348,8 @@ func TestRenderGridWithRefAtoms(t *testing.T) {
 	defer render.FreeObject(arrayHandle)
 
 	// Add molecules
-	render.ArrayAdd(arrayHandle, mol1.Handle())
-	render.ArrayAdd(arrayHandle, mol2.Handle())
+	render.ArrayAdd(arrayHandle, mol1.Handle)
+	render.ArrayAdd(arrayHandle, mol2.Handle)
 
 	// Create temp file
 	tmpDir := t.TempDir()
@@ -388,7 +388,7 @@ func TestRenderToBuffer(t *testing.T) {
 	render.SetRenderOption("render-output-format", "png")
 
 	// Render to buffer
-	err = render.Render(mol.Handle(), bufferHandle)
+	err = render.Render(mol.Handle, bufferHandle)
 	if err != nil {
 		t.Fatalf("failed to render to buffer: %v", err)
 	}
@@ -443,7 +443,7 @@ func TestRenderMultipleFormats(t *testing.T) {
 			}
 
 			// Render
-			if err := render.RenderToFile(mol.Handle(), outputFile); err != nil {
+			if err := render.RenderToFile(mol.Handle, outputFile); err != nil {
 				t.Fatalf("failed to render to %s: %v", format, err)
 			}
 

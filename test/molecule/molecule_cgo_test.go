@@ -14,8 +14,8 @@ func TestCreateMolecule(t *testing.T) {
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
-		t.Errorf("invalid molecule handle: %d", m.Handle())
+	if m.Handle < 0 {
+		t.Errorf("invalid molecule handle: %d", m.Handle)
 	}
 
 	// Test counts
@@ -44,8 +44,8 @@ func TestCreateQueryMolecule(t *testing.T) {
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
-		t.Errorf("invalid query molecule handle: %d", m.Handle())
+	if m.Handle < 0 {
+		t.Errorf("invalid query molecule handle: %d", m.Handle)
 	}
 }
 
