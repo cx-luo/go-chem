@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	indigoInchi, err := core.InchiInit(indigoInit.GetSessionID())
+	indigoInchi, err := indigoInit.InchiInit()
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize Indigo: %v", err)
 	}
-	defer core.DisposeInChI(indigoInchi.GetInchiSessionID())
+	defer indigoInchi.InchiDispose()
 
 	// Load a reaction: Fischer esterification
 	// ethanol + acetic acid → ethyl acetate + water

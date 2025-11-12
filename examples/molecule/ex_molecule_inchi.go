@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	indigoInchi, err := core.InchiInit(indigoInit.GetSessionID())
+	indigoInchi, err := indigoInit.InchiInit()
 
 	if err != nil {
 		panic(err)

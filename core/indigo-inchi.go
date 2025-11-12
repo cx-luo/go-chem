@@ -35,11 +35,9 @@ import (
 	"github.com/cx-luo/go-chem/molecule"
 )
 
-// inchiInitialized tracks whether InChI module has been initialized
-var inchiInitialized = false
-
 type IndigoInchi struct {
-	sid uint64
+	sid              uint64
+	inchiInitialized bool
 }
 
 // getInchiLastError retrieves the last error message from Indigo
@@ -53,33 +51,28 @@ func getInchiLastError() string {
 
 // InchiInit initializes the InChI module for the current session
 // This should be called before using InChI functions
-func InchiInit(sessionID uint64) (*IndigoInchi, error) {
-	if inchiInitialized {
-		return &IndigoInchi{sid: sessionID}, nil // Already initialized
-	}
-
-	ret := int(C.indigoInchiInit(C.ulonglong(sessionID)))
+func (in *Indigo) InchiInit() (*IndigoInchi, error) {
+	ret := int(C.indigoInchiInit(C.ulonglong(in.sid)))
 	if ret < 0 {
 		return nil, fmt.Errorf("failed to initialize InChI: %s", getInchiLastError())
 	}
 
-	inchiInitialized = true
-	return &IndigoInchi{sid: sessionID}, nil
+	return &IndigoInchi{sid: in.sid, inchiInitialized: true}, nil
 }
 
-// DisposeInChI disposes the InChI module
+// InchiDispose disposes the InChI module
 // This should be called when done using InChI functions
-func DisposeInChI(sessionID uint64) error {
-	if !inchiInitialized {
+func (ii *IndigoInchi) InchiDispose() error {
+	if !ii.inchiInitialized {
 		return nil // Not initialized
 	}
 
-	ret := int(C.indigoInchiDispose(C.qword(sessionID)))
+	ret := int(C.indigoInchiDispose(C.qword(ii.sid)))
 	if ret < 0 {
 		return fmt.Errorf("failed to dispose InChI: %s", getInchiLastError())
 	}
 
-	inchiInitialized = false
+	ii.inchiInitialized = false
 	return nil
 }
 
