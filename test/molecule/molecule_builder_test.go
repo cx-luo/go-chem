@@ -17,7 +17,7 @@ func init() {
 	}
 	indigoInit = handle
 
-	indigoInchiHandle, err := core.InchiInit(indigoInit.GetSessionID())
+	indigoInchiHandle, err := indigoInit.InchiInit()
 
 	if err != nil {
 		panic(err)
