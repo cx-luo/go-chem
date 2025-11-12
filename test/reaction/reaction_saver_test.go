@@ -438,7 +438,6 @@ func TestReactionFormatConsistency(t *testing.T) {
 
 			// Test all SMILES variants
 			formats := map[string]func() (string, error){
-				"SMILES":    rxn.ToSmiles,
 				"Canonical": rxn.ToCanonicalSmiles,
 				"CXSmiles":  rxn.ToCXSmiles,
 				"Daylight":  rxn.ToDaylightSmiles,

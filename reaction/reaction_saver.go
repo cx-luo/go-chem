@@ -78,20 +78,6 @@ func (r *Reaction) SaveRxnfile(outputHandle int) error {
 	return nil
 }
 
-// ToSmiles converts the reaction to SMILES format
-func (r *Reaction) ToSmiles() (string, error) {
-	if r.Closed {
-		return "", fmt.Errorf("reaction is closed")
-	}
-
-	cStr := C.indigoSmiles(C.int(r.Handle))
-	if cStr == nil {
-		return "", fmt.Errorf("failed to convert reaction to SMILES: %s", getLastError())
-	}
-
-	return C.GoString(cStr), nil
-}
-
 // ToCanonicalSmiles converts the reaction to canonical SMILES format
 func (r *Reaction) ToCanonicalSmiles() (string, error) {
 	if r.Closed {
