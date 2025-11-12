@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/cx-luo/go-chem/molecule"
-	"github.com/cx-luo/go-chem/reaction"
 	"github.com/cx-luo/go-chem/render"
 )
 
@@ -118,9 +117,9 @@ func ExampleGridRender(indigoInit *core.Indigo) {
 }
 
 // Example 4: Rendering a reaction
-func ExampleReactionRender() {
+func ExampleReactionRender(indigoInit *core.Indigo) {
 	// Load a reaction
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,7 +135,7 @@ func ExampleReactionRender() {
 	render.SetRenderOption("render-background-color", "1.0, 1.0, 1.0")
 
 	// Render reaction
-	if err := render.RenderToFile(rxn.Handle(), "oxidation_reaction.png"); err != nil {
+	if err := render.RenderToFile(rxn.Handle, "oxidation_reaction.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -363,7 +362,7 @@ func main() {
 	ExampleGridRender(indigoInit)
 	fmt.Println("✓ Grid render completed")
 
-	ExampleReactionRender()
+	ExampleReactionRender(indigoInit)
 	fmt.Println("✓ Reaction render completed")
 
 	ExampleBufferRender(indigoInit)
