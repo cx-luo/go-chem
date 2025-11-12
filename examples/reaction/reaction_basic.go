@@ -4,12 +4,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 
 	"github.com/cx-luo/go-chem/reaction"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Reaction Package Example ===\n")
 
 	// Example 1: Load a reaction from SMILES
@@ -20,7 +26,7 @@ func main() {
 </cml>`
 	fmt.Printf("   Input: %s\n", rxn)
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		log.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -85,7 +91,7 @@ func main() {
 	smarts := "[C:1](=[O:2])[OH:3].[C:4][OH:5]>>[C:1](=[O:2])[O:5][C:4].[OH2:3]"
 	fmt.Printf("   Input: %s\n", smarts)
 
-	r2, err := reaction.LoadReactionSmartsFromString(smarts)
+	r2, err := indigoInit.LoadReactionSmartsFromString(smarts)
 	if err != nil {
 		log.Fatalf("Failed to load reaction SMARTS: %v", err)
 	}
@@ -110,7 +116,7 @@ func main() {
 
 	// Example 8: Create a new empty reaction
 	fmt.Println("8. Creating a new empty reaction:")
-	r4, err := reaction.CreateReaction()
+	r4, err := indigoInit.CreateReaction()
 	if err != nil {
 		log.Fatalf("Failed to create reaction: %v", err)
 	}

@@ -13,7 +13,6 @@ import (
 	"log"
 
 	"github.com/cx-luo/go-chem/core"
-	"github.com/cx-luo/go-chem/reaction"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 
 	// Load a reaction: Fischer esterification
 	// ethanol + acetic acid → ethyl acetate + water
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		log.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -49,7 +48,7 @@ func main() {
 	fmt.Println("1. Getting Individual Molecules by Index:")
 
 	// Get first reactant (ethanol)
-	reactant0, err := rxn.GetReactantMolecule(0)
+	reactant0, err := rxn.GetReactantMolecules(0)
 	if err != nil {
 		log.Printf("Failed to get reactant 0: %v", err)
 	} else {
@@ -61,7 +60,7 @@ func main() {
 	}
 
 	// Get second reactant (acetic acid)
-	reactant1, err := rxn.GetReactantMolecule(1)
+	reactant1, err := rxn.GetReactantMolecules(1)
 	if err != nil {
 		log.Printf("Failed to get reactant 1: %v", err)
 	} else {
@@ -77,7 +76,7 @@ func main() {
 	}
 
 	// Get first product (ethyl acetate)
-	product0, err := rxn.GetProductMolecule(0)
+	product0, err := rxn.GetProductMolecules(0)
 	if err != nil {
 		log.Printf("Failed to get product 0: %v", err)
 	} else {
@@ -89,7 +88,7 @@ func main() {
 	}
 
 	// Get second product (water)
-	product1, err := rxn.GetProductMolecule(1)
+	product1, err := rxn.GetProductMolecules(1)
 	if err != nil {
 		log.Printf("Failed to get product 1: %v", err)
 	} else {
@@ -173,7 +172,7 @@ func main() {
 	// Example 5: Process molecules from a complex reaction
 	fmt.Println("\n5. Processing Complex Reaction:")
 
-	rxn2, err := reaction.LoadReactionFromString("COCC(=O)N1CC(C)(N)C1.COC1=CC=C(Cl)C=C1NC(=O)CN>>OC(=O)C(F)(F)F.O=C1N(C2CCC(=O)NC2=O)C(=O)C2=CC3=C(CNC3)C=C12 |f:2.3,c:18,t:13,15,45,47,53,lp:25:2,27:2,29:3,30:3,31:3,32:2,34:1,39:2,40:1,42:2,44:2,50:1|")
+	rxn2, err := indigoInit.LoadReactionFromString("COCC(=O)N1CC(C)(N)C1.COC1=CC=C(Cl)C=C1NC(=O)CN>>OC(=O)C(F)(F)F.O=C1N(C2CCC(=O)NC2=O)C(=O)C2=CC3=C(CNC3)C=C12 |f:2.3,c:18,t:13,15,45,47,53,lp:25:2,27:2,29:3,30:3,31:3,32:2,34:1,39:2,40:1,42:2,44:2,50:1|")
 	if err != nil {
 		log.Fatalf("Failed to load reaction: %v", err)
 	}
