@@ -1,4 +1,5 @@
-// Package core coding=utf-8
+// Package core provides core functions for Indigo C API library via CGO
+// coding=utf-8
 // @Project : go-chem
 // @Time    : 2025/11/12 13:47
 // @Author  : chengxiang.luo
