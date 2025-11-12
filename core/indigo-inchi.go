@@ -1,3 +1,11 @@
+// Package core provides core functions for Indigo C API library via CGO
+// coding=utf-8
+// @Project : go-chem
+// @Time    : 2025/11/12
+// @Author  : chengxiang.luo
+// @Email   : chengxiang.luo@foxmail.com
+// @File    : indigo-inchi.go
+// @Software: GoLand
 package core
 
 /*
@@ -22,8 +30,9 @@ package core
 import "C"
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/molecule"
 	"unsafe"
+
+	"github.com/cx-luo/go-chem/molecule"
 )
 
 // inchiInitialized tracks whether InChI module has been initialized
@@ -33,9 +42,9 @@ type IndigoInchi struct {
 	sid uint64
 }
 
-// getLastError retrieves the last error message from Indigo
-func getLastError() string {
-	errMsg := C.indigoGetLastError()
+// getInchiLastError retrieves the last error message from Indigo
+func getInchiLastError() string {
+	errMsg := C.indigoInchiGetLog()
 	if errMsg == nil {
 		return "unknown error"
 	}
@@ -51,7 +60,7 @@ func InchiInit(sessionID uint64) (*IndigoInchi, error) {
 
 	ret := int(C.indigoInchiInit(C.ulonglong(sessionID)))
 	if ret < 0 {
-		return nil, fmt.Errorf("failed to initialize InChI: %s", getLastError())
+		return nil, fmt.Errorf("failed to initialize InChI: %s", getInchiLastError())
 	}
 
 	inchiInitialized = true
@@ -67,7 +76,7 @@ func DisposeInChI(sessionID uint64) error {
 
 	ret := int(C.indigoInchiDispose(C.qword(sessionID)))
 	if ret < 0 {
-		return fmt.Errorf("failed to dispose InChI: %s", getLastError())
+		return fmt.Errorf("failed to dispose InChI: %s", getInchiLastError())
 	}
 
 	inchiInitialized = false
@@ -75,17 +84,17 @@ func DisposeInChI(sessionID uint64) error {
 }
 
 // ResetInChIOptions resets InChI options to default
-func ResetInChIOptions() error {
+func (ii *IndigoInchi) ResetInChIOptions() error {
 	ret := int(C.indigoInchiResetOptions())
 	if ret < 0 {
-		return fmt.Errorf("failed to reset InChI options: %s", getLastError())
+		return fmt.Errorf("failed to reset InChI options: %s", ii.InChILog())
 	}
 	return nil
 }
 
-// ToInChI converts the molecule to InChI format
+// GenerateInChI converts the molecule to InChI format
 // This uses Indigo's InChI plugin
-func (ii *IndigoInchi) ToInChI(m *molecule.Molecule) (string, error) {
+func (ii *IndigoInchi) GenerateInChI(m *molecule.Molecule) (string, error) {
 	if m == nil {
 		return "", fmt.Errorf("molecule is nil")
 	}
@@ -98,7 +107,7 @@ func (ii *IndigoInchi) ToInChI(m *molecule.Molecule) (string, error) {
 
 	cStr := C.indigoInchiGetInchi(C.int(m.Handle))
 	if cStr == nil {
-		return "", fmt.Errorf("failed to convert to InChI: %s", getLastError())
+		return "", fmt.Errorf("failed to convert to InChI: %s", ii.InChILog())
 	}
 
 	return C.GoString(cStr), nil
@@ -115,7 +124,7 @@ func (ii *IndigoInchi) InChIToKey(inchi string) (string, error) {
 
 	cKey := C.indigoInchiGetInchiKey(cInchi)
 	if cKey == nil {
-		return "", fmt.Errorf("failed to generate InChI Key: %s", getLastError())
+		return "", fmt.Errorf("failed to generate InChI Key: %s", ii.InChILog())
 	}
 
 	return C.GoString(cKey), nil
@@ -172,7 +181,7 @@ func (ii *IndigoInchi) LoadFromInChI(inchi string) (int, error) {
 
 	handle := int(C.indigoInchiLoadMolecule(cInchi))
 	if handle < 0 {
-		return 0, fmt.Errorf("failed to load molecule from InChI: %s", getLastError())
+		return 0, fmt.Errorf("failed to load molecule from InChI: %s", ii.InChILog())
 	}
 
 	return handle, nil
@@ -187,9 +196,9 @@ type InChIResult struct {
 	AuxInfo string // Auxiliary information
 }
 
-// ToInChIWithInfo converts the molecule to InChI format and returns detailed information
-func (ii *IndigoInchi) ToInChIWithInfo(m *molecule.Molecule) (*InChIResult, error) {
-	inchi, err := ii.ToInChI(m)
+// GenerateInChIWithInfo converts the molecule to InChI format and returns detailed information
+func (ii *IndigoInchi) GenerateInChIWithInfo(m *molecule.Molecule) (*InChIResult, error) {
+	inchi, err := ii.GenerateInChI(m)
 	if err != nil {
 		return nil, err
 	}

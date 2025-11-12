@@ -68,7 +68,7 @@ func example1(i *core.IndigoInchi) error {
 	defer mol.Close()
 
 	// Convert to InChI
-	inchi, err := i.ToInChI(mol)
+	inchi, err := i.GenerateInChI(mol)
 	if err != nil {
 		return fmt.Errorf("failed to convert to InChI: %w", err)
 	}
@@ -139,7 +139,7 @@ func example3(i *core.IndigoInchi) error {
 	defer mol.Close()
 
 	// Get InChI with detailed information
-	result, err := i.ToInChIWithInfo(mol)
+	result, err := i.GenerateInChIWithInfo(mol)
 	if err != nil {
 		return fmt.Errorf("failed to generate InChI: %w", err)
 	}
@@ -216,7 +216,7 @@ func example5(ii *core.IndigoInchi) {
 			defer wg.Done()
 			defer m.Close()
 
-			inchi, err := ii.ToInChI(m)
+			inchi, err := ii.GenerateInChI(m)
 			results[idx] = inchi
 			errors[idx] = err
 		}(i, molecules[i])

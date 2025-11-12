@@ -69,7 +69,7 @@ func main() {
 		smiles, _ := reactant1.ToSmiles()
 		formula, _ := reactant1.GrossFormula()
 		mass, _ := reactant1.MolecularWeight()
-		inChI, err := indigoInchi.ToInChI(reactant1)
+		inChI, err := indigoInchi.GenerateInChI(reactant1)
 		if err != nil {
 			panic(err)
 		}
@@ -188,7 +188,7 @@ func main() {
 		afterSmiles, _ := mol.ToCanonicalSmiles()
 		rings, _ := mol.CountSSSR()
 
-		inchi, err := indigoInchi.ToInChI(mol)
+		inchi, err := indigoInchi.GenerateInChI(mol)
 		if err != nil {
 			panic(err)
 		}
