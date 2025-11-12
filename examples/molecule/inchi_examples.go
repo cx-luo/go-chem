@@ -33,19 +33,19 @@ func main() {
 
 	// Example 1: Convert SMILES to InChI
 	fmt.Println("\n=== Example 1: Convert SMILES to InChI ===")
-	if err := example1(indigoInchi); err != nil {
+	if err := example1(indigoInit, indigoInchi); err != nil {
 		log.Printf("Example 1 failed: %v", err)
 	}
 
 	// Example 2: Load molecule from InChI
 	fmt.Println("\n=== Example 2: Load from InChI ===")
-	if err := example2(indigoInchi); err != nil {
+	if err := example2(indigoInit, indigoInchi); err != nil {
 		log.Printf("Example 2 failed: %v", err)
 	}
 
 	// Example 3: Get InChI with detailed information
 	fmt.Println("\n=== Example 3: InChI with Info ===")
-	if err := example3(indigoInchi); err != nil {
+	if err := example3(indigoInit, indigoInchi); err != nil {
 		log.Printf("Example 3 failed: %v", err)
 	}
 
@@ -55,13 +55,13 @@ func main() {
 		log.Printf("Example 4 failed: %v", err)
 	}
 
-	example5(indigoInchi)
+	example5(indigoInit, indigoInchi)
 }
 
 // example1 demonstrates converting SMILES to InChI
-func example1(i *core.IndigoInchi) error {
+func example1(indigoInit *core.Indigo, i *core.IndigoInchi) error {
 	// Load molecule from SMILES
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		return fmt.Errorf("failed to load molecule: %w", err)
 	}
@@ -93,7 +93,7 @@ func example1(i *core.IndigoInchi) error {
 }
 
 // example2 demonstrates loading a molecule from InChI
-func example2(i *core.IndigoInchi) error {
+func example2(indigoInit *core.Indigo, i *core.IndigoInchi) error {
 	// InChI for ethanol (CCO)
 	inchi := "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3"
 
@@ -105,7 +105,7 @@ func example2(i *core.IndigoInchi) error {
 
 	fmt.Printf("Loaded from InChI: %s\n", inchi)
 
-	mol, err := molecule.LoadMoleculeFromHandle(molHandle)
+	mol, err := indigoInit.LoadMoleculeFromHandle(molHandle)
 	if err != nil {
 		panic(err)
 	}
@@ -130,9 +130,9 @@ func example2(i *core.IndigoInchi) error {
 }
 
 // example3 demonstrates getting InChI with detailed information
-func example3(i *core.IndigoInchi) error {
+func example3(indigoInit *core.Indigo, i *core.IndigoInchi) error {
 	// Load molecule from SMILES (benzene)
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		return fmt.Errorf("failed to load molecule: %w", err)
 	}
@@ -186,14 +186,14 @@ func example4(i *core.IndigoInchi) error {
 	return nil
 }
 
-func example5(ii *core.IndigoInchi) {
+func example5(indigoInit *core.Indigo, ii *core.IndigoInchi) {
 	// Create test molecules
 	smilesList := []string{"CCO", "c1ccccc1", "CC(=O)O", "O"}
 	molecules := make([]*molecule.Molecule, 0, len(smilesList))
 
 	for _, smi := range smilesList {
 		// Skip if LoadMoleculeFromString fails (maybe due to other issues)
-		mol, err := molecule.LoadMoleculeFromString(smi)
+		mol, err := indigoInit.LoadMoleculeFromString(smi)
 		if err != nil {
 			fmt.Printf("Skipping %s due to load error: %v\n", smi, err)
 			continue

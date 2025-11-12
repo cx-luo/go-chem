@@ -10,23 +10,32 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+	indigoInchi, err := core.InchiInit(indigoInit.GetSessionID())
+
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== InChI Examples ===\n")
 
 	// Example 1: Generate InChI from SMILES
 	fmt.Println("1. Generating InChI from SMILES:")
-	m1, err := molecule.LoadMoleculeFromString("CCO")
+	m1, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}
 	defer m1.Close()
 
-	inchi, err := m1.ToInChI()
+	inchi, err := indigoInchi.GenerateInChI(m1)
 	if err != nil {
 		log.Fatalf("Failed to generate InChI: %v", err)
 	}
@@ -35,7 +44,7 @@ func main() {
 
 	// Example 2: Generate InChI Key
 	fmt.Println("2. Generating InChI Key:")
-	inchiKey, err := m1.ToInChIKey()
+	inchiKey, err := indigoInchi.InChIToKey(inchi)
 	if err != nil {
 		log.Fatalf("Failed to generate InChI Key: %v", err)
 	}
@@ -43,9 +52,13 @@ func main() {
 
 	// Example 3: Load molecule from InChI
 	fmt.Println("3. Loading molecule from InChI:")
-	m2, err := molecule.LoadFromInChI(inchi)
+	m2handle, err := indigoInchi.LoadFromInChI(inchi)
 	if err != nil {
 		log.Fatalf("Failed to load from InChI: %v", err)
+	}
+	m2, err := indigoInit.LoadMoleculeFromHandle(m2handle)
+	if err != nil {
+		log.Fatalf("Failed to load from InChI handle: %v", err)
 	}
 	defer m2.Close()
 
@@ -71,20 +84,20 @@ func main() {
 
 	for _, mol := range testMolecules {
 		fmt.Printf("\n   %s (%s):\n", mol.name, mol.smiles)
-		m, err := molecule.LoadMoleculeFromString(mol.smiles)
+		m, err := indigoInit.LoadMoleculeFromString(mol.smiles)
 		if err != nil {
 			log.Printf("   Error loading: %v\n", err)
 			continue
 		}
 
-		inchi, err := m.ToInChI()
+		inchi, err := indigoInchi.GenerateInChI(m)
 		if err != nil {
 			log.Printf("   Error generating InChI: %v\n", err)
 			m.Close()
 			continue
 		}
 
-		inchiKey, err := m.ToInChIKey()
+		inchiKey, err := indigoInchi.InChIToKey(inchi)
 		if err != nil {
 			log.Printf("   Error generating InChI Key: %v\n", err)
 			m.Close()
@@ -99,16 +112,17 @@ func main() {
 
 	// Example 5: InChI roundtrip test
 	fmt.Println("\n5. InChI roundtrip test:")
-	original, _ := molecule.LoadMoleculeFromString("c1ccccc1")
+	original, _ := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	defer original.Close()
 
-	inchi1, _ := original.ToInChI()
+	inchi1, _ := indigoInchi.GenerateInChI(original)
 	fmt.Printf("   Original InChI: %s\n", inchi1)
 
-	reloaded, _ := molecule.LoadFromInChI(inchi1)
+	handle, _ := indigoInchi.LoadFromInChI(inchi1)
+	reloaded, _ := indigoInit.LoadMoleculeFromHandle(handle)
 	defer reloaded.Close()
 
-	inchi2, _ := reloaded.ToInChI()
+	inchi2, _ := indigoInchi.GenerateInChI(reloaded)
 	fmt.Printf("   Reloaded InChI: %s\n", inchi2)
 
 	if inchi1 == inchi2 {
@@ -119,14 +133,14 @@ func main() {
 
 	// Example 6: InChI helper functions
 	fmt.Println("6. InChI warnings and logs:")
-	m3, _ := molecule.LoadMoleculeFromString("CCO")
+	m3, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer m3.Close()
 
-	m3.ToInChI()
+	indigoInchi.GenerateInChI(m3)
 
-	warning := molecule.InChIWarning()
-	linchiog := molecule.InChILog()
-	auxInfo := molecule.InChIAuxInfo()
+	warning := indigoInchi.InChIWarning()
+	linchiog := indigoInchi.InChILog()
+	auxInfo := indigoInchi.InChIAuxInfo()
 
 	if warning != "" {
 		fmt.Printf("   Warning: %s\n", warning)
@@ -146,13 +160,16 @@ func main() {
 	// Example 7: Verify InChI Key uniqueness
 	fmt.Println("7. Verifying InChI Key uniqueness:")
 	// Same molecule, different SMILES representations
-	m4a, _ := molecule.LoadMoleculeFromString("CCO")
-	m4b, _ := molecule.LoadMoleculeFromString("OCC")
+	m4a, _ := indigoInit.LoadMoleculeFromString("CCO")
+	m4b, _ := indigoInit.LoadMoleculeFromString("OCC")
 	defer m4a.Close()
 	defer m4b.Close()
 
-	key4a, _ := m4a.ToInChIKey()
-	key4b, _ := m4b.ToInChIKey()
+	m4aInchi, _ := indigoInchi.GenerateInChI(m4a)
+	m4bInchi, _ := indigoInchi.GenerateInChI(m4b)
+
+	key4a, _ := indigoInchi.InChIToKey(m4aInchi)
+	key4b, _ := indigoInchi.InChIToKey(m4bInchi)
 
 	fmt.Printf("   InChI Key for 'CCO': %s\n", key4a)
 	fmt.Printf("   InChI Key for 'OCC': %s\n", key4b)

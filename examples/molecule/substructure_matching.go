@@ -10,24 +10,28 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Substructure Matching Examples ===\n")
 
 	// Example 1: Basic substructure search
 	fmt.Println("1. Basic Substructure Search:")
 
-	target, err := molecule.LoadMoleculeFromString("c1ccccc1CCO")
+	target, err := indigoInit.LoadMoleculeFromString("c1ccccc1CCO")
 	if err != nil {
 		log.Fatalf("Failed to load target molecule: %v", err)
 	}
 	defer target.Close()
 
-	query, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatalf("Failed to load query molecule: %v", err)
 	}
@@ -45,9 +49,9 @@ func main() {
 	// Example 2: Multiple substructure matches
 	fmt.Println("\n2. Multiple Substructure Matches:")
 
-	target2, _ := molecule.LoadMoleculeFromString("c1ccc(cc1)c2ccccc2")
+	target2, _ := indigoInit.LoadMoleculeFromString("c1ccc(cc1)c2ccccc2")
 	defer target2.Close()
-	query2, _ := molecule.LoadMoleculeFromString("c1ccccc1")
+	query2, _ := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	defer query2.Close()
 
 	fmt.Println("  Target: c1ccc(cc1)c2ccccc2 (Biphenyl)")
@@ -59,11 +63,11 @@ func main() {
 	// Example 3: Exact match
 	fmt.Println("\n3. Exact Matching:")
 
-	mol1, _ := molecule.LoadMoleculeFromString("CCO")
+	mol1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol1.Close()
-	mol2, _ := molecule.LoadMoleculeFromString("CCO")
+	mol2, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol2.Close()
-	mol3, _ := molecule.LoadMoleculeFromString("OCC")
+	mol3, _ := indigoInit.LoadMoleculeFromString("OCC")
 	defer mol3.Close()
 
 	isExact1, _ := mol1.ExactMatch(mol2)
@@ -75,11 +79,11 @@ func main() {
 	// Example 4: SMARTS pattern matching
 	fmt.Println("\n4. SMARTS Pattern Matching:")
 
-	aspirin, _ := molecule.LoadMoleculeFromString("CC(=O)Oc1ccccc1C(=O)O")
+	aspirin, _ := indigoInit.LoadMoleculeFromString("CC(=O)Oc1ccccc1C(=O)O")
 	defer aspirin.Close()
 
 	// Search for carboxylic acid group
-	carboxyl, _ := molecule.LoadSmartsFromString("[CX3](=O)[OX2H1]")
+	carboxyl, _ := indigoInit.LoadSmartsFromString("[CX3](=O)[OX2H1]")
 	defer carboxyl.Close()
 
 	fmt.Println("  Molecule: Aspirin")
@@ -115,7 +119,7 @@ func main() {
 	}
 
 	for _, testMol := range testMolecules {
-		mol, err := molecule.LoadMoleculeFromString(testMol.smiles)
+		mol, err := indigoInit.LoadMoleculeFromString(testMol.smiles)
 		if err != nil {
 			continue
 		}
@@ -123,7 +127,7 @@ func main() {
 		fmt.Printf("\n  %s (%s):\n", testMol.name, testMol.smiles)
 
 		for _, fg := range functionalGroups {
-			pattern, err := molecule.LoadSmartsFromString(fg.smarts)
+			pattern, err := indigoInit.LoadSmartsFromString(fg.smarts)
 			if err != nil {
 				continue
 			}
@@ -143,7 +147,7 @@ func main() {
 	// Example 6: Submolecule extraction
 	fmt.Println("\n6. Submolecule Extraction:")
 
-	bigMol, _ := molecule.LoadMoleculeFromString("c1ccccc1CCO")
+	bigMol, _ := indigoInit.LoadMoleculeFromString("c1ccccc1CCO")
 	defer bigMol.Close()
 
 	fmt.Println("  Original: c1ccccc1CCO")

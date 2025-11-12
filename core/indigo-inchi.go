@@ -170,7 +170,7 @@ func (ii *IndigoInchi) InChIAuxInfo() string {
 	return C.GoString(cStr)
 }
 
-// LoadFromInChI loads a molecule from InChI string
+// LoadFromInChI loads a molecule from InChI string, return molecule handle
 func (ii *IndigoInchi) LoadFromInChI(inchi string) (int, error) {
 	if inchi == "" {
 		return 0, fmt.Errorf("empty InChI string")
