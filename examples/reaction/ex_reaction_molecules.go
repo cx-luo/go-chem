@@ -48,10 +48,14 @@ func main() {
 	fmt.Println("1. Getting Individual Molecules by Index:")
 
 	// Get first reactant (ethanol)
-	reactant0, err := rxn.GetReactantMolecules(0)
+	reactant0Handle, err := rxn.GetReactantMolecule(0)
 	if err != nil {
 		log.Printf("Failed to get reactant 0: %v", err)
 	} else {
+		reactant0, err := indigoInit.LoadMoleculeFromHandle(reactant0Handle)
+		if err != nil {
+			log.Printf("Failed to get reactant 0: %v", err)
+		}
 		defer reactant0.Close()
 		smiles, _ := reactant0.ToSmiles()
 		formula, _ := reactant0.GrossFormula()
@@ -60,10 +64,14 @@ func main() {
 	}
 
 	// Get second reactant (acetic acid)
-	reactant1, err := rxn.GetReactantMolecules(1)
+	reactant1Handle, err := rxn.GetReactantMolecule(1)
 	if err != nil {
-		log.Printf("Failed to get reactant 1: %v", err)
+		log.Printf("Failed to get reactant 1 handle: %v", err)
 	} else {
+		reactant1, err := indigoInit.LoadMoleculeFromHandle(reactant1Handle)
+		if err != nil {
+			log.Printf("Failed to get reactant 1: %v", err)
+		}
 		defer reactant1.Close()
 		smiles, _ := reactant1.ToSmiles()
 		formula, _ := reactant1.GrossFormula()
@@ -76,26 +84,34 @@ func main() {
 	}
 
 	// Get first product (ethyl acetate)
-	product0, err := rxn.GetProductMolecules(0)
+	product0, err := rxn.GetProductMolecule(0)
 	if err != nil {
 		log.Printf("Failed to get product 0: %v", err)
 	} else {
-		defer product0.Close()
-		smiles, _ := product0.ToSmiles()
-		formula, _ := product0.GrossFormula()
-		mass, _ := product0.MolecularWeight()
+		product0Molecule, err := indigoInit.LoadMoleculeFromHandle(product0)
+		if err != nil {
+			log.Printf("Failed to get product 0: %v", err)
+		}
+		defer product0Molecule.Close()
+		smiles, _ := product0Molecule.ToSmiles()
+		formula, _ := product0Molecule.GrossFormula()
+		mass, _ := product0Molecule.MolecularWeight()
 		fmt.Printf("  Product 0:  %s (%s, MW=%.2f)\n", smiles, formula, mass)
 	}
 
 	// Get second product (water)
-	product1, err := rxn.GetProductMolecules(1)
+	product1, err := rxn.GetProductMolecule(1)
 	if err != nil {
 		log.Printf("Failed to get product 1: %v", err)
 	} else {
-		defer product1.Close()
-		smiles, _ := product1.ToSmiles()
-		formula, _ := product1.GrossFormula()
-		mass, _ := product1.MolecularWeight()
+		product1Molecule, err := indigoInit.LoadMoleculeFromHandle(product1)
+		if err != nil {
+			log.Printf("Failed to get product 1: %v", err)
+		}
+		defer product1Molecule.Close()
+		smiles, _ := product1Molecule.ToSmiles()
+		formula, _ := product1Molecule.GrossFormula()
+		mass, _ := product1Molecule.MolecularWeight()
 		fmt.Printf("  Product 1:  %s (%s, MW=%.2f)\n", smiles, formula, mass)
 	}
 
@@ -108,11 +124,11 @@ func main() {
 	} else {
 		fmt.Printf("  Found %d reactants:\n", len(allReactants))
 		for i, mol := range allReactants {
-			smiles, _ := mol.ToSmiles()
-			formula, _ := mol.GrossFormula()
-			atomCount, _ := mol.CountAtoms()
-			fmt.Printf("    [%d] %s (%s, %d atoms)\n", i, smiles, formula, atomCount)
-			mol.Close() // Don't forget to close!
+			molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+			if err != nil {
+				log.Printf("Failed to get molecule %d: %v", i, err)
+			}
+			defer molMolecule.Close()
 		}
 	}
 
@@ -125,11 +141,16 @@ func main() {
 	} else {
 		fmt.Printf("  Found %d products:\n", len(allProducts))
 		for i, mol := range allProducts {
-			smiles, _ := mol.ToSmiles()
-			formula, _ := mol.GrossFormula()
-			atomCount, _ := mol.CountAtoms()
+			molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+			if err != nil {
+				log.Printf("Failed to get molecule %d: %v", i, err)
+			}
+			defer molMolecule.Close()
+			smiles, _ := molMolecule.ToSmiles()
+			formula, _ := molMolecule.GrossFormula()
+			atomCount, _ := molMolecule.CountAtoms()
 			fmt.Printf("    [%d] %s (%s, %d atoms)\n", i, smiles, formula, atomCount)
-			mol.Close()
+			molMolecule.Close()
 		}
 	}
 
@@ -144,24 +165,34 @@ func main() {
 
 	fmt.Println("  Reactants:")
 	for i, mol := range reactants {
-		mass, _ := mol.MolecularWeight()
-		atoms, _ := mol.CountAtoms()
+		molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			log.Printf("Failed to get molecule %d: %v", i, err)
+		}
+		defer molMolecule.Close()
+		mass, _ := molMolecule.MolecularWeight()
+		atoms, _ := molMolecule.CountAtoms()
 		totalReactantMass += float32(mass)
 		totalReactantAtoms += atoms
-		smiles, _ := mol.ToSmiles()
+		smiles, _ := molMolecule.ToSmiles()
 		fmt.Printf("    %d. %s (MW=%.2f, atoms=%d)\n", i+1, smiles, mass, atoms)
-		mol.Close()
+		molMolecule.Close()
 	}
 
 	fmt.Println("  Products:")
 	for i, mol := range products {
-		mass, _ := mol.MolecularWeight()
-		atoms, _ := mol.CountAtoms()
+		molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			log.Printf("Failed to get molecule %d: %v", i, err)
+		}
+		defer molMolecule.Close()
+		mass, _ := molMolecule.MolecularWeight()
+		atoms, _ := molMolecule.CountAtoms()
 		totalProductMass += float32(mass)
 		totalProductAtoms += atoms
-		smiles, _ := mol.ToSmiles()
+		smiles, _ := molMolecule.ToSmiles()
 		fmt.Printf("    %d. %s (MW=%.2f, atoms=%d)\n", i+1, smiles, mass, atoms)
-		mol.Close()
+		molMolecule.Close()
 	}
 
 	fmt.Printf("\n  Mass balance: %.2f → %.2f (diff=%.4f)\n",
@@ -182,12 +213,17 @@ func main() {
 	reactants2, _ := rxn2.GetAllReactants()
 	fmt.Println("\n  Processing reactants:")
 	for i, mol := range reactants2 {
-		beforeSmiles, _ := mol.ToSmiles()
-		mol.Aromatize()
-		afterSmiles, _ := mol.ToCanonicalSmiles()
-		rings, _ := mol.CountSSSR()
+		molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			log.Printf("Failed to get molecule %d: %v", i, err)
+		}
+		defer molMolecule.Close()
+		beforeSmiles, _ := molMolecule.ToSmiles()
+		molMolecule.Aromatize()
+		afterSmiles, _ := molMolecule.ToCanonicalSmiles()
+		rings, _ := molMolecule.CountSSSR()
 
-		inchi, err := indigoInchi.GenerateInChI(mol)
+		inchi, err := indigoInchi.GenerateInChI(molMolecule)
 		if err != nil {
 			panic(err)
 		}
@@ -200,18 +236,23 @@ func main() {
 		fmt.Printf("    %d. %s → %s (rings=%d)\n"+
 			"	inchi: %s\n"+
 			"	inchikey: %s\n", i+1, beforeSmiles, afterSmiles, rings, inchi, inChIKey)
-		mol.Close()
+		molMolecule.Close()
 	}
 
 	// Process products
 	products2, _ := rxn2.GetAllProducts()
 	fmt.Println("\n  Processing products:")
 	for i, mol := range products2 {
-		smiles, _ := mol.ToCanonicalSmiles()
-		heavy, _ := mol.CountHeavyAtoms()
-		bonds, _ := mol.CountBonds()
+		molMolecule, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			log.Printf("Failed to get molecule %d: %v", i, err)
+		}
+		defer molMolecule.Close()
+		smiles, _ := molMolecule.ToCanonicalSmiles()
+		heavy, _ := molMolecule.CountHeavyAtoms()
+		bonds, _ := molMolecule.CountBonds()
 		fmt.Printf("    %d. %s (heavy atoms=%d, bonds=%d)\n", i+1, smiles, heavy, bonds)
-		mol.Close()
+		molMolecule.Close()
 	}
 
 	fmt.Println("\n=== Examples completed successfully ===")

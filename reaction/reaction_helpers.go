@@ -29,8 +29,6 @@ package reaction
 import "C"
 import (
 	"fmt"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 // GetReactant returns a reactant molecule by index
@@ -167,56 +165,56 @@ func (r *Reaction) Dearomatize() error {
 	return nil
 }
 
-// GetReactantMolecules returns a reactant molecule as a Molecule object by index
-func (r *Reaction) GetReactantMolecules(index int) (*molecule.Molecule, error) {
+// GetReactantMolecule returns a reactant molecule handle as a Molecule object by index
+func (r *Reaction) GetReactantMolecule(index int) (int, error) {
 	handle, err := r.GetReactant(index)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// Clone the molecule to avoid issues with handle ownership
 	clonedHandle := int(C.indigoClone(C.int(handle)))
 	if clonedHandle < 0 {
-		return nil, fmt.Errorf("failed to clone reactant: %s", getLastError())
+		return 0, fmt.Errorf("failed to clone reactant: %s", getLastError())
 	}
 
-	return molecule.LoadMoleculeFromHandle(clonedHandle)
+	return clonedHandle, nil
 }
 
-// GetProductMolecules returns a product molecule as a Molecule object by index
-func (r *Reaction) GetProductMolecules(index int) (*molecule.Molecule, error) {
+// GetProductMolecule returns a product molecule as a Molecule object by index
+func (r *Reaction) GetProductMolecule(index int) (int, error) {
 	handle, err := r.GetProduct(index)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// Clone the molecule to avoid issues with handle ownership
 	clonedHandle := int(C.indigoClone(C.int(handle)))
 	if clonedHandle < 0 {
-		return nil, fmt.Errorf("failed to clone product: %s", getLastError())
+		return 0, fmt.Errorf("failed to clone product: %s", getLastError())
 	}
 
-	return molecule.LoadMoleculeFromHandle(clonedHandle)
+	return clonedHandle, nil
 }
 
-// GetCatalystMolecules returns a catalyst molecule as a Molecule object by index
-func (r *Reaction) GetCatalystMolecules(index int) (*molecule.Molecule, error) {
+// GetCatalystMolecule returns a catalyst molecule as a Molecule object by index
+func (r *Reaction) GetCatalystMolecule(index int) (int, error) {
 	handle, err := r.GetCatalyst(index)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// Clone the molecule to avoid issues with handle ownership
 	clonedHandle := int(C.indigoClone(C.int(handle)))
 	if clonedHandle < 0 {
-		return nil, fmt.Errorf("failed to clone catalyst: %s", getLastError())
+		return 0, fmt.Errorf("failed to clone catalyst: %s", getLastError())
 	}
 
-	return molecule.LoadMoleculeFromHandle(clonedHandle)
+	return clonedHandle, nil
 }
 
 // GetAllReactants returns all reactant molecules as Molecule objects
-func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
+func (r *Reaction) GetAllReactants() ([]int, error) {
 	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
@@ -226,7 +224,7 @@ func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
 		return nil, err
 	}
 
-	reactants := make([]*molecule.Molecule, 0, count)
+	reactants := make([]int, 0, count)
 
 	iterHandle := int(C.indigoIterateReactants(C.int(r.Handle)))
 	if iterHandle < 0 {
@@ -246,20 +244,14 @@ func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
-		if err != nil {
-			C.indigoFree(C.int(clonedHandle))
-			continue
-		}
-
-		reactants = append(reactants, mol)
+		reactants = append(reactants, clonedHandle)
 	}
 
 	return reactants, nil
 }
 
 // GetAllProducts returns all product molecules as Molecule objects
-func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
+func (r *Reaction) GetAllProducts() ([]int, error) {
 	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
@@ -269,7 +261,7 @@ func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
 		return nil, err
 	}
 
-	products := make([]*molecule.Molecule, 0, count)
+	products := make([]int, 0, count)
 
 	iterHandle := int(C.indigoIterateProducts(C.int(r.Handle)))
 	if iterHandle < 0 {
@@ -289,20 +281,14 @@ func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
-		if err != nil {
-			C.indigoFree(C.int(clonedHandle))
-			continue
-		}
-
-		products = append(products, mol)
+		products = append(products, clonedHandle)
 	}
 
 	return products, nil
 }
 
 // GetAllCatalysts returns all catalyst molecules as Molecule objects
-func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
+func (r *Reaction) GetAllCatalysts() ([]int, error) {
 	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
@@ -312,7 +298,7 @@ func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
 		return nil, err
 	}
 
-	catalysts := make([]*molecule.Molecule, 0, count)
+	catalysts := make([]int, 0, count)
 
 	iterHandle := int(C.indigoIterateCatalysts(C.int(r.Handle)))
 	if iterHandle < 0 {
@@ -332,13 +318,7 @@ func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
 			continue
 		}
 
-		mol, err := molecule.LoadMoleculeFromHandle(clonedHandle)
-		if err != nil {
-			C.indigoFree(C.int(clonedHandle))
-			continue
-		}
-
-		catalysts = append(catalysts, mol)
+		catalysts = append(catalysts, clonedHandle)
 	}
 
 	return catalysts, nil
