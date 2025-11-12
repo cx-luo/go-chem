@@ -12,8 +12,6 @@ import (
 	"fmt"
 	"github.com/cx-luo/go-chem/core"
 	"log"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
@@ -26,7 +24,7 @@ func main() {
 
 	// Example 1: Create an empty molecule
 	fmt.Println("1. Creating an empty molecule:")
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}

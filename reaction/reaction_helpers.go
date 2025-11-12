@@ -33,42 +33,14 @@ import (
 	"github.com/cx-luo/go-chem/molecule"
 )
 
-// HasNext checks if an iterator has more items
-func HasNext(iterHandle int) bool {
-	return C.indigoHasNext(C.int(iterHandle)) != 0
-}
-
-// Next moves to the next item in an iterator and returns its handle
-func Next(iterHandle int) (int, error) {
-	handle := int(C.indigoNext(C.int(iterHandle)))
-	if handle < 0 {
-		return 0, fmt.Errorf("failed to get next item: %s", getLastError())
-	}
-	return handle, nil
-}
-
-// FreeIterator frees an iterator handle
-func FreeIterator(iterHandle int) error {
-	if iterHandle < 0 {
-		return nil
-	}
-
-	ret := int(C.indigoFree(C.int(iterHandle)))
-	if ret < 0 {
-		return fmt.Errorf("failed to free iterator: %s", getLastError())
-	}
-
-	return nil
-}
-
 // GetReactant returns a reactant molecule by index
 func (r *Reaction) GetReactant(index int) (int, error) {
-	if r.closed {
+	if r.Closed {
 		return 0, fmt.Errorf("reaction is closed")
 	}
 
 	// Get iterator
-	iterHandle := int(C.indigoIterateReactants(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateReactants(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return 0, fmt.Errorf("failed to iterate reactants: %s", getLastError())
 	}
@@ -89,12 +61,12 @@ func (r *Reaction) GetReactant(index int) (int, error) {
 
 // GetProduct returns a product molecule by index
 func (r *Reaction) GetProduct(index int) (int, error) {
-	if r.closed {
+	if r.Closed {
 		return 0, fmt.Errorf("reaction is closed")
 	}
 
 	// Get iterator
-	iterHandle := int(C.indigoIterateProducts(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateProducts(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return 0, fmt.Errorf("failed to iterate products: %s", getLastError())
 	}
@@ -115,12 +87,12 @@ func (r *Reaction) GetProduct(index int) (int, error) {
 
 // GetCatalyst returns a catalyst molecule by index
 func (r *Reaction) GetCatalyst(index int) (int, error) {
-	if r.closed {
+	if r.Closed {
 		return 0, fmt.Errorf("reaction is closed")
 	}
 
 	// Get iterator
-	iterHandle := int(C.indigoIterateCatalysts(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateCatalysts(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return 0, fmt.Errorf("failed to iterate catalysts: %s", getLastError())
 	}
@@ -141,11 +113,11 @@ func (r *Reaction) GetCatalyst(index int) (int, error) {
 
 // Layout performs 2D layout of the reaction
 func (r *Reaction) Layout() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoLayout(C.int(r.handle)))
+	ret := int(C.indigoLayout(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to layout reaction: %s", getLastError())
 	}
@@ -155,11 +127,11 @@ func (r *Reaction) Layout() error {
 
 // Clean2D performs 2D cleaning of the reaction
 func (r *Reaction) Clean2D() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoClean2d(C.int(r.handle)))
+	ret := int(C.indigoClean2d(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to clean2d reaction: %s", getLastError())
 	}
@@ -169,11 +141,11 @@ func (r *Reaction) Clean2D() error {
 
 // Aromatize performs aromatization of all molecules in the reaction
 func (r *Reaction) Aromatize() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoAromatize(C.int(r.handle)))
+	ret := int(C.indigoAromatize(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to aromatize reaction: %s", getLastError())
 	}
@@ -183,11 +155,11 @@ func (r *Reaction) Aromatize() error {
 
 // Dearomatize removes aromaticity from all molecules in the reaction
 func (r *Reaction) Dearomatize() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoDearomatize(C.int(r.handle)))
+	ret := int(C.indigoDearomatize(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to dearomatize reaction: %s", getLastError())
 	}
@@ -195,8 +167,8 @@ func (r *Reaction) Dearomatize() error {
 	return nil
 }
 
-// GetReactantMolecule returns a reactant molecule as a Molecule object by index
-func (r *Reaction) GetReactantMolecule(index int) (*molecule.Molecule, error) {
+// GetReactantMolecules returns a reactant molecule as a Molecule object by index
+func (r *Reaction) GetReactantMolecules(index int) (*molecule.Molecule, error) {
 	handle, err := r.GetReactant(index)
 	if err != nil {
 		return nil, err
@@ -211,8 +183,8 @@ func (r *Reaction) GetReactantMolecule(index int) (*molecule.Molecule, error) {
 	return molecule.LoadMoleculeFromHandle(clonedHandle)
 }
 
-// GetProductMolecule returns a product molecule as a Molecule object by index
-func (r *Reaction) GetProductMolecule(index int) (*molecule.Molecule, error) {
+// GetProductMolecules returns a product molecule as a Molecule object by index
+func (r *Reaction) GetProductMolecules(index int) (*molecule.Molecule, error) {
 	handle, err := r.GetProduct(index)
 	if err != nil {
 		return nil, err
@@ -227,8 +199,8 @@ func (r *Reaction) GetProductMolecule(index int) (*molecule.Molecule, error) {
 	return molecule.LoadMoleculeFromHandle(clonedHandle)
 }
 
-// GetCatalystMolecule returns a catalyst molecule as a Molecule object by index
-func (r *Reaction) GetCatalystMolecule(index int) (*molecule.Molecule, error) {
+// GetCatalystMolecules returns a catalyst molecule as a Molecule object by index
+func (r *Reaction) GetCatalystMolecules(index int) (*molecule.Molecule, error) {
 	handle, err := r.GetCatalyst(index)
 	if err != nil {
 		return nil, err
@@ -245,7 +217,7 @@ func (r *Reaction) GetCatalystMolecule(index int) (*molecule.Molecule, error) {
 
 // GetAllReactants returns all reactant molecules as Molecule objects
 func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
@@ -256,7 +228,7 @@ func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
 
 	reactants := make([]*molecule.Molecule, 0, count)
 
-	iterHandle := int(C.indigoIterateReactants(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateReactants(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return nil, fmt.Errorf("failed to iterate reactants: %s", getLastError())
 	}
@@ -288,7 +260,7 @@ func (r *Reaction) GetAllReactants() ([]*molecule.Molecule, error) {
 
 // GetAllProducts returns all product molecules as Molecule objects
 func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
@@ -299,7 +271,7 @@ func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
 
 	products := make([]*molecule.Molecule, 0, count)
 
-	iterHandle := int(C.indigoIterateProducts(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateProducts(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return nil, fmt.Errorf("failed to iterate products: %s", getLastError())
 	}
@@ -331,7 +303,7 @@ func (r *Reaction) GetAllProducts() ([]*molecule.Molecule, error) {
 
 // GetAllCatalysts returns all catalyst molecules as Molecule objects
 func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
@@ -342,7 +314,7 @@ func (r *Reaction) GetAllCatalysts() ([]*molecule.Molecule, error) {
 
 	catalysts := make([]*molecule.Molecule, 0, count)
 
-	iterHandle := int(C.indigoIterateCatalysts(C.int(r.handle)))
+	iterHandle := int(C.indigoIterateCatalysts(C.int(r.Handle)))
 	if iterHandle < 0 {
 		return nil, fmt.Errorf("failed to iterate catalysts: %s", getLastError())
 	}

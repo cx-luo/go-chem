@@ -52,26 +52,6 @@ type Molecule struct {
 	Closed bool
 }
 
-// CreateMolecule creates a new empty molecule
-func CreateMolecule() (*Molecule, error) {
-	handle := int(C.indigoCreateMolecule())
-	if handle < 0 {
-		return nil, fmt.Errorf("failed to create molecule: %s", getLastError())
-	}
-
-	return newMolecule(handle), nil
-}
-
-// CreateQueryMolecule creates a new empty query molecule
-func CreateQueryMolecule() (*Molecule, error) {
-	handle := int(C.indigoCreateQueryMolecule())
-	if handle < 0 {
-		return nil, fmt.Errorf("failed to create query molecule: %s", getLastError())
-	}
-
-	return newMolecule(handle), nil
-}
-
 // Close frees the Indigo molecule object
 func (m *Molecule) Close() error {
 	if m.Closed || m.Handle < 0 {

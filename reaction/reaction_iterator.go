@@ -40,11 +40,11 @@ type ReactionIterator struct {
 
 // IterateReactants returns an iterator for all reactants in the reaction
 func (r *Reaction) IterateReactants() (*ReactionIterator, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
-	handle := int(C.indigoIterateReactants(C.int(r.handle)))
+	handle := int(C.indigoIterateReactants(C.int(r.Handle)))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to create reactants iterator: %s", getLastError())
 	}
@@ -60,11 +60,11 @@ func (r *Reaction) IterateReactants() (*ReactionIterator, error) {
 
 // IterateProducts returns an iterator for all products in the reaction
 func (r *Reaction) IterateProducts() (*ReactionIterator, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
-	handle := int(C.indigoIterateProducts(C.int(r.handle)))
+	handle := int(C.indigoIterateProducts(C.int(r.Handle)))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to create products iterator: %s", getLastError())
 	}
@@ -80,11 +80,11 @@ func (r *Reaction) IterateProducts() (*ReactionIterator, error) {
 
 // IterateCatalysts returns an iterator for all catalysts in the reaction
 func (r *Reaction) IterateCatalysts() (*ReactionIterator, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
-	handle := int(C.indigoIterateCatalysts(C.int(r.handle)))
+	handle := int(C.indigoIterateCatalysts(C.int(r.Handle)))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to create catalysts iterator: %s", getLastError())
 	}
@@ -100,11 +100,11 @@ func (r *Reaction) IterateCatalysts() (*ReactionIterator, error) {
 
 // IterateMolecules returns an iterator for all molecules (reactants, products, and catalysts) in the reaction
 func (r *Reaction) IterateMolecules() (*ReactionIterator, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
-	handle := int(C.indigoIterateMolecules(C.int(r.handle)))
+	handle := int(C.indigoIterateMolecules(C.int(r.Handle)))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to create molecules iterator: %s", getLastError())
 	}

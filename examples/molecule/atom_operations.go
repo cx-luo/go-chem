@@ -83,7 +83,7 @@ func main() {
 
 	// Example 4: Build molecule from scratch
 	fmt.Println("\n4. Building Molecule from Atoms:")
-	newMol, err := molecule.CreateMolecule()
+	newMol, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
