@@ -10,18 +10,22 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 	"os"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Molecule I/O Examples ===\n")
 
 	// Example 1: Load from SMILES
 	fmt.Println("1. Loading from SMILES:")
-	m1, err := molecule.LoadMoleculeFromString("CCO")
+	m1, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load from SMILES: %v", err)
 	}
@@ -55,7 +59,7 @@ func main() {
 
 	// Example 4: Load from MOL file
 	fmt.Println("4. Loading from MOL file:")
-	m2, err := molecule.LoadMoleculeFromFile("ethanol.mol")
+	m2, err := indigoInit.LoadMoleculeFromFile("ethanol.mol")
 	if err != nil {
 		log.Fatalf("Failed to load from file: %v", err)
 	}
@@ -89,7 +93,7 @@ func main() {
 	// Example 7: Load from buffer
 	fmt.Println("7. Loading from buffer:")
 	smilesBuffer := []byte("c1ccccc1")
-	m3, err := molecule.LoadMoleculeFromBuffer(smilesBuffer)
+	m3, err := indigoInit.LoadMoleculeFromBuffer(smilesBuffer)
 	if err != nil {
 		log.Fatalf("Failed to load from buffer: %v", err)
 	}
@@ -98,7 +102,7 @@ func main() {
 
 	// Example 8: Load SMARTS
 	fmt.Println("8. Loading SMARTS pattern:")
-	pattern, err := molecule.LoadSmartsFromString("[OH]")
+	pattern, err := indigoInit.LoadSmartsFromString("[OH]")
 	if err != nil {
 		log.Fatalf("Failed to load SMARTS: %v", err)
 	}
@@ -107,7 +111,7 @@ func main() {
 
 	// Example 9: Load query molecule
 	fmt.Println("9. Loading query molecule:")
-	query, err := molecule.LoadQueryMoleculeFromString("[#6]CO")
+	query, err := indigoInit.LoadQueryMoleculeFromString("[#6]CO")
 	if err != nil {
 		log.Fatalf("Failed to load query: %v", err)
 	}
@@ -116,7 +120,7 @@ func main() {
 
 	// Example 10: Multiple molecules with components
 	fmt.Println("10. Loading mixture:")
-	mixture, err := molecule.LoadMoleculeFromString("CCO.C.O")
+	mixture, err := indigoInit.LoadMoleculeFromString("CCO.C.O")
 	if err != nil {
 		log.Fatalf("Failed to load mixture: %v", err)
 	}

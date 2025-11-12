@@ -34,11 +34,11 @@ import (
 
 // ToRxnfile returns the reaction as an RXN file string
 func (r *Reaction) ToRxnfile() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoRxnfile(C.int(r.handle))
+	cStr := C.indigoRxnfile(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to RXN: %s", getLastError())
 	}
@@ -48,14 +48,14 @@ func (r *Reaction) ToRxnfile() (string, error) {
 
 // SaveToFile saves the reaction to a file in RXN format
 func (r *Reaction) SaveToFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
-	ret := int(C.indigoSaveRxnfileToFile(C.int(r.handle), cFilename))
+	ret := int(C.indigoSaveRxnfileToFile(C.int(r.Handle), cFilename))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to file %s: %s", filename, getLastError())
 	}
@@ -66,11 +66,11 @@ func (r *Reaction) SaveToFile(filename string) error {
 // SaveRxnfile saves the reaction to an output object
 // outputHandle is the Indigo handle of an output object
 func (r *Reaction) SaveRxnfile(outputHandle int) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoSaveRxnfile(C.int(r.handle), C.int(outputHandle)))
+	ret := int(C.indigoSaveRxnfile(C.int(r.Handle), C.int(outputHandle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to output: %s", getLastError())
 	}
@@ -78,27 +78,13 @@ func (r *Reaction) SaveRxnfile(outputHandle int) error {
 	return nil
 }
 
-// ToSmiles converts the reaction to SMILES format
-func (r *Reaction) ToSmiles() (string, error) {
-	if r.closed {
-		return "", fmt.Errorf("reaction is closed")
-	}
-
-	cStr := C.indigoSmiles(C.int(r.handle))
-	if cStr == nil {
-		return "", fmt.Errorf("failed to convert reaction to SMILES: %s", getLastError())
-	}
-
-	return C.GoString(cStr), nil
-}
-
 // ToCanonicalSmiles converts the reaction to canonical SMILES format
 func (r *Reaction) ToCanonicalSmiles() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoCanonicalSmiles(C.int(r.handle))
+	cStr := C.indigoCanonicalSmiles(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to canonical SMILES: %s", getLastError())
 	}
@@ -137,11 +123,11 @@ func FreeOutput(outputHandle int) error {
 
 // ToSmarts converts the reaction to SMARTS format
 func (r *Reaction) ToSmarts() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoSmarts(C.int(r.handle))
+	cStr := C.indigoSmarts(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to SMARTS: %s", getLastError())
 	}
@@ -151,11 +137,11 @@ func (r *Reaction) ToSmarts() (string, error) {
 
 // ToCanonicalSmarts converts the reaction to canonical SMARTS format
 func (r *Reaction) ToCanonicalSmarts() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoCanonicalSmarts(C.int(r.handle))
+	cStr := C.indigoCanonicalSmarts(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to canonical SMARTS: %s", getLastError())
 	}
@@ -165,7 +151,7 @@ func (r *Reaction) ToCanonicalSmarts() (string, error) {
 
 // ToCXSmiles converts the reaction to ChemAxon Extended SMILES format
 func (r *Reaction) ToCXSmiles() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
@@ -185,7 +171,7 @@ func (r *Reaction) ToCXSmiles() (string, error) {
 	// Reset to default after getting the SMILES
 	defer C.indigoSetOption(cOption, cDefaultValue)
 
-	cStr := C.indigoSmiles(C.int(r.handle))
+	cStr := C.indigoSmiles(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to CXSmiles: %s", getLastError())
 	}
@@ -196,7 +182,7 @@ func (r *Reaction) ToCXSmiles() (string, error) {
 // ToDaylightSmiles converts the reaction to Daylight SMILES format
 // This explicitly uses the Daylight format (as opposed to ChemAxon)
 func (r *Reaction) ToDaylightSmiles() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
@@ -211,7 +197,7 @@ func (r *Reaction) ToDaylightSmiles() (string, error) {
 		return "", fmt.Errorf("failed to set daylight format: %s", getLastError())
 	}
 
-	cStr := C.indigoSmiles(C.int(r.handle))
+	cStr := C.indigoSmiles(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to Daylight SMILES: %s", getLastError())
 	}
@@ -221,11 +207,11 @@ func (r *Reaction) ToDaylightSmiles() (string, error) {
 
 // ToCML converts the reaction to CML (Chemical Markup Language) format
 func (r *Reaction) ToCML() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoCml(C.int(r.handle))
+	cStr := C.indigoCml(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to CML: %s", getLastError())
 	}
@@ -235,14 +221,14 @@ func (r *Reaction) ToCML() (string, error) {
 
 // SaveToCMLFile saves the reaction to a file in CML format
 func (r *Reaction) SaveToCMLFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
-	ret := int(C.indigoSaveCmlToFile(C.int(r.handle), cFilename))
+	ret := int(C.indigoSaveCmlToFile(C.int(r.Handle), cFilename))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to CML file %s: %s", filename, getLastError())
 	}
@@ -252,11 +238,11 @@ func (r *Reaction) SaveToCMLFile(filename string) error {
 
 // ToCDXML converts the reaction to CDXML format
 func (r *Reaction) ToCDXML() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
-	cStr := C.indigoCdxml(C.int(r.handle))
+	cStr := C.indigoCdxml(C.int(r.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to convert reaction to CDXML: %s", getLastError())
 	}
@@ -266,14 +252,14 @@ func (r *Reaction) ToCDXML() (string, error) {
 
 // SaveToCDXMLFile saves the reaction to a file in CDXML format
 func (r *Reaction) SaveToCDXMLFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
-	ret := int(C.indigoSaveCdxmlToFile(C.int(r.handle), cFilename))
+	ret := int(C.indigoSaveCdxmlToFile(C.int(r.Handle), cFilename))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to CDXML file %s: %s", filename, getLastError())
 	}
@@ -283,14 +269,14 @@ func (r *Reaction) SaveToCDXMLFile(filename string) error {
 
 // SaveToCDXFile saves the reaction to a file in CDX format
 func (r *Reaction) SaveToCDXFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
-	ret := int(C.indigoSaveCdxToFile(C.int(r.handle), cFilename))
+	ret := int(C.indigoSaveCdxToFile(C.int(r.Handle), cFilename))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to CDX file %s: %s", filename, getLastError())
 	}
@@ -300,7 +286,7 @@ func (r *Reaction) SaveToCDXFile(filename string) error {
 
 // ToCDXBase64 converts the reaction to base64-encoded CDX format
 func (r *Reaction) ToCDXBase64() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
@@ -312,7 +298,7 @@ func (r *Reaction) ToCDXBase64() (string, error) {
 	defer C.indigoFree(C.int(bufferHandle))
 
 	// Save as CDX
-	ret := int(C.indigoSaveCdx(C.int(r.handle), C.int(bufferHandle)))
+	ret := int(C.indigoSaveCdx(C.int(r.Handle), C.int(bufferHandle)))
 	if ret < 0 {
 		return "", fmt.Errorf("failed to save reaction as CDX: %s", getLastError())
 	}
@@ -328,7 +314,7 @@ func (r *Reaction) ToCDXBase64() (string, error) {
 
 // ToJSON converts the reaction to JSON format
 func (r *Reaction) ToJSON() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
@@ -340,7 +326,7 @@ func (r *Reaction) ToJSON() (string, error) {
 	defer C.indigoFree(C.int(bufferHandle))
 
 	// Save as JSON
-	ret := int(C.indigoSaveJson(C.int(r.handle), C.int(bufferHandle)))
+	ret := int(C.indigoSaveJson(C.int(r.Handle), C.int(bufferHandle)))
 	if ret < 0 {
 		return "", fmt.Errorf("failed to save reaction as JSON: %s", getLastError())
 	}
@@ -356,14 +342,14 @@ func (r *Reaction) ToJSON() (string, error) {
 
 // SaveToJSONFile saves the reaction to a file in JSON format
 func (r *Reaction) SaveToJSONFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
-	ret := int(C.indigoSaveJsonToFile(C.int(r.handle), cFilename))
+	ret := int(C.indigoSaveJsonToFile(C.int(r.Handle), cFilename))
 	if ret < 0 {
 		return fmt.Errorf("failed to save reaction to JSON file %s: %s", filename, getLastError())
 	}
@@ -373,7 +359,7 @@ func (r *Reaction) SaveToJSONFile(filename string) error {
 
 // ToRDF converts the reaction to RDF (Reaction Data Format) format string
 func (r *Reaction) ToRDF() (string, error) {
-	if r.closed {
+	if r.Closed {
 		return "", fmt.Errorf("reaction is closed")
 	}
 
@@ -395,7 +381,7 @@ func (r *Reaction) ToRDF() (string, error) {
 	defer C.indigoFree(C.int(saverHandle))
 
 	// Append the reaction
-	ret := int(C.indigoAppend(C.int(saverHandle), C.int(r.handle)))
+	ret := int(C.indigoAppend(C.int(saverHandle), C.int(r.Handle)))
 	if ret < 0 {
 		return "", fmt.Errorf("failed to append reaction to RDF: %s", getLastError())
 	}
@@ -417,7 +403,7 @@ func (r *Reaction) ToRDF() (string, error) {
 
 // SaveToRDFFile saves the reaction to a file in RDF format
 func (r *Reaction) SaveToRDFFile(filename string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
@@ -442,7 +428,7 @@ func (r *Reaction) SaveToRDFFile(filename string) error {
 	defer C.indigoFree(C.int(saverHandle))
 
 	// Append the reaction
-	ret := int(C.indigoAppend(C.int(saverHandle), C.int(r.handle)))
+	ret := int(C.indigoAppend(C.int(saverHandle), C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to append reaction to RDF: %s", getLastError())
 	}
@@ -458,7 +444,7 @@ func (r *Reaction) SaveToRDFFile(filename string) error {
 
 // ToBuffer converts the reaction to a binary buffer
 func (r *Reaction) ToBuffer() ([]byte, error) {
-	if r.closed {
+	if r.Closed {
 		return nil, fmt.Errorf("reaction is closed")
 	}
 
@@ -470,7 +456,7 @@ func (r *Reaction) ToBuffer() ([]byte, error) {
 	defer C.indigoFree(C.int(bufferHandle))
 
 	// Save reaction to buffer
-	ret := int(C.indigoSaveRxnfile(C.int(r.handle), C.int(bufferHandle)))
+	ret := int(C.indigoSaveRxnfile(C.int(r.Handle), C.int(bufferHandle)))
 	if ret < 0 {
 		return nil, fmt.Errorf("failed to save reaction to buffer: %s", getLastError())
 	}

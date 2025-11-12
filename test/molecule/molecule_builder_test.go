@@ -1,14 +1,33 @@
 package molecule_test
 
 import (
+	"github.com/cx-luo/go-chem/core"
 	"testing"
 
 	"github.com/cx-luo/go-chem/molecule"
 )
 
+var indigoInit *core.Indigo
+var indigoInchi *core.IndigoInchi
+
+func init() {
+	handle, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+	indigoInit = handle
+
+	indigoInchiHandle, err := core.InchiInit(indigoInit.GetSessionID())
+
+	if err != nil {
+		panic(err)
+	}
+	indigoInchi = indigoInchiHandle
+}
+
 // TestAddAtom tests adding atoms to a molecule
 func TestAddAtom(t *testing.T) {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("failed to create molecule: %v", err)
 	}
@@ -33,7 +52,7 @@ func TestAddAtom(t *testing.T) {
 
 // TestAddMultipleAtoms tests adding multiple atoms
 func TestAddMultipleAtoms(t *testing.T) {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("failed to create molecule: %v", err)
 	}
@@ -57,7 +76,7 @@ func TestAddMultipleAtoms(t *testing.T) {
 
 // TestAddBond tests adding a bond between atoms
 func TestAddBond(t *testing.T) {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("failed to create molecule: %v", err)
 	}
@@ -86,7 +105,7 @@ func TestAddBond(t *testing.T) {
 
 // TestBuildEthanol tests building ethanol from scratch
 func TestBuildEthanol(t *testing.T) {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("failed to create molecule: %v", err)
 	}
@@ -128,7 +147,7 @@ func TestBondTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, _ := molecule.CreateMolecule()
+			m, _ := indigoInit.CreateMolecule()
 			defer m.Close()
 
 			c1, _ := m.AddAtom("C")
@@ -148,7 +167,7 @@ func TestBondTypes(t *testing.T) {
 
 // TestBuildBenzene tests building benzene
 func TestBuildBenzene(t *testing.T) {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("failed to create molecule: %v", err)
 	}
@@ -188,14 +207,14 @@ func TestBuildBenzene(t *testing.T) {
 // TestMergeMolecules tests merging two molecules
 func TestMergeMolecules(t *testing.T) {
 	// Create first molecule (C-C)
-	m1, _ := molecule.CreateMolecule()
+	m1, _ := indigoInit.CreateMolecule()
 	defer m1.Close()
 	c1, _ := m1.AddAtom("C")
 	c2, _ := m1.AddAtom("C")
 	m1.AddBond(c1, c2, molecule.BOND_SINGLE)
 
 	// Create second molecule (O)
-	m2, _ := molecule.CreateMolecule()
+	m2, _ := indigoInit.CreateMolecule()
 	defer m2.Close()
 	m2.AddAtom("O")
 
@@ -220,7 +239,7 @@ func TestMergeMolecules(t *testing.T) {
 
 // TestBuilderSetCharge tests setting atom charge during building
 func TestBuilderSetCharge(t *testing.T) {
-	m, _ := molecule.CreateMolecule()
+	m, _ := indigoInit.CreateMolecule()
 	defer m.Close()
 
 	o, _ := m.AddAtom("O")
@@ -234,7 +253,7 @@ func TestBuilderSetCharge(t *testing.T) {
 
 // TestBuilderSetIsotope tests setting isotope during building
 func TestBuilderSetIsotope(t *testing.T) {
-	m, _ := molecule.CreateMolecule()
+	m, _ := indigoInit.CreateMolecule()
 	defer m.Close()
 
 	h, _ := m.AddAtom("H")
@@ -248,7 +267,7 @@ func TestBuilderSetIsotope(t *testing.T) {
 
 // TestAddRSite tests adding R-site
 func TestAddRSite(t *testing.T) {
-	m, _ := molecule.CreateMolecule()
+	m, _ := indigoInit.CreateMolecule()
 	defer m.Close()
 
 	// Add R1 site
@@ -264,7 +283,7 @@ func TestAddRSite(t *testing.T) {
 
 // TestBuildMoleculeWithHydrogens tests building a molecule and managing hydrogens
 func TestBuildMoleculeWithHydrogens(t *testing.T) {
-	m, _ := molecule.CreateMolecule()
+	m, _ := indigoInit.CreateMolecule()
 	defer m.Close()
 
 	// Build methane (C with 4 H)

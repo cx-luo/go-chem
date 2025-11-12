@@ -34,11 +34,11 @@ import (
 
 // GrossFormula returns the gross formula of the molecule
 func (m *Molecule) GrossFormula() (string, error) {
-	if m.closed {
+	if m.Closed {
 		return "", fmt.Errorf("molecule is closed")
 	}
 
-	handle := int(C.indigoGrossFormula(C.int(m.handle)))
+	handle := int(C.indigoGrossFormula(C.int(m.Handle)))
 	if handle < 0 {
 		return "", fmt.Errorf("failed to get gross formula: %s", getLastError())
 	}
@@ -53,11 +53,11 @@ func (m *Molecule) GrossFormula() (string, error) {
 
 // MolecularFormula returns the molecular formula of the molecule
 func (m *Molecule) MolecularFormula() (string, error) {
-	if m.closed {
+	if m.Closed {
 		return "", fmt.Errorf("molecule is closed")
 	}
 
-	handle := int(C.indigoMolecularFormula(C.int(m.handle)))
+	handle := int(C.indigoMolecularFormula(C.int(m.Handle)))
 	if handle < 0 {
 		return "", fmt.Errorf("failed to get molecular formula: %s", getLastError())
 	}
@@ -72,11 +72,11 @@ func (m *Molecule) MolecularFormula() (string, error) {
 
 // MolecularWeight returns the molecular weight of the molecule
 func (m *Molecule) MolecularWeight() (float64, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
-	weight := float64(C.indigoMolecularWeight(C.int(m.handle)))
+	weight := float64(C.indigoMolecularWeight(C.int(m.Handle)))
 	if weight < 0 {
 		return 0, fmt.Errorf("failed to get molecular weight: %s", getLastError())
 	}
@@ -86,11 +86,11 @@ func (m *Molecule) MolecularWeight() (float64, error) {
 
 // MostAbundantMass returns the most abundant mass of the molecule
 func (m *Molecule) MostAbundantMass() (float64, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
-	mass := float64(C.indigoMostAbundantMass(C.int(m.handle)))
+	mass := float64(C.indigoMostAbundantMass(C.int(m.Handle)))
 	if mass < 0 {
 		return 0, fmt.Errorf("failed to get most abundant mass: %s", getLastError())
 	}
@@ -100,11 +100,11 @@ func (m *Molecule) MostAbundantMass() (float64, error) {
 
 // MonoisotopicMass returns the monoisotopic mass of the molecule
 func (m *Molecule) MonoisotopicMass() (float64, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
-	mass := float64(C.indigoMonoisotopicMass(C.int(m.handle)))
+	mass := float64(C.indigoMonoisotopicMass(C.int(m.Handle)))
 	if mass < 0 {
 		return 0, fmt.Errorf("failed to get monoisotopic mass: %s", getLastError())
 	}
@@ -114,11 +114,11 @@ func (m *Molecule) MonoisotopicMass() (float64, error) {
 
 // MassComposition returns the mass composition of the molecule
 func (m *Molecule) MassComposition() (string, error) {
-	if m.closed {
+	if m.Closed {
 		return "", fmt.Errorf("molecule is closed")
 	}
 
-	cStr := C.indigoMassComposition(C.int(m.handle))
+	cStr := C.indigoMassComposition(C.int(m.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to get mass composition: %s", getLastError())
 	}
@@ -129,7 +129,7 @@ func (m *Molecule) MassComposition() (string, error) {
 // TPSA returns the topological polar surface area
 // includeSP: if true, includes sulfur and phosphorus
 func (m *Molecule) TPSA(includeSP bool) (float64, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
@@ -140,7 +140,7 @@ func (m *Molecule) TPSA(includeSP bool) (float64, error) {
 		sp = 0
 	}
 
-	tpsa := float64(C.indigoTPSA(C.int(m.handle), sp))
+	tpsa := float64(C.indigoTPSA(C.int(m.Handle), sp))
 	if tpsa < 0 {
 		return 0, fmt.Errorf("failed to get TPSA: %s", getLastError())
 	}
@@ -150,11 +150,11 @@ func (m *Molecule) TPSA(includeSP bool) (float64, error) {
 
 // NumRotatableBonds returns the number of rotatable bonds
 func (m *Molecule) NumRotatableBonds() (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
-	count := int(C.indigoNumRotatableBonds(C.int(m.handle)))
+	count := int(C.indigoNumRotatableBonds(C.int(m.Handle)))
 	if count < 0 {
 		return 0, fmt.Errorf("failed to get rotatable bonds count: %s", getLastError())
 	}
@@ -164,11 +164,11 @@ func (m *Molecule) NumRotatableBonds() (int, error) {
 
 // Name returns the name of the molecule
 func (m *Molecule) Name() (string, error) {
-	if m.closed {
+	if m.Closed {
 		return "", fmt.Errorf("molecule is closed")
 	}
 
-	cStr := C.indigoName(C.int(m.handle))
+	cStr := C.indigoName(C.int(m.Handle))
 	if cStr == nil {
 		return "", nil // No name set
 	}
@@ -178,14 +178,14 @@ func (m *Molecule) Name() (string, error) {
 
 // SetName sets the name of the molecule
 func (m *Molecule) SetName(name string) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	ret := int(C.indigoSetName(C.int(m.handle), cName))
+	ret := int(C.indigoSetName(C.int(m.Handle), cName))
 	if ret < 0 {
 		return fmt.Errorf("failed to set name: %s", getLastError())
 	}
@@ -195,14 +195,14 @@ func (m *Molecule) SetName(name string) error {
 
 // HasProperty checks if the molecule has a property
 func (m *Molecule) HasProperty(prop string) (bool, error) {
-	if m.closed {
+	if m.Closed {
 		return false, fmt.Errorf("molecule is closed")
 	}
 
 	cProp := C.CString(prop)
 	defer C.free(unsafe.Pointer(cProp))
 
-	ret := int(C.indigoHasProperty(C.int(m.handle), cProp))
+	ret := int(C.indigoHasProperty(C.int(m.Handle), cProp))
 	if ret < 0 {
 		return false, fmt.Errorf("failed to check property: %s", getLastError())
 	}
@@ -212,14 +212,14 @@ func (m *Molecule) HasProperty(prop string) (bool, error) {
 
 // GetProperty gets a property value from the molecule
 func (m *Molecule) GetProperty(prop string) (string, error) {
-	if m.closed {
+	if m.Closed {
 		return "", fmt.Errorf("molecule is closed")
 	}
 
 	cProp := C.CString(prop)
 	defer C.free(unsafe.Pointer(cProp))
 
-	cStr := C.indigoGetProperty(C.int(m.handle), cProp)
+	cStr := C.indigoGetProperty(C.int(m.Handle), cProp)
 	if cStr == nil {
 		return "", fmt.Errorf("failed to get property: %s", getLastError())
 	}
@@ -229,7 +229,7 @@ func (m *Molecule) GetProperty(prop string) (string, error) {
 
 // SetProperty sets a property value on the molecule
 func (m *Molecule) SetProperty(prop string, value string) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
@@ -239,7 +239,7 @@ func (m *Molecule) SetProperty(prop string, value string) error {
 	cValue := C.CString(value)
 	defer C.free(unsafe.Pointer(cValue))
 
-	ret := int(C.indigoSetProperty(C.int(m.handle), cProp, cValue))
+	ret := int(C.indigoSetProperty(C.int(m.Handle), cProp, cValue))
 	if ret < 0 {
 		return fmt.Errorf("failed to set property: %s", getLastError())
 	}
@@ -249,14 +249,14 @@ func (m *Molecule) SetProperty(prop string, value string) error {
 
 // RemoveProperty removes a property from the molecule
 func (m *Molecule) RemoveProperty(prop string) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
 	cProp := C.CString(prop)
 	defer C.free(unsafe.Pointer(cProp))
 
-	ret := int(C.indigoRemoveProperty(C.int(m.handle), cProp))
+	ret := int(C.indigoRemoveProperty(C.int(m.Handle), cProp))
 	if ret < 0 {
 		return fmt.Errorf("failed to remove property: %s", getLastError())
 	}

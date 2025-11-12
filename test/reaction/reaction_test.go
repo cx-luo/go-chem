@@ -3,20 +3,37 @@ package reaction_test
 import (
 	"testing"
 
-	"github.com/cx-luo/go-chem/reaction"
+	"github.com/cx-luo/go-chem/core"
 )
+
+var indigoInit *core.Indigo
+var indigoInchi *core.IndigoInchi
+
+func init() {
+	handle, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+	indigoInit = handle
+
+	indigoInchiHandle, err := core.InchiInit(indigoInit.GetSessionID())
+	if err != nil {
+		panic(err)
+	}
+	indigoInchi = indigoInchiHandle
+}
 
 // TestCreateReaction tests creating a new reaction
 func TestCreateReaction(t *testing.T) {
-	r, err := reaction.CreateReaction()
+	r, err := indigoInit.CreateReaction()
 	if err != nil {
 		t.Fatalf("failed to create reaction: %v", err)
 	}
 	defer r.Close()
 
 	// Test that the reaction is valid
-	if r.Handle() < 0 {
-		t.Errorf("invalid reaction handle: %d", r.Handle())
+	if r.Handle < 0 {
+		t.Errorf("invalid reaction handle: %d", r.Handle)
 	}
 
 	// Test counts
@@ -47,20 +64,20 @@ func TestCreateReaction(t *testing.T) {
 
 // TestCreateQueryReaction tests creating a query reaction
 func TestCreateQueryReaction(t *testing.T) {
-	r, err := reaction.CreateQueryReaction()
+	r, err := indigoInit.CreateQueryReaction()
 	if err != nil {
 		t.Fatalf("failed to create query reaction: %v", err)
 	}
 	defer r.Close()
 
-	if r.Handle() < 0 {
-		t.Errorf("invalid query reaction handle: %d", r.Handle())
+	if r.Handle < 0 {
+		t.Errorf("invalid query reaction handle: %d", r.Handle)
 	}
 }
 
 // TestReactionClose tests closing a reaction
 func TestReactionClose(t *testing.T) {
-	r, err := reaction.CreateReaction()
+	r, err := indigoInit.CreateReaction()
 	if err != nil {
 		t.Fatalf("failed to create reaction: %v", err)
 	}
@@ -88,7 +105,7 @@ func TestReactionClose(t *testing.T) {
 func TestReactionClone(t *testing.T) {
 	// Load a simple reaction
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -117,7 +134,7 @@ func TestReactionClone(t *testing.T) {
 
 // TestReactionOptimize tests optimizing a query reaction
 func TestReactionOptimize(t *testing.T) {
-	r, err := reaction.CreateQueryReaction()
+	r, err := indigoInit.CreateQueryReaction()
 	if err != nil {
 		t.Fatalf("failed to create query reaction: %v", err)
 	}
@@ -134,7 +151,7 @@ func TestReactionOptimize(t *testing.T) {
 func TestReactionCountMolecules(t *testing.T) {
 	// Load a reaction: 2 reactants + 2 products = 4 molecules
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -155,7 +172,7 @@ func TestReactionCountMolecules(t *testing.T) {
 func TestReactionGetMolecule(t *testing.T) {
 	// Load a reaction
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}

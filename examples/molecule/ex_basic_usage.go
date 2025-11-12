@@ -10,26 +10,30 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Go-Chem Molecule Basic Usage Examples ===\n")
 
 	// Example 1: Create an empty molecule
 	fmt.Println("1. Creating an empty molecule:")
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
 	defer m.Close()
-	fmt.Printf("   Created molecule with handle: %d\n\n", m.Handle())
+	fmt.Printf("   Created molecule with handle: %d\n\n", m.Handle)
 
 	// Example 2: Load molecule from SMILES
 	fmt.Println("2. Loading molecule from SMILES:")
-	ethanol, err := molecule.LoadMoleculeFromString("CCO")
+	ethanol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load ethanol: %v", err)
 	}
@@ -54,7 +58,7 @@ func main() {
 
 	// Example 4: Aromatize a molecule
 	fmt.Println("4. Aromatization:")
-	benzene, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	benzene, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatalf("Failed to load benzene: %v", err)
 	}
@@ -73,7 +77,7 @@ func main() {
 
 	// Example 5: Fold/Unfold hydrogens
 	fmt.Println("5. Hydrogen management:")
-	molecule2, err := molecule.LoadMoleculeFromString("CCO")
+	molecule2, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -98,7 +102,7 @@ func main() {
 
 	// Example 6: Layout molecule (2D coordinates)
 	fmt.Println("6. 2D Layout:")
-	molecule3, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	molecule3, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -114,7 +118,7 @@ func main() {
 
 	// Example 7: Normalize and Standardize
 	fmt.Println("7. Normalization and Standardization:")
-	molecule4, err := molecule.LoadMoleculeFromString("CC(=O)O")
+	molecule4, err := indigoInit.LoadMoleculeFromString("CC(=O)O")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -137,7 +141,7 @@ func main() {
 
 	// Example 8: Count components
 	fmt.Println("8. Counting connected components:")
-	mixture, err := molecule.LoadMoleculeFromString("CCO.C.O")
+	mixture, err := indigoInit.LoadMoleculeFromString("CCO.C.O")
 	if err != nil {
 		log.Fatalf("Failed to load mixture: %v", err)
 	}

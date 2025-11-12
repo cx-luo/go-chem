@@ -10,16 +10,22 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 
 	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Atom-Level Operations Examples ===\n")
 
 	// Load a molecule (ethanol)
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -77,7 +83,7 @@ func main() {
 
 	// Example 4: Build molecule from scratch
 	fmt.Println("\n4. Building Molecule from Atoms:")
-	newMol, err := molecule.CreateMolecule()
+	newMol, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}

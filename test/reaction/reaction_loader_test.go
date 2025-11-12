@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"testing"
-
-	"github.com/cx-luo/go-chem/reaction"
 )
 
 // TestLoadReactionFromString tests loading a reaction from a SMILES string
@@ -13,7 +11,7 @@ func TestLoadReactionFromString(t *testing.T) {
 	// Test simple esterification reaction
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction from string: %v", err)
 	}
@@ -50,14 +48,14 @@ func TestLoadReactionFromStringWithCatalyst(t *testing.T) {
 	// Reaction with catalyst notation
 	rxn := "C=C.O>>[H]C([H])C([H])([H])O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction with catalyst: %v", err)
 	}
 	defer r.Close()
 
 	// Verify the reaction loaded successfully
-	if r.Handle() < 0 {
+	if r.Handle < 0 {
 		t.Error("invalid reaction handle")
 	}
 }
@@ -67,7 +65,7 @@ func TestLoadReactionFromBuffer(t *testing.T) {
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 	buffer := []byte(rxn)
 
-	r, err := reaction.LoadReactionFromBuffer(buffer)
+	r, err := indigoInit.LoadReactionFromBuffer(buffer)
 	if err != nil {
 		t.Fatalf("failed to load reaction from buffer: %v", err)
 	}
@@ -143,7 +141,7 @@ M  END
 	tmpFile.Close()
 
 	// Load the reaction
-	r, err := reaction.LoadReactionFromFile(tmpFile.Name())
+	r, err := indigoInit.LoadReactionFromFile(tmpFile.Name())
 	if err != nil {
 		t.Fatalf("failed to load reaction from file: %v", err)
 	}
@@ -166,13 +164,13 @@ func TestLoadQueryReactionFromString(t *testing.T) {
 	// Simple query reaction with wildcards
 	rxn := "[#6]C(=O)O.CCO>>[#6]C(=O)OCC.O"
 
-	r, err := reaction.LoadQueryReactionFromString(rxn)
+	r, err := indigoInit.LoadQueryReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load query reaction: %v", err)
 	}
 	defer r.Close()
 
-	if r.Handle() < 0 {
+	if r.Handle < 0 {
 		t.Error("invalid query reaction handle")
 	}
 }
@@ -182,13 +180,13 @@ func TestLoadQueryReactionFromBuffer(t *testing.T) {
 	rxn := "[#6]C(=O)O.CCO>>[#6]C(=O)OCC.O"
 	buffer := []byte(rxn)
 
-	r, err := reaction.LoadQueryReactionFromBuffer(buffer)
+	r, err := indigoInit.LoadQueryReactionFromBuffer(buffer)
 	if err != nil {
 		t.Fatalf("failed to load query reaction from buffer: %v", err)
 	}
 	defer r.Close()
 
-	if r.Handle() < 0 {
+	if r.Handle < 0 {
 		t.Error("invalid query reaction handle")
 	}
 }
@@ -198,13 +196,13 @@ func TestLoadReactionSmartsFromString(t *testing.T) {
 	// Simple SMARTS pattern for esterification
 	smarts := "[C:1](=[O:2])[OH:3].[C:4][OH:5]>>[C:1](=[O:2])[O:5][C:4].[OH2:3]"
 
-	r, err := reaction.LoadReactionSmartsFromString(smarts)
+	r, err := indigoInit.LoadReactionSmartsFromString(smarts)
 	if err != nil {
 		t.Fatalf("failed to load reaction SMARTS: %v", err)
 	}
 	defer r.Close()
 
-	if r.Handle() < 0 {
+	if r.Handle < 0 {
 		t.Error("invalid reaction SMARTS handle")
 	}
 }
@@ -214,13 +212,13 @@ func TestLoadReactionSmartsFromBuffer(t *testing.T) {
 	smarts := "[C:1](=[O:2])[OH:3].[C:4][OH:5]>>[C:1](=[O:2])[O:5][C:4].[OH2:3]"
 	buffer := []byte(smarts)
 
-	r, err := reaction.LoadReactionSmartsFromBuffer(buffer)
+	r, err := indigoInit.LoadReactionSmartsFromBuffer(buffer)
 	if err != nil {
 		t.Fatalf("failed to load reaction SMARTS from buffer: %v", err)
 	}
 	defer r.Close()
 
-	if r.Handle() < 0 {
+	if r.Handle < 0 {
 		t.Error("invalid reaction SMARTS handle")
 	}
 }
@@ -228,19 +226,19 @@ func TestLoadReactionSmartsFromBuffer(t *testing.T) {
 // TestLoadInvalidReaction tests loading invalid reaction data
 func TestLoadInvalidReaction(t *testing.T) {
 	// Test with invalid SMILES
-	_, err := reaction.LoadReactionFromString("invalid>>reaction>>data")
+	_, err := indigoInit.LoadReactionFromString("invalid>>reaction>>data")
 	if err == nil {
 		t.Error("expected error when loading invalid reaction")
 	}
 
 	// Test with empty string
-	_, err = reaction.LoadReactionFromString("")
+	_, err = indigoInit.LoadReactionFromString("")
 	if err == nil {
 		t.Error("expected error when loading empty reaction")
 	}
 
 	// Test with empty buffer
-	_, err = reaction.LoadReactionFromBuffer([]byte{})
+	_, err = indigoInit.LoadReactionFromBuffer([]byte{})
 	if err == nil {
 		t.Error("expected error when loading empty buffer")
 	}
@@ -251,7 +249,7 @@ func TestLoadReactionMultipleComponents(t *testing.T) {
 	// Reaction with 3 reactants and 2 products
 	rxn := "CC.CC.CC>>CCCC.CC"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -272,7 +270,7 @@ func TestLoadReactionMultipleComponents(t *testing.T) {
 func TestReactionIterators(t *testing.T) {
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
