@@ -3,8 +3,6 @@ package molecule_test
 import (
 	"os"
 	"testing"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 // TestLoadMoleculeFromString tests loading a molecule from SMILES
@@ -23,14 +21,14 @@ func TestLoadMoleculeFromString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadMoleculeFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if err == nil {
 				defer m.Close()
-				if m.Handle() < 0 {
+				if m.Handle < 0 {
 					t.Errorf("invalid molecule handle")
 				}
 			}
@@ -62,7 +60,7 @@ M  END
 	tmpFile.Close()
 
 	// Load the molecule
-	m, err := molecule.LoadMoleculeFromFile(tmpFile.Name())
+	m, err := indigoInit.LoadMoleculeFromFile(tmpFile.Name())
 	if err != nil {
 		t.Fatalf("failed to load molecule from file: %v", err)
 	}
@@ -80,7 +78,7 @@ func TestLoadMoleculeFromBuffer(t *testing.T) {
 	smiles := "CCO"
 	buffer := []byte(smiles)
 
-	m, err := molecule.LoadMoleculeFromBuffer(buffer)
+	m, err := indigoInit.LoadMoleculeFromBuffer(buffer)
 	if err != nil {
 		t.Fatalf("failed to load molecule from buffer: %v", err)
 	}
@@ -97,13 +95,13 @@ func TestLoadQueryMoleculeFromString(t *testing.T) {
 	// Query molecule with wildcards
 	query := "[#6]CO"
 
-	m, err := molecule.LoadQueryMoleculeFromString(query)
+	m, err := indigoInit.LoadQueryMoleculeFromString(query)
 	if err != nil {
 		t.Fatalf("failed to load query molecule: %v", err)
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.Handle < 0 {
 		t.Error("invalid query molecule handle")
 	}
 }
@@ -122,7 +120,7 @@ func TestLoadSmartsFromString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadSmartsFromString(tt.smarts)
+			m, err := indigoInit.LoadSmartsFromString(tt.smarts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadSmartsFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -138,20 +136,20 @@ func TestLoadSmartsFromString(t *testing.T) {
 func TestLoadStructureFromString(t *testing.T) {
 	smiles := "CCO"
 
-	m, err := molecule.LoadStructureFromString(smiles, "")
+	m, err := indigoInit.LoadStructureFromString(smiles, "")
 	if err != nil {
 		t.Fatalf("failed to load structure: %v", err)
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.Handle < 0 {
 		t.Error("invalid molecule handle")
 	}
 }
 
 // TestLoadEmptyBuffer tests loading from empty buffer
 func TestLoadEmptyBuffer(t *testing.T) {
-	_, err := molecule.LoadMoleculeFromBuffer([]byte{})
+	_, err := indigoInit.LoadMoleculeFromBuffer([]byte{})
 	if err == nil {
 		t.Error("expected error when loading from empty buffer")
 	}
@@ -162,7 +160,7 @@ func TestLoadMultipleComponents(t *testing.T) {
 	// Ethanol and methane
 	smiles := "CCO.C"
 
-	m, err := molecule.LoadMoleculeFromString(smiles)
+	m, err := indigoInit.LoadMoleculeFromString(smiles)
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -192,7 +190,7 @@ func TestLoadAromaticMolecule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load %s: %v", tt.name, err)
 			}
@@ -216,7 +214,7 @@ func TestLoadMoleculeWithCharges(t *testing.T) {
 	// Sodium acetate
 	smiles := "[Na+].CC(=O)[O-]"
 
-	m, err := molecule.LoadMoleculeFromString(smiles)
+	m, err := indigoInit.LoadMoleculeFromString(smiles)
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -238,13 +236,13 @@ func TestLoadMoleculeWithIsotopes(t *testing.T) {
 	// Deuterated methanol
 	smiles := "[2H]CO"
 
-	m, err := molecule.LoadMoleculeFromString(smiles)
+	m, err := indigoInit.LoadMoleculeFromString(smiles)
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
 	defer m.Close()
 
-	if m.Handle() < 0 {
+	if m.Handle < 0 {
 		t.Error("invalid molecule handle")
 	}
 }

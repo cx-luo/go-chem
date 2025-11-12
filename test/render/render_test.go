@@ -5,10 +5,27 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cx-luo/go-chem/molecule"
-	"github.com/cx-luo/go-chem/reaction"
+	"github.com/cx-luo/go-chem/core"
+
 	"github.com/cx-luo/go-chem/render"
 )
+
+var indigoInit *core.Indigo
+var indigoInchi *core.IndigoInchi
+
+func init() {
+	handle, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+	indigoInit = handle
+
+	indigoInchiHandle, err := core.InchiInit(indigoInit.GetSessionID())
+	if err != nil {
+		panic(err)
+	}
+	indigoInchi = indigoInchiHandle
+}
 
 // TestInitRenderer tests initializing the renderer
 func TestInitRenderer(t *testing.T) {
@@ -46,7 +63,7 @@ func TestDisposeRenderer(t *testing.T) {
 // TestRenderMoleculeToFile tests rendering a molecule to a file
 func TestRenderMoleculeToFile(t *testing.T) {
 	// Load a molecule
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -65,7 +82,7 @@ func TestRenderMoleculeToFile(t *testing.T) {
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle(), outputFile)
+	err = render.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to file: %v", err)
 	}
@@ -85,7 +102,7 @@ func TestRenderMoleculeToFile(t *testing.T) {
 // TestRenderMoleculeSVG tests rendering a molecule to SVG format
 func TestRenderMoleculeSVG(t *testing.T) {
 	// Load a molecule
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -101,7 +118,7 @@ func TestRenderMoleculeSVG(t *testing.T) {
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle(), outputFile)
+	err = render.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to SVG: %v", err)
 	}
@@ -119,7 +136,7 @@ func TestRenderMoleculeSVG(t *testing.T) {
 // TestRenderReactionToFile tests rendering a reaction to a file
 func TestRenderReactionToFile(t *testing.T) {
 	// Load a reaction
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -138,7 +155,7 @@ func TestRenderReactionToFile(t *testing.T) {
 	}
 
 	// Render to file
-	err = render.RenderToFile(rxn.Handle(), outputFile)
+	err = render.RenderToFile(rxn.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render reaction to file: %v", err)
 	}
@@ -284,13 +301,13 @@ func TestResetRenderer(t *testing.T) {
 // TestRenderGrid tests rendering multiple molecules in a grid
 func TestRenderGrid(t *testing.T) {
 	// Create molecules
-	mol1, _ := molecule.LoadMoleculeFromString("CCO")
+	mol1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol1.Close()
 
-	mol2, _ := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol2, _ := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	defer mol2.Close()
 
-	mol3, _ := molecule.LoadMoleculeFromString("CC(=O)O")
+	mol3, _ := indigoInit.LoadMoleculeFromString("CC(=O)O")
 	defer mol3.Close()
 
 	// Create array
@@ -301,13 +318,13 @@ func TestRenderGrid(t *testing.T) {
 	defer render.FreeObject(arrayHandle)
 
 	// Add molecules to array
-	if err := render.ArrayAdd(arrayHandle, mol1.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol1.Handle); err != nil {
 		t.Fatalf("failed to add mol1 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol2.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol2.Handle); err != nil {
 		t.Fatalf("failed to add mol2 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol3.Handle()); err != nil {
+	if err := render.ArrayAdd(arrayHandle, mol3.Handle); err != nil {
 		t.Fatalf("failed to add mol3 to array: %v", err)
 	}
 
@@ -334,10 +351,10 @@ func TestRenderGrid(t *testing.T) {
 // TestRenderGridWithRefAtoms tests rendering grid with reference atoms
 func TestRenderGridWithRefAtoms(t *testing.T) {
 	// Create molecules
-	mol1, _ := molecule.LoadMoleculeFromString("CCO")
+	mol1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol1.Close()
 
-	mol2, _ := molecule.LoadMoleculeFromString("CCCO")
+	mol2, _ := indigoInit.LoadMoleculeFromString("CCCO")
 	defer mol2.Close()
 
 	// Create array
@@ -348,8 +365,8 @@ func TestRenderGridWithRefAtoms(t *testing.T) {
 	defer render.FreeObject(arrayHandle)
 
 	// Add molecules
-	render.ArrayAdd(arrayHandle, mol1.Handle())
-	render.ArrayAdd(arrayHandle, mol2.Handle())
+	render.ArrayAdd(arrayHandle, mol1.Handle)
+	render.ArrayAdd(arrayHandle, mol2.Handle)
 
 	// Create temp file
 	tmpDir := t.TempDir()
@@ -371,7 +388,7 @@ func TestRenderGridWithRefAtoms(t *testing.T) {
 // TestRenderToBuffer tests rendering to a memory buffer
 func TestRenderToBuffer(t *testing.T) {
 	// Load a molecule
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -388,7 +405,7 @@ func TestRenderToBuffer(t *testing.T) {
 	render.SetRenderOption("render-output-format", "png")
 
 	// Render to buffer
-	err = render.Render(mol.Handle(), bufferHandle)
+	err = render.Render(mol.Handle, bufferHandle)
 	if err != nil {
 		t.Fatalf("failed to render to buffer: %v", err)
 	}
@@ -423,7 +440,7 @@ func TestRenderInvalidHandle(t *testing.T) {
 // TestRenderMultipleFormats tests rendering to different formats
 func TestRenderMultipleFormats(t *testing.T) {
 	// Load a molecule
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -443,7 +460,7 @@ func TestRenderMultipleFormats(t *testing.T) {
 			}
 
 			// Render
-			if err := render.RenderToFile(mol.Handle(), outputFile); err != nil {
+			if err := render.RenderToFile(mol.Handle, outputFile); err != nil {
 				t.Fatalf("failed to render to %s: %v", format, err)
 			}
 

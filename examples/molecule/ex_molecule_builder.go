@@ -10,10 +10,21 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 
 	"github.com/cx-luo/go-chem/molecule"
 )
+
+var indigoInit *core.Indigo
+
+func init() {
+	handle, err := core.IndigoInit()
+	indigoInit = handle
+	if err != nil {
+		panic(err)
+	}
+}
 
 func main() {
 	fmt.Println("=== Molecule Builder Examples ===\n")
@@ -66,13 +77,13 @@ func main() {
 
 	// Example 5: Merge molecules
 	fmt.Println("5. Merging molecules:")
-	mol1, _ := molecule.CreateMolecule()
+	mol1, _ := indigoInit.CreateMolecule()
 	defer mol1.Close()
 	c1, _ := mol1.AddAtom("C")
 	c2, _ := mol1.AddAtom("C")
 	mol1.AddBond(c1, c2, molecule.BOND_SINGLE)
 
-	mol2, _ := molecule.CreateMolecule()
+	mol2, _ := indigoInit.CreateMolecule()
 	defer mol2.Close()
 	mol2.AddAtom("O")
 
@@ -90,7 +101,7 @@ func main() {
 
 // buildEthanol builds ethanol (C-C-O) from scratch
 func buildEthanol() *molecule.Molecule {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
@@ -109,7 +120,7 @@ func buildEthanol() *molecule.Molecule {
 
 // buildBenzene builds a benzene ring from scratch
 func buildBenzene() *molecule.Molecule {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
@@ -131,7 +142,7 @@ func buildBenzene() *molecule.Molecule {
 
 // buildWater builds a water molecule
 func buildWater() *molecule.Molecule {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}
@@ -150,7 +161,7 @@ func buildWater() *molecule.Molecule {
 
 // buildAcetate builds acetate ion (CH3COO-)
 func buildAcetate() *molecule.Molecule {
-	m, err := molecule.CreateMolecule()
+	m, err := indigoInit.CreateMolecule()
 	if err != nil {
 		log.Fatalf("Failed to create molecule: %v", err)
 	}

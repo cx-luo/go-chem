@@ -10,18 +10,16 @@ package molecule_test
 
 import (
 	"testing"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func TestHasSubstructure(t *testing.T) {
-	target, err := molecule.LoadMoleculeFromString("c1ccccc1CCO")
+	target, err := indigoInit.LoadMoleculeFromString("c1ccccc1CCO")
 	if err != nil {
 		t.Fatalf("Failed to load target: %v", err)
 	}
 	defer target.Close()
 
-	query, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load query: %v", err)
 	}
@@ -39,13 +37,13 @@ func TestHasSubstructure(t *testing.T) {
 
 func TestCountSubstructureMatches(t *testing.T) {
 	// Biphenyl has 2 benzene rings
-	target, err := molecule.LoadMoleculeFromString("c1ccc(cc1)c2ccccc2")
+	target, err := indigoInit.LoadMoleculeFromString("c1ccc(cc1)c2ccccc2")
 	if err != nil {
 		t.Fatalf("Failed to load target: %v", err)
 	}
 	defer target.Close()
 
-	query, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load query: %v", err)
 	}
@@ -62,19 +60,19 @@ func TestCountSubstructureMatches(t *testing.T) {
 }
 
 func TestExactMatch(t *testing.T) {
-	mol1, err := molecule.LoadMoleculeFromString("CCO")
+	mol1, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load mol1: %v", err)
 	}
 	defer mol1.Close()
 
-	mol2, err := molecule.LoadMoleculeFromString("CCO")
+	mol2, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load mol2: %v", err)
 	}
 	defer mol2.Close()
 
-	mol3, err := molecule.LoadMoleculeFromString("CC")
+	mol3, err := indigoInit.LoadMoleculeFromString("CC")
 	if err != nil {
 		t.Fatalf("Failed to load mol3: %v", err)
 	}
@@ -103,13 +101,13 @@ func TestExactMatch(t *testing.T) {
 
 func TestSMARTSMatching(t *testing.T) {
 	// Test carboxylic acid pattern in acetic acid
-	mol, err := molecule.LoadMoleculeFromString("CC(=O)O")
+	mol, err := indigoInit.LoadMoleculeFromString("CC(=O)O")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
 	defer mol.Close()
 
-	pattern, err := molecule.LoadSmartsFromString("[CX3](=O)[OX2H1]")
+	pattern, err := indigoInit.LoadSmartsFromString("[CX3](=O)[OX2H1]")
 	if err != nil {
 		t.Fatalf("Failed to load SMARTS: %v", err)
 	}
@@ -135,7 +133,7 @@ func TestSMARTSMatching(t *testing.T) {
 }
 
 func TestGetSubmolecule(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCCCCC")
+	mol, err := indigoInit.LoadMoleculeFromString("CCCCCC")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -159,7 +157,7 @@ func TestGetSubmolecule(t *testing.T) {
 }
 
 func TestRemoveAtoms(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCCC")
+	mol, err := indigoInit.LoadMoleculeFromString("CCCC")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -181,7 +179,7 @@ func TestRemoveAtoms(t *testing.T) {
 }
 
 func TestHighlight(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -195,7 +193,7 @@ func TestHighlight(t *testing.T) {
 }
 
 func TestEmptySubmolecule(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCC")
+	mol, err := indigoInit.LoadMoleculeFromString("CCC")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -209,7 +207,7 @@ func TestEmptySubmolecule(t *testing.T) {
 }
 
 func TestRemoveEmptyAtoms(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCC")
+	mol, err := indigoInit.LoadMoleculeFromString("CCC")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}

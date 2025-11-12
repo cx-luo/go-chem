@@ -10,9 +10,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
@@ -44,7 +43,12 @@ func main() {
 }
 
 func analyzeProperties(smiles string) {
-	m, err := molecule.LoadMoleculeFromString(smiles)
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
+	m, err := indigoInit.LoadMoleculeFromString(smiles)
 	if err != nil {
 		log.Printf("Failed to load molecule: %v\n", err)
 		return
@@ -122,7 +126,12 @@ func analyzeProperties(smiles string) {
 }
 
 func demonstrateProperties() {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatalf("Failed to load molecule: %v", err)
 	}

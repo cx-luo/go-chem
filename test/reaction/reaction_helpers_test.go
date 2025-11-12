@@ -10,12 +10,10 @@ package reaction_test
 
 import (
 	"testing"
-
-	"github.com/cx-luo/go-chem/reaction"
 )
 
 func TestGetReactant(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -33,7 +31,7 @@ func TestGetReactant(t *testing.T) {
 }
 
 func TestGetProduct(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -51,7 +49,7 @@ func TestGetProduct(t *testing.T) {
 }
 
 func TestGetReactantOutOfRange(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -65,7 +63,7 @@ func TestGetReactantOutOfRange(t *testing.T) {
 }
 
 func TestIteratorHelpers(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC>>CC=O.C")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC>>CC=O.C")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -84,7 +82,7 @@ func TestIteratorHelpers(t *testing.T) {
 }
 
 func TestReactionLayout(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -98,7 +96,7 @@ func TestReactionLayout(t *testing.T) {
 }
 
 func TestReactionClean2D(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -112,7 +110,7 @@ func TestReactionClean2D(t *testing.T) {
 }
 
 func TestReactionAromatize(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("C1=CC=CC=C1>>c1ccccc1")
+	rxn, err := indigoInit.LoadReactionFromString("C1=CC=CC=C1>>c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -126,7 +124,7 @@ func TestReactionAromatize(t *testing.T) {
 }
 
 func TestReactionDearomatize(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("c1ccccc1>>C1=CC=CC=C1")
+	rxn, err := indigoInit.LoadReactionFromString("c1ccccc1>>C1=CC=CC=C1")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -141,7 +139,7 @@ func TestReactionDearomatize(t *testing.T) {
 
 func TestGetCatalyst(t *testing.T) {
 	// Most reactions don't have catalysts, so this is a basic test
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -157,7 +155,7 @@ func TestGetCatalyst(t *testing.T) {
 }
 
 func TestReactionCountMethods(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}

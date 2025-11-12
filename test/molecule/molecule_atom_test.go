@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetAtom(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestGetAtom(t *testing.T) {
 }
 
 func TestAtomProperties(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestAtomProperties(t *testing.T) {
 }
 
 func TestSetCharge(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("C")
+	mol, err := indigoInit.LoadMoleculeFromString("C")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -99,7 +99,7 @@ func TestSetCharge(t *testing.T) {
 }
 
 func TestIsotope(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("C")
+	mol, err := indigoInit.LoadMoleculeFromString("C")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestIsotope(t *testing.T) {
 }
 
 func TestBondOperations(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestBondOperations(t *testing.T) {
 
 func TestAtomTypes(t *testing.T) {
 	// Test pseudoatom
-	mol, err := molecule.CreateMolecule()
+	mol, err := indigoInit.CreateMolecule()
 	if err != nil {
 		t.Fatalf("Failed to create molecule: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestAtomTypes(t *testing.T) {
 }
 
 func TestImplicitHydrogens(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("C")
+	mol, err := indigoInit.LoadMoleculeFromString("C")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}

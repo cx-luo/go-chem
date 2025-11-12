@@ -4,18 +4,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/cx-luo/go-chem/core"
 	"log"
 	"os"
 
 	"github.com/cx-luo/go-chem/molecule"
-	"github.com/cx-luo/go-chem/reaction"
 	"github.com/cx-luo/go-chem/render"
 )
 
 // Example 1: Basic molecule rendering
-func ExampleBasicRender() {
+func ExampleBasicRender(indigoInit *core.Indigo) {
 	// Load a molecule
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,14 +30,14 @@ func ExampleBasicRender() {
 	render.SetRenderOptionInt("render-image-height", 800)
 
 	// Render to file
-	if err := render.RenderToFile(mol.Handle(), "benzene.png"); err != nil {
+	if err := render.RenderToFile(mol.Handle, "benzene.png"); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // Example 2: Using RenderOptions
-func ExampleWithOptions() {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+func ExampleWithOptions(indigoInit *core.Indigo) {
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,13 +61,13 @@ func ExampleWithOptions() {
 	}
 
 	// Render
-	if err := render.RenderToFile(mol.Handle(), "ethanol.svg"); err != nil {
+	if err := render.RenderToFile(mol.Handle, "ethanol.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // Example 3: Grid rendering
-func ExampleGridRender() {
+func ExampleGridRender(indigoInit *core.Indigo) {
 	// Load multiple molecules
 	molecules := []string{
 		"CCO",         // Ethanol
@@ -90,12 +90,12 @@ func ExampleGridRender() {
 
 	// Load and add molecules to array
 	for _, smiles := range molecules {
-		mol, err := molecule.LoadMoleculeFromString(smiles)
+		mol, err := indigoInit.LoadMoleculeFromString(smiles)
 		if err != nil {
 			log.Printf("Warning: failed to load %s: %v", smiles, err)
 			continue
 		}
-		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+		if err := render.ArrayAdd(array, mol.Handle); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 		// Note: molecules should be kept alive until rendering is done
@@ -117,9 +117,9 @@ func ExampleGridRender() {
 }
 
 // Example 4: Rendering a reaction
-func ExampleReactionRender() {
+func ExampleReactionRender(indigoInit *core.Indigo) {
 	// Load a reaction
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,14 +135,14 @@ func ExampleReactionRender() {
 	render.SetRenderOption("render-background-color", "1.0, 1.0, 1.0")
 
 	// Render reaction
-	if err := render.RenderToFile(rxn.Handle(), "oxidation_reaction.png"); err != nil {
+	if err := render.RenderToFile(rxn.Handle, "oxidation_reaction.png"); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // Example 5: Render to memory buffer
-func ExampleBufferRender() {
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+func ExampleBufferRender(indigoInit *core.Indigo) {
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func ExampleBufferRender() {
 	}
 
 	// Render to buffer
-	if err := render.Render(mol.Handle(), buffer); err != nil {
+	if err := render.Render(mol.Handle, buffer); err != nil {
 		log.Fatal(err)
 	}
 
@@ -183,8 +183,8 @@ func ExampleBufferRender() {
 }
 
 // Example 6: Batch rendering with different styles
-func ExampleBatchRender() {
-	mol, err := molecule.LoadMoleculeFromString("CC(C)(C)C")
+func ExampleBatchRender(indigoInit *core.Indigo) {
+	mol, err := indigoInit.LoadMoleculeFromString("CC(C)(C)C")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -206,15 +206,15 @@ func ExampleBatchRender() {
 			log.Printf("Warning: failed to set label mode %s: %v", labelMode, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("neopentane_%s.png", name)); err != nil {
+		if err := render.RenderToFile(mol.Handle, fmt.Sprintf("neopentane_%s.png", name)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", name, err)
 		}
 	}
 }
 
 // Example 7: High-quality rendering
-func ExampleHighQualityRender() {
-	mol, err := molecule.LoadMoleculeFromString("c1ccc(cc1)C(=O)O") // Benzoic acid
+func ExampleHighQualityRender(indigoInit *core.Indigo) {
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccc(cc1)C(=O)O") // Benzoic acid
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -241,15 +241,15 @@ func ExampleHighQualityRender() {
 		log.Fatal(err)
 	}
 
-	if err := render.RenderToFile(mol.Handle(), "benzoic_acid_hq.svg"); err != nil {
+	if err := render.RenderToFile(mol.Handle, "benzoic_acid_hq.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // Example 8: Rendering with stereochemistry
-func ExampleStereoRender() {
+func ExampleStereoRender(indigoInit *core.Indigo) {
 	// L-Alanine
-	mol, err := molecule.LoadMoleculeFromString("C[C@H](N)C(=O)O")
+	mol, err := indigoInit.LoadMoleculeFromString("C[C@H](N)C(=O)O")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -266,14 +266,14 @@ func ExampleStereoRender() {
 			log.Printf("Warning: failed to set stereo style %s: %v", style, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle(), fmt.Sprintf("alanine_%s.png", style)); err != nil {
+		if err := render.RenderToFile(mol.Handle, fmt.Sprintf("alanine_%s.png", style)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", style, err)
 		}
 	}
 }
 
 // Example 9: Grid with reference atoms (alignment)
-func ExampleAlignedGrid() {
+func ExampleAlignedGrid(indigoInit *core.Indigo) {
 	// Series of alcohols - align on oxygen
 	alcohols := []string{"CO", "CCO", "CCCO", "CC(C)O"}
 
@@ -288,13 +288,13 @@ func ExampleAlignedGrid() {
 
 	var mols []*molecule.Molecule
 	for _, smiles := range alcohols {
-		mol, err := molecule.LoadMoleculeFromString(smiles)
+		mol, err := indigoInit.LoadMoleculeFromString(smiles)
 		if err != nil {
 			log.Printf("Warning: failed to load %s: %v", smiles, err)
 			continue
 		}
 		mols = append(mols, mol)
-		if err := render.ArrayAdd(array, mol.Handle()); err != nil {
+		if err := render.ArrayAdd(array, mol.Handle); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 	}
@@ -314,8 +314,8 @@ func ExampleAlignedGrid() {
 }
 
 // Example 10: Custom colors and styling
-func ExampleCustomColors() {
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+func ExampleCustomColors(indigoInit *core.Indigo) {
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -333,12 +333,17 @@ func ExampleCustomColors() {
 	// Larger bonds
 	render.SetRenderOptionInt("render-bond-length", 60)
 
-	if err := render.RenderToFile(mol.Handle(), "benzene_custom.png"); err != nil {
+	if err := render.RenderToFile(mol.Handle, "benzene_custom.png"); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
+	indigoInit, err := core.IndigoInit()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("=== Render Package Example ===")
 
 	// Initialize renderer once at the start
@@ -348,34 +353,34 @@ func main() {
 	defer render.DisposeRenderer()
 
 	// Run all examples
-	ExampleBasicRender()
+	ExampleBasicRender(indigoInit)
 	fmt.Println("✓ Basic render completed")
 
-	ExampleWithOptions()
+	ExampleWithOptions(indigoInit)
 	fmt.Println("✓ With options completed")
 
-	ExampleGridRender()
+	ExampleGridRender(indigoInit)
 	fmt.Println("✓ Grid render completed")
 
-	ExampleReactionRender()
+	ExampleReactionRender(indigoInit)
 	fmt.Println("✓ Reaction render completed")
 
-	ExampleBufferRender()
+	ExampleBufferRender(indigoInit)
 	fmt.Println("✓ Buffer render completed")
 
-	ExampleBatchRender()
+	ExampleBatchRender(indigoInit)
 	fmt.Println("✓ Batch render completed")
 
-	ExampleHighQualityRender()
+	ExampleHighQualityRender(indigoInit)
 	fmt.Println("✓ High-quality render completed")
 
-	ExampleStereoRender()
+	ExampleStereoRender(indigoInit)
 	fmt.Println("✓ Stereo render completed")
 
-	ExampleAlignedGrid()
+	ExampleAlignedGrid(indigoInit)
 	fmt.Println("✓ Aligned grid completed")
 
-	ExampleCustomColors()
+	ExampleCustomColors(indigoInit)
 	fmt.Println("✓ Custom colors completed")
 
 	fmt.Println("\n=== All examples completed successfully! ===")

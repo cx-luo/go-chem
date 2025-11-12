@@ -73,14 +73,14 @@ const (
 //   - "ignore_valence": do not consider atom valence while searching
 //   - "ignore_radicals": do not consider atom radicals while searching
 func (r *Reaction) Automap(mode string) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
 	cMode := C.CString(mode)
 	defer C.free(unsafe.Pointer(cMode))
 
-	ret := int(C.indigoAutomap(C.int(r.handle), cMode))
+	ret := int(C.indigoAutomap(C.int(r.Handle), cMode))
 	if ret < 0 {
 		return fmt.Errorf("failed to automap reaction: %s", getLastError())
 	}
@@ -91,11 +91,11 @@ func (r *Reaction) Automap(mode string) error {
 // GetAtomMappingNumber returns the atom-to-atom mapping number for a reaction atom
 // Returns 0 if no mapping number has been specified
 func (r *Reaction) GetAtomMappingNumber(atomHandle int) (int, error) {
-	if r.closed {
+	if r.Closed {
 		return 0, fmt.Errorf("reaction is closed")
 	}
 
-	number := int(C.indigoGetAtomMappingNumber(C.int(r.handle), C.int(atomHandle)))
+	number := int(C.indigoGetAtomMappingNumber(C.int(r.Handle), C.int(atomHandle)))
 	if number < 0 {
 		return 0, fmt.Errorf("failed to get atom mapping number: %s", getLastError())
 	}
@@ -105,11 +105,11 @@ func (r *Reaction) GetAtomMappingNumber(atomHandle int) (int, error) {
 
 // SetAtomMappingNumber sets the atom-to-atom mapping number for a reaction atom
 func (r *Reaction) SetAtomMappingNumber(atomHandle int, number int) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoSetAtomMappingNumber(C.int(r.handle), C.int(atomHandle), C.int(number)))
+	ret := int(C.indigoSetAtomMappingNumber(C.int(r.Handle), C.int(atomHandle), C.int(number)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set atom mapping number: %s", getLastError())
 	}
@@ -120,12 +120,12 @@ func (r *Reaction) SetAtomMappingNumber(atomHandle int, number int) error {
 // GetReactingCenter returns the reacting center information for a bond
 // Returns the reacting center flags (combination of RC_* constants)
 func (r *Reaction) GetReactingCenter(bondHandle int) (int, error) {
-	if r.closed {
+	if r.Closed {
 		return 0, fmt.Errorf("reaction is closed")
 	}
 
 	var rc C.int
-	ret := int(C.indigoGetReactingCenter(C.int(r.handle), C.int(bondHandle), &rc))
+	ret := int(C.indigoGetReactingCenter(C.int(r.Handle), C.int(bondHandle), &rc))
 	if ret < 0 {
 		return 0, fmt.Errorf("failed to get reacting center: %s", getLastError())
 	}
@@ -136,11 +136,11 @@ func (r *Reaction) GetReactingCenter(bondHandle int) (int, error) {
 // SetReactingCenter sets the reacting center information for a bond
 // rc should be a combination of RC_* constants
 func (r *Reaction) SetReactingCenter(bondHandle int, rc int) error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoSetReactingCenter(C.int(r.handle), C.int(bondHandle), C.int(rc)))
+	ret := int(C.indigoSetReactingCenter(C.int(r.Handle), C.int(bondHandle), C.int(rc)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set reacting center: %s", getLastError())
 	}
@@ -150,11 +150,11 @@ func (r *Reaction) SetReactingCenter(bondHandle int, rc int) error {
 
 // ClearAAM clears all atom-to-atom mapping information from the reaction
 func (r *Reaction) ClearAAM() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoClearAAM(C.int(r.handle)))
+	ret := int(C.indigoClearAAM(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to clear AAM: %s", getLastError())
 	}
@@ -164,11 +164,11 @@ func (r *Reaction) ClearAAM() error {
 
 // CorrectReactingCenters corrects reacting centers according to atom-to-atom mapping
 func (r *Reaction) CorrectReactingCenters() error {
-	if r.closed {
+	if r.Closed {
 		return fmt.Errorf("reaction is closed")
 	}
 
-	ret := int(C.indigoCorrectReactingCenters(C.int(r.handle)))
+	ret := int(C.indigoCorrectReactingCenters(C.int(r.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to correct reacting centers: %s", getLastError())
 	}

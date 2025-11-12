@@ -44,14 +44,14 @@ const (
 // symbol: element symbol (e.g., "C", "N", "O") or pseudoatom label
 // Returns the handle of the added atom
 func (m *Molecule) AddAtom(symbol string) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
 	cSymbol := C.CString(symbol)
 	defer C.free(unsafe.Pointer(cSymbol))
 
-	handle := int(C.indigoAddAtom(C.int(m.handle), cSymbol))
+	handle := int(C.indigoAddAtom(C.int(m.Handle), cSymbol))
 	if handle < 0 {
 		return 0, fmt.Errorf("failed to add atom %s: %s", symbol, getLastError())
 	}
@@ -76,14 +76,14 @@ func ResetAtom(atomHandle int, symbol string) error {
 // name: R-site name (e.g., "R", "R1", "R2", or list "R1 R3")
 // Returns the handle of the added R-site
 func (m *Molecule) AddRSite(name string) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	handle := int(C.indigoAddRSite(C.int(m.handle), cName))
+	handle := int(C.indigoAddRSite(C.int(m.Handle), cName))
 	if handle < 0 {
 		return 0, fmt.Errorf("failed to add R-site %s: %s", name, getLastError())
 	}
@@ -110,7 +110,7 @@ func SetRSite(atomHandle int, name string) error {
 // order: bond order (BOND_SINGLE, BOND_DOUBLE, BOND_TRIPLE, BOND_AROMATIC)
 // Returns the handle of the added bond
 func (m *Molecule) AddBond(source int, destination int, order int) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
@@ -184,14 +184,14 @@ func SetImplicitHCount(atomHandle int, count int) error {
 
 // Merge merges another molecule into this molecule
 func (m *Molecule) Merge(other *Molecule) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
-	if other.closed {
+	if other.Closed {
 		return fmt.Errorf("other molecule is closed")
 	}
 
-	ret := int(C.indigoMerge(C.int(m.handle), C.int(other.handle)))
+	ret := int(C.indigoMerge(C.int(m.Handle), C.int(other.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to merge molecules: %s", getLastError())
 	}

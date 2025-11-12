@@ -38,19 +38,19 @@ type SubstructureMatch struct {
 
 // SubstructureMatcher performs substructure matching
 func (m *Molecule) SubstructureMatcher(query *Molecule) (*SubstructureMatch, error) {
-	if m.closed {
+	if m.Closed {
 		return nil, fmt.Errorf("molecule is closed")
 	}
-	if query.closed {
+	if query.Closed {
 		return nil, fmt.Errorf("query molecule is closed")
 	}
 
-	handle := int(C.indigoSubstructureMatcher(C.int(m.handle), C.CString("substructure")))
+	handle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("substructure")))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
 	}
 
-	matchHandle := int(C.indigoMatch(C.int(handle), C.int(query.handle)))
+	matchHandle := int(C.indigoMatch(C.int(handle), C.int(query.Handle)))
 	if matchHandle < 0 {
 		return nil, fmt.Errorf("no match found")
 	}
@@ -60,20 +60,20 @@ func (m *Molecule) SubstructureMatcher(query *Molecule) (*SubstructureMatch, err
 
 // CountSubstructureMatches counts the number of substructure matches
 func (m *Molecule) CountSubstructureMatches(query *Molecule) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
-	if query.closed {
+	if query.Closed {
 		return 0, fmt.Errorf("query molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.handle), C.CString("substructure")))
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("substructure")))
 	if matcherHandle < 0 {
 		return 0, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
 	}
 	defer C.indigoFree(C.int(matcherHandle))
 
-	count := int(C.indigoCountMatches(C.int(matcherHandle), C.int(query.handle)))
+	count := int(C.indigoCountMatches(C.int(matcherHandle), C.int(query.Handle)))
 	if count < 0 {
 		return 0, fmt.Errorf("failed to count matches: %s", getLastError())
 	}
@@ -92,38 +92,38 @@ func (m *Molecule) HasSubstructure(query *Molecule) (bool, error) {
 
 // ExactMatch checks if the molecule exactly matches another molecule
 func (m *Molecule) ExactMatch(other *Molecule) (bool, error) {
-	if m.closed {
+	if m.Closed {
 		return false, fmt.Errorf("molecule is closed")
 	}
-	if other.closed {
+	if other.Closed {
 		return false, fmt.Errorf("other molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.handle), C.CString("exact")))
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("exact")))
 	if matcherHandle < 0 {
 		return false, fmt.Errorf("failed to create exact matcher: %s", getLastError())
 	}
 	defer C.indigoFree(C.int(matcherHandle))
 
-	matchHandle := int(C.indigoMatch(C.int(matcherHandle), C.int(other.handle)))
+	matchHandle := int(C.indigoMatch(C.int(matcherHandle), C.int(other.Handle)))
 	return matchHandle >= 0, nil
 }
 
 // IterateSubstructureMatches iterates through all substructure matches
 func (m *Molecule) IterateSubstructureMatches(query *Molecule) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
-	if query.closed {
+	if query.Closed {
 		return 0, fmt.Errorf("query molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.handle), C.CString("substructure")))
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("substructure")))
 	if matcherHandle < 0 {
 		return 0, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
 	}
 
-	iterHandle := int(C.indigoIterateMatches(C.int(matcherHandle), C.int(query.handle)))
+	iterHandle := int(C.indigoIterateMatches(C.int(matcherHandle), C.int(query.Handle)))
 	if iterHandle < 0 {
 		C.indigoFree(C.int(matcherHandle))
 		return 0, fmt.Errorf("failed to iterate matches: %s", getLastError())
@@ -134,7 +134,7 @@ func (m *Molecule) IterateSubstructureMatches(query *Molecule) (int, error) {
 
 // Highlight highlights atoms and bonds from a match
 func (m *Molecule) Highlight(match *SubstructureMatch) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
@@ -148,11 +148,11 @@ func (m *Molecule) Highlight(match *SubstructureMatch) error {
 
 // UnhighlightAll removes all highlights from the molecule
 func (m *Molecule) UnhighlightAll() error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
-	ret := int(C.indigoUnhighlight(C.int(m.handle)))
+	ret := int(C.indigoUnhighlight(C.int(m.Handle)))
 	if ret < 0 {
 		return fmt.Errorf("failed to unhighlight: %s", getLastError())
 	}
@@ -162,7 +162,7 @@ func (m *Molecule) UnhighlightAll() error {
 
 // RemoveAtoms removes specified atoms from the molecule
 func (m *Molecule) RemoveAtoms(atomIndices []int) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
@@ -176,7 +176,7 @@ func (m *Molecule) RemoveAtoms(atomIndices []int) error {
 		cIndices[i] = C.int(idx)
 	}
 
-	ret := int(C.indigoRemoveAtoms(C.int(m.handle), C.int(len(atomIndices)), &cIndices[0]))
+	ret := int(C.indigoRemoveAtoms(C.int(m.Handle), C.int(len(atomIndices)), &cIndices[0]))
 	if ret < 0 {
 		return fmt.Errorf("failed to remove atoms: %s", getLastError())
 	}
@@ -186,7 +186,7 @@ func (m *Molecule) RemoveAtoms(atomIndices []int) error {
 
 // RemoveBonds removes specified bonds from the molecule
 func (m *Molecule) RemoveBonds(bondIndices []int) error {
-	if m.closed {
+	if m.Closed {
 		return fmt.Errorf("molecule is closed")
 	}
 
@@ -200,7 +200,7 @@ func (m *Molecule) RemoveBonds(bondIndices []int) error {
 		cIndices[i] = C.int(idx)
 	}
 
-	ret := int(C.indigoRemoveBonds(C.int(m.handle), C.int(len(bondIndices)), &cIndices[0]))
+	ret := int(C.indigoRemoveBonds(C.int(m.Handle), C.int(len(bondIndices)), &cIndices[0]))
 	if ret < 0 {
 		return fmt.Errorf("failed to remove bonds: %s", getLastError())
 	}
@@ -210,7 +210,7 @@ func (m *Molecule) RemoveBonds(bondIndices []int) error {
 
 // GetSubmolecule returns a submolecule containing only specified atoms
 func (m *Molecule) GetSubmolecule(atomIndices []int) (*Molecule, error) {
-	if m.closed {
+	if m.Closed {
 		return nil, fmt.Errorf("molecule is closed")
 	}
 
@@ -224,7 +224,7 @@ func (m *Molecule) GetSubmolecule(atomIndices []int) (*Molecule, error) {
 		cIndices[i] = C.int(idx)
 	}
 
-	handle := int(C.indigoGetSubmolecule(C.int(m.handle), C.int(len(atomIndices)), &cIndices[0]))
+	handle := int(C.indigoGetSubmolecule(C.int(m.Handle), C.int(len(atomIndices)), &cIndices[0]))
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to get submolecule: %s", getLastError())
 	}
