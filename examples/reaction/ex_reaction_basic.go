@@ -5,9 +5,8 @@ package main
 import (
 	"fmt"
 	"github.com/cx-luo/go-chem/core"
-	"log"
-
 	"github.com/cx-luo/go-chem/reaction"
+	"log"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("=== Reaction Package Example ===\n")
+	fmt.Println("=== Reaction Package Example ===")
 
 	// Example 1: Load a reaction from SMILES
 	fmt.Println("1. Loading reaction from SMILES:")

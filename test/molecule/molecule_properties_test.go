@@ -3,8 +3,6 @@ package molecule_test
 import (
 	"strings"
 	"testing"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 // TestGrossFormula tests getting gross formula
@@ -22,7 +20,7 @@ func TestGrossFormula(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
@@ -56,7 +54,7 @@ func TestMolecularWeight(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
@@ -76,7 +74,7 @@ func TestMolecularWeight(t *testing.T) {
 
 // TestMonoisotopicMass tests getting monoisotopic mass
 func TestMonoisotopicMass(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -94,7 +92,7 @@ func TestMonoisotopicMass(t *testing.T) {
 
 // TestMostAbundantMass tests getting most abundant mass
 func TestMostAbundantMass(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -123,7 +121,7 @@ func TestTPSA(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
@@ -166,7 +164,7 @@ func TestNumRotatableBonds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
@@ -186,7 +184,7 @@ func TestNumRotatableBonds(t *testing.T) {
 
 // TestMoleculeName tests setting and getting molecule name
 func TestMoleculeName(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -211,7 +209,7 @@ func TestMoleculeName(t *testing.T) {
 
 // TestMoleculeProperties tests setting and getting properties
 func TestMoleculeProperties(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -262,7 +260,7 @@ func TestMoleculeProperties(t *testing.T) {
 
 // TestMolecularFormula tests getting molecular formula
 func TestMolecularFormula(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -285,7 +283,7 @@ func TestMolecularFormula(t *testing.T) {
 
 // TestMassComposition tests getting mass composition
 func TestMassComposition(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
@@ -303,7 +301,7 @@ func TestMassComposition(t *testing.T) {
 
 // TestPropertiesOnClosedMolecule tests that properties fail on closed molecule
 func TestPropertiesOnClosedMolecule(t *testing.T) {
-	m, _ := molecule.LoadMoleculeFromString("CCO")
+	m, _ := indigoInit.LoadMoleculeFromString("CCO")
 	m.Close()
 
 	// All property methods should return errors

@@ -3,8 +3,6 @@ package molecule_test
 import (
 	"strings"
 	"testing"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 // TestToInChI tests converting molecule to InChI
@@ -21,13 +19,13 @@ func TestToInChI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
 			defer m.Close()
 
-			inchi, err := m.ToInChI()
+			inchi, err := indigoInchi.GenerateInChI(m)
 			if err != nil {
 				t.Errorf("failed to convert to InChI: %v", err)
 			}
@@ -46,13 +44,14 @@ func TestToInChI(t *testing.T) {
 
 // TestToInChIKey tests converting molecule to InChI Key
 func TestToInChIKey(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
 	defer m.Close()
 
-	inchiKey, err := m.ToInChIKey()
+	inchi, _ := indigoInchi.GenerateInChI(m)
+	inchiKey, err := indigoInchi.InChIToKey(inchi)
 	if err != nil {
 		t.Errorf("failed to convert to InChI Key: %v", err)
 	}
@@ -70,23 +69,24 @@ func TestToInChIKey(t *testing.T) {
 // TestLoadInChI tests loading a molecule from InChI
 func TestLoadInChI(t *testing.T) {
 	// Load ethanol
-	m1, err := molecule.LoadMoleculeFromString("CCO")
+	m1, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
 	defer m1.Close()
 
 	// Get InChI
-	inchi, err := m1.ToInChI()
+	inchi, err := indigoInchi.GenerateInChI(m1)
 	if err != nil {
 		t.Fatalf("failed to convert to InChI: %v", err)
 	}
 
 	// Load from InChI
-	m2, err := molecule.LoadFromInChI(inchi)
+	m2Handle, err := indigoInchi.LoadFromInChI(inchi)
 	if err != nil {
 		t.Fatalf("failed to load from InChI: %v", err)
 	}
+	m2, _ := indigoInit.LoadMoleculeFromHandle(m2Handle)
 	defer m2.Close()
 
 	// Verify atom counts match
@@ -112,23 +112,24 @@ func TestInChIRoundtrip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Load molecule
-			m1, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m1, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load molecule: %v", err)
 			}
 			defer m1.Close()
 
 			// Convert to InChI
-			inchi, err := m1.ToInChI()
+			inchi, err := indigoInchi.GenerateInChI(m1)
 			if err != nil {
 				t.Fatalf("failed to convert to InChI: %v", err)
 			}
 
 			// Load from InChI
-			m2, err := molecule.LoadFromInChI(inchi)
+			m2Handle, err := indigoInchi.LoadFromInChI(inchi)
 			if err != nil {
 				t.Fatalf("failed to load from InChI: %v", err)
 			}
+			m2, _ := indigoInit.LoadMoleculeFromHandle(m2Handle)
 			defer m2.Close()
 
 			// Verify structure preserved
@@ -145,19 +146,21 @@ func TestInChIRoundtrip(t *testing.T) {
 // TestInChIKeyConsistency tests that same molecule produces same InChI Key
 func TestInChIKeyConsistency(t *testing.T) {
 	// Load the same molecule twice
-	m1, _ := molecule.LoadMoleculeFromString("CCO")
+	m1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer m1.Close()
 
-	m2, _ := molecule.LoadMoleculeFromString("OCC")
+	m2, _ := indigoInit.LoadMoleculeFromString("OCC")
 	defer m2.Close()
 
 	// Get InChI Keys
-	key1, err := m1.ToInChIKey()
+	inchi, err := indigoInchi.GenerateInChI(m1)
+	key1, err := indigoInchi.InChIToKey(inchi)
 	if err != nil {
 		t.Fatalf("failed to get InChI Key 1: %v", err)
 	}
 
-	key2, err := m2.ToInChIKey()
+	inchi, err = indigoInchi.GenerateInChI(m2)
+	key2, err := indigoInchi.InChIToKey(inchi)
 	if err != nil {
 		t.Fatalf("failed to get InChI Key 2: %v", err)
 	}
@@ -170,22 +173,22 @@ func TestInChIKeyConsistency(t *testing.T) {
 
 // TestInChIHelperFunctions tests warning, log, and auxinfo functions
 func TestInChIHelperFunctions(t *testing.T) {
-	m, err := molecule.LoadMoleculeFromString("CCO")
+	m, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("failed to load molecule: %v", err)
 	}
 	defer m.Close()
 
 	// Generate InChI (this may produce warnings/logs)
-	_, err = m.ToInChI()
+	_, err = indigoInchi.GenerateInChI(m)
 	if err != nil {
 		t.Fatalf("failed to generate InChI: %v", err)
 	}
 
 	// These functions should not panic
-	warning := molecule.InChIWarning()
-	log := molecule.InChILog()
-	auxInfo := molecule.InChIAuxInfo()
+	warning := indigoInchi.InChIWarning()
+	log := indigoInchi.InChILog()
+	auxInfo := indigoInchi.InChIAuxInfo()
 
 	// Just verify they return strings (may be empty)
 	_ = warning
@@ -195,15 +198,15 @@ func TestInChIHelperFunctions(t *testing.T) {
 
 // TestInChIOnClosedMolecule tests that InChI fails on closed molecule
 func TestInChIOnClosedMolecule(t *testing.T) {
-	m, _ := molecule.LoadMoleculeFromString("CCO")
-	m.Close()
+	m, _ := indigoInit.LoadMoleculeFromString("CCO")
+	defer m.Close()
 
-	_, err := m.ToInChI()
+	inchi, err := indigoInchi.GenerateInChI(m)
 	if err == nil {
 		t.Error("expected error when generating InChI on closed molecule")
 	}
 
-	_, err = m.ToInChIKey()
+	_, err = indigoInchi.InChIToKey(inchi)
 	if err == nil {
 		t.Error("expected error when generating InChI Key on closed molecule")
 	}
@@ -211,7 +214,7 @@ func TestInChIOnClosedMolecule(t *testing.T) {
 
 // TestLoadInvalidInChI tests loading from invalid InChI
 func TestLoadInvalidInChI(t *testing.T) {
-	_, err := molecule.LoadFromInChI("invalid inchi string")
+	_, err := indigoInchi.LoadFromInChI("invalid inchi string")
 	if err == nil {
 		t.Error("expected error when loading from invalid InChI")
 	}
@@ -230,13 +233,13 @@ func TestInChIForComplexMolecules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := molecule.LoadMoleculeFromString(tt.smiles)
+			m, err := indigoInit.LoadMoleculeFromString(tt.smiles)
 			if err != nil {
 				t.Fatalf("failed to load %s: %v", tt.name, err)
 			}
 			defer m.Close()
 
-			inchi, err := m.ToInChI()
+			inchi, err := indigoInchi.GenerateInChI(m)
 			if err != nil {
 				t.Errorf("failed to generate InChI for %s: %v", tt.name, err)
 			}
@@ -246,7 +249,7 @@ func TestInChIForComplexMolecules(t *testing.T) {
 			}
 
 			// Also test InChI Key
-			key, err := m.ToInChIKey()
+			key, err := indigoInchi.InChIToKey(inchi)
 			if err != nil {
 				t.Errorf("failed to generate InChI Key for %s: %v", tt.name, err)
 			}

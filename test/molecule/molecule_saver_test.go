@@ -12,13 +12,11 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/cx-luo/go-chem/molecule"
 )
 
 // Test ChemAxon CXSMILES format
 func TestToCXSmiles(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -38,7 +36,7 @@ func TestToCXSmiles(t *testing.T) {
 
 // Test Canonical ChemAxon CXSMILES format
 func TestToCanonicalCXSmiles(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -58,7 +56,7 @@ func TestToCanonicalCXSmiles(t *testing.T) {
 
 // Test Daylight SMILES format
 func TestToDaylightSmiles(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
+	mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -78,7 +76,7 @@ func TestToDaylightSmiles(t *testing.T) {
 
 // Test CML file saving
 func TestSaveToCMLFile(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -107,7 +105,7 @@ func TestSaveToCMLFile(t *testing.T) {
 
 // Test CDXML file saving
 func TestSaveToCDXMLFile(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -136,7 +134,7 @@ func TestSaveToCDXMLFile(t *testing.T) {
 
 // Test CDX file saving
 func TestSaveToCDXFile(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -165,7 +163,7 @@ func TestSaveToCDXFile(t *testing.T) {
 
 // Test RDF format conversion
 func TestToRDF(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -189,7 +187,7 @@ func TestToRDF(t *testing.T) {
 
 // Test RDF file saving
 func TestSaveToRDFFile(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -218,7 +216,7 @@ func TestSaveToRDFFile(t *testing.T) {
 
 // Test buffer conversion
 func TestToBuffer(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -244,7 +242,7 @@ func TestToBuffer(t *testing.T) {
 
 // Test KET format conversion
 func TestToKet(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -269,7 +267,7 @@ func TestToKet(t *testing.T) {
 
 // Test KET file saving
 func TestSaveToKetFile(t *testing.T) {
-	mol, err := molecule.LoadMoleculeFromString("CCO")
+	mol, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -301,7 +299,7 @@ func TestCXSmilesWithComplexMolecule(t *testing.T) {
 	// Aspirin with stereochemistry
 	smilesInput := "CC(=O)Oc1ccccc1C(=O)O"
 
-	mol, err := molecule.LoadMoleculeFromString(smilesInput)
+	mol, err := indigoInit.LoadMoleculeFromString(smilesInput)
 	if err != nil {
 		t.Fatalf("Failed to load molecule: %v", err)
 	}
@@ -355,7 +353,7 @@ func TestFormatConsistency(t *testing.T) {
 
 	for _, smiles := range testCases {
 		t.Run(smiles, func(t *testing.T) {
-			mol, err := molecule.LoadMoleculeFromString(smiles)
+			mol, err := indigoInit.LoadMoleculeFromString(smiles)
 			if err != nil {
 				t.Fatalf("Failed to load molecule %s: %v", smiles, err)
 			}

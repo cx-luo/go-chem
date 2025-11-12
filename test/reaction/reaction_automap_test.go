@@ -11,7 +11,7 @@ func TestReactionAutomap(t *testing.T) {
 	// Load a reaction
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestReactionAutomapModes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
-			r, err := reaction.LoadReactionFromString(rxn)
+			r, err := indigoInit.LoadReactionFromString(rxn)
 			if err != nil {
 				t.Fatalf("failed to load reaction: %v", err)
 			}
@@ -57,7 +57,7 @@ func TestReactionAutomapModes(t *testing.T) {
 func TestReactionAutomapOptions(t *testing.T) {
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestReactionAutomapOptions(t *testing.T) {
 func TestReactionAutomapMultipleOptions(t *testing.T) {
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestReactionClearAAM(t *testing.T) {
 	// Load a reaction with explicit mapping
 	rxn := "[CH3:1][C:2](=[O:3])[OH:4].[CH3:5][CH2:6][OH:7]>>[CH3:1][C:2](=[O:3])[O:7][CH2:6][CH3:5].[OH2:4]"
 
-	r, err := reaction.LoadReactionSmartsFromString(rxn)
+	r, err := indigoInit.LoadReactionSmartsFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestReactionCorrectReactingCenters(t *testing.T) {
 	// Load a reaction with mapping
 	rxn := "[CH3:1][C:2](=[O:3])[OH:4].[CH3:5][CH2:6][OH:7]>>[CH3:1][C:2](=[O:3])[O:7][CH2:6][CH3:5].[OH2:4]"
 
-	r, err := reaction.LoadReactionSmartsFromString(rxn)
+	r, err := indigoInit.LoadReactionSmartsFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestReactionGetSetAtomMapping(t *testing.T) {
 	// Create a simple reaction
 	rxn := "CC(=O)O.CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestReactionGetSetReactingCenter(t *testing.T) {
 	// Load a reaction with mapping
 	rxn := "[CH3:1][C:2](=[O:3])[OH:4].[CH3:5][CH2:6][OH:7]>>[CH3:1][C:2](=[O:3])[O:7][CH2:6][CH3:5].[OH2:4]"
 
-	r, err := reaction.LoadReactionSmartsFromString(rxn)
+	r, err := indigoInit.LoadReactionSmartsFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestReactionAutomapSmartsReaction(t *testing.T) {
 	// SMARTS reaction without explicit mapping
 	smarts := "[C](=[O])[OH].[C][OH]>>[C](=[O])[O][C].[OH2]"
 
-	r, err := reaction.LoadReactionSmartsFromString(smarts)
+	r, err := indigoInit.LoadReactionSmartsFromString(smarts)
 	if err != nil {
 		t.Fatalf("failed to load reaction SMARTS: %v", err)
 	}
@@ -204,7 +204,7 @@ func TestReactionAutomapComplexReaction(t *testing.T) {
 	// More complex reaction: Diels-Alder
 	rxn := "C=CC=C.C=C>>C1=CCCCC1"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestReactionAutomapWithIsotopes(t *testing.T) {
 	// Reaction with isotopic labels
 	rxn := "[13C]C(=O)O.CCO>>[13C]C(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -246,7 +246,7 @@ func TestReactionAutomapWithCharges(t *testing.T) {
 	// Reaction with charged species
 	rxn := "CC(=O)[O-].[Na+].CCO>>CC(=O)OCC.O.[Na+].[OH-]"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestReactionAutomapKeepExisting(t *testing.T) {
 	// Load a reaction with partial mapping
 	rxn := "[CH3:1][C:2](=[O:3])[OH:4].CCO>>CC(=O)OCC.O"
 
-	r, err := reaction.LoadReactionFromString(rxn)
+	r, err := indigoInit.LoadReactionFromString(rxn)
 	if err != nil {
 		t.Fatalf("failed to load reaction: %v", err)
 	}

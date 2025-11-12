@@ -10,21 +10,23 @@ package reaction_test
 
 import (
 	"testing"
-
-	"github.com/cx-luo/go-chem/reaction"
 )
 
 func TestGetReactantMolecule(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
 	defer rxn.Close()
 
 	// Get first reactant (ethanol)
-	mol, err := rxn.GetReactantMolecule(0)
+	molhandle, err := rxn.GetReactantMolecule(0)
 	if err != nil {
 		t.Fatalf("Failed to get reactant molecule: %v", err)
+	}
+	mol, err := indigoInit.LoadMoleculeFromHandle(molhandle)
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
 	}
 	defer mol.Close()
 
@@ -49,16 +51,20 @@ func TestGetReactantMolecule(t *testing.T) {
 }
 
 func TestGetProductMolecule(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
 	defer rxn.Close()
 
 	// Get first product (ethyl acetate)
-	mol, err := rxn.GetProductMolecule(0)
+	molhandle, err := rxn.GetProductMolecule(0)
 	if err != nil {
 		t.Fatalf("Failed to get product molecule: %v", err)
+	}
+	mol, err := indigoInit.LoadMoleculeFromHandle(molhandle)
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
 	}
 	defer mol.Close()
 
@@ -77,7 +83,7 @@ func TestGetProductMolecule(t *testing.T) {
 }
 
 func TestGetMoleculeOutOfRange(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -97,7 +103,7 @@ func TestGetMoleculeOutOfRange(t *testing.T) {
 }
 
 func TestGetAllReactants(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -114,17 +120,21 @@ func TestGetAllReactants(t *testing.T) {
 
 	// Check each reactant
 	for i, mol := range reactants {
-		smiles, err := mol.ToSmiles()
+		molhandle, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			t.Errorf("Failed to load molecule: %v", err)
+		}
+		defer molhandle.Close()
+		smiles, err := molhandle.ToSmiles()
 		if err != nil {
 			t.Errorf("Failed to get SMILES for reactant %d: %v", i, err)
 		}
 		t.Logf("Reactant %d: %s", i, smiles)
-		mol.Close()
 	}
 }
 
 func TestGetAllProducts(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -141,18 +151,22 @@ func TestGetAllProducts(t *testing.T) {
 
 	// Check each product
 	for i, mol := range products {
-		smiles, err := mol.ToSmiles()
+		molhandle, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			t.Errorf("Failed to load molecule: %v", err)
+		}
+		defer molhandle.Close()
+		smiles, err := molhandle.ToSmiles()
 		if err != nil {
 			t.Errorf("Failed to get SMILES for product %d: %v", i, err)
 		}
 		t.Logf("Product %d: %s", i, smiles)
-		mol.Close()
 	}
 }
 
 func TestGetAllCatalysts(t *testing.T) {
 	// Most simple reactions don't have catalysts
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -170,21 +184,29 @@ func TestGetAllCatalysts(t *testing.T) {
 
 	// Close any catalysts
 	for _, mol := range catalysts {
-		mol.Close()
+		molhandle, err := indigoInit.LoadMoleculeFromHandle(mol)
+		if err != nil {
+			t.Errorf("Failed to load molecule: %v", err)
+		}
+		molhandle.Close()
 	}
 }
 
 func TestMoleculeManipulation(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("c1ccccc1>>C1=CC=CC=C1")
+	rxn, err := indigoInit.LoadReactionFromString("c1ccccc1>>C1=CC=CC=C1")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
 	defer rxn.Close()
 
 	// Get reactant and manipulate it
-	mol, err := rxn.GetReactantMolecule(0)
+	molhandle, err := rxn.GetReactantMolecule(0)
 	if err != nil {
 		t.Fatalf("Failed to get reactant: %v", err)
+	}
+	mol, err := indigoInit.LoadMoleculeFromHandle(molhandle)
+	if err != nil {
+		t.Fatalf("Failed to load molecule: %v", err)
 	}
 	defer mol.Close()
 
@@ -192,7 +214,7 @@ func TestMoleculeManipulation(t *testing.T) {
 	t.Logf("Before aromatize: %s", beforeSmiles)
 
 	// Aromatize
-	err = mol.Aromatize()
+	err = rxn.Aromatize()
 	if err != nil {
 		t.Errorf("Failed to aromatize: %v", err)
 	}
@@ -213,7 +235,7 @@ func TestMoleculeManipulation(t *testing.T) {
 }
 
 func TestMassBalance(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
@@ -225,15 +247,17 @@ func TestMassBalance(t *testing.T) {
 	var reactantMass, productMass float64
 
 	for _, mol := range reactants {
-		mass, _ := mol.MolecularWeight()
+		m, _ := indigoInit.LoadMoleculeFromHandle(mol)
+		mass, _ := m.MolecularWeight()
+		defer m.Close()
 		reactantMass += mass
-		mol.Close()
 	}
 
 	for _, mol := range products {
-		mass, _ := mol.MolecularWeight()
+		m, _ := indigoInit.LoadMoleculeFromHandle(mol)
+		mass, _ := m.MolecularWeight()
+		defer m.Close()
 		productMass += mass
-		mol.Close()
 	}
 
 	diff := reactantMass - productMass
@@ -246,7 +270,7 @@ func TestMassBalance(t *testing.T) {
 }
 
 func TestClosedReaction(t *testing.T) {
-	rxn, err := reaction.LoadReactionFromString("CCO>>CC=O")
+	rxn, err := indigoInit.LoadReactionFromString("CCO>>CC=O")
 	if err != nil {
 		t.Fatalf("Failed to load reaction: %v", err)
 	}
