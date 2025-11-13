@@ -57,30 +57,41 @@ go test ./test/molecule/...
 package main
 
 import (
-    "github.com/cx-luo/go-chem/molecule"
-    "github.com/cx-luo/go-chem/render"
+   "fmt"
+   "github.com/cx-luo/go-chem/core"
+   "github.com/cx-luo/go-chem/molecule"
+   "github.com/cx-luo/go-chem/render"
 )
 
 func main() {
-    // 从 SMILES 加载分子
-    mol, err := molecule.LoadMoleculeFromString("c1ccccc1")
-    if err != nil {
-        panic(err)
-    }
-    defer mol.Close()
+   indigoInit, err := core.IndigoInit()
+   if err != nil {
+      panic(err)
+   }
+   
+   indigoRender, err := indigoInit.InitRenderer()
+   if err != nil {
+      fmt.Printf("failed to initialize renderer: %v", err)
+   }
 
-    // 初始化渲染器
-    renderer := render.NewRenderer()
-    defer renderer.Dispose()
+   // 从 SMILES 加载分子
+   mol, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
+   if err != nil {
+      panic(err)
+   }
+   defer mol.Close()
 
-    // 设置渲染选项
-    opts := renderer.DefaultRenderOptions()
-    opts.ImageWidth = 800
-    opts.ImageHeight = 600
-    opts.Apply()
+   // 设置渲染选项
+   opts := &indigoRender.RenderOptions{
+      OutputFormat: "png",
+      ImageWidth:   800,
+      ImageHeight:  600,
+   }
+   indigoRender.Options = opts
+   indigoRender.Apply()
 
-    // 渲染为 PNG
-    renderer.RenderToFile(mol.Handle(), "benzene.png")
+   // 渲染为 PNG
+   indigoRender.RenderToFile(mol.Handle, "benzene.png")
 }
 ```
 
@@ -90,28 +101,34 @@ func main() {
 package main
 
 import (
-    "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+   "fmt"
+   "github.com/cx-luo/go-chem/core"
+   "github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
-    // 加载乙醇
-    mol, _ := molecule.LoadMoleculeFromString("CCO")
-    defer mol.Close()
+   indigoInit, err := core.IndigoInit()
+   if err != nil {
+      panic(err)
+   }
 
-    // 计算分子属性
-    mw, _ := mol.MolecularWeight()
-    fmt.Printf("分子量: %.2f\n", mw)
+   // 加载乙醇
+   mol, _ := indigoInit.LoadMoleculeFromString("CCO")
+   defer mol.Close()
 
-    formula, _ := mol.GrossFormula()
-    fmt.Printf("分子式: %s\n", formula)
+   // 计算分子属性
+   mw, _ := mol.MolecularWeight()
+   fmt.Printf("分子量: %.2f\n", mw)
 
-    tpsa, _ := mol.TPSA(false)
-    fmt.Printf("TPSA: %.2f\n", tpsa)
+   formula, _ := mol.GrossFormula()
+   fmt.Printf("分子式: %s\n", formula)
 
-    // 转换为 SMILES
-    smiles, _ := mol.ToSmiles()
-    fmt.Printf("SMILES: %s\n", smiles)
+   tpsa, _ := mol.TPSA(false)
+   fmt.Printf("TPSA: %.2f\n", tpsa)
+
+   // 转换为 SMILES
+   smiles, _ := mol.ToDaylightSmiles()
+   fmt.Printf("SMILES: %s\n", smiles)
 }
 ```
 
@@ -121,26 +138,33 @@ func main() {
 package main
 
 import (
-    "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+   "fmt"
+   "github.com/cx-luo/go-chem/core"
+   "github.com/cx-luo/go-chem/molecule"
 )
 
 func main() {
-    // 加载分子
-    mol, _ := molecule.LoadMoleculeFromString("CC(=O)O")
-    defer mol.Close()
+   indigoInit, err := core.IndigoInit()
+   if err != nil {
+      panic(err)
+   }
 
-    // 初始化 InChI
-    molecule.InitInChI()
-    defer molecule.DisposeInChI()
+   indigoInchi, err := indigoInit.InchiInit()
+   if err != nil {
+      panic(err)
+   }
 
-    // 生成 InChI
-    inchi, _ := mol.ToInChI()
-    fmt.Println("InChI:", inchi)
+   // 加载分子
+   mol, _ := indigoInchi.LoadMoleculeFromString("CC(=O)O")
+   defer mol.Close()
 
-    // 生成 InChIKey
-    key, _ := mol.ToInChIKey()
-    fmt.Println("InChIKey:", key)
+   // 生成 InChI
+   inchi, _ := indigoInchi.GenerateInChI(mol)
+   fmt.Println("InChI:", inchi)
+
+   // 生成 InChIKey
+   key, _ := indigoInchi.InchiToKey(inchi)
+   fmt.Println("InChIKey:", key)
 }
 ```
 
@@ -150,26 +174,32 @@ func main() {
 package main
 
 import (
-    "fmt"
-    "github.com/cx-luo/go-chem/reaction"
+   "fmt"
+   "github.com/cx-luo/go-chem/core"
+   "github.com/cx-luo/go-chem/reaction"
 )
 
 func main() {
-    // 加载反应
-    rxn, _ := reaction.LoadReactionFromString("CCO>>CC=O")
-    defer rxn.Close()
+   indigoInit, err := core.IndigoInit()
+   if err != nil {
+      panic(err)
+   }
 
-    // 获取反应信息
-    nReactants, _ := rxn.CountReactants()
-    nProducts, _ := rxn.CountProducts()
-    fmt.Printf("反应物: %d, 产物: %d\n", nReactants, nProducts)
+   // 加载反应
+   rxn, _ := indigoInit.LoadReactionFromString("CCO>>CC=O")
+   defer rxn.Close()
 
-    // 自动原子映射
-    rxn.Automap("discard")
+   // 获取反应信息
+   nReactants, _ := rxn.CountReactants()
+   nProducts, _ := rxn.CountProducts()
+   fmt.Printf("反应物: %d, 产物: %d\n", nReactants, nProducts)
 
-    // 保存为 RXN 文件
-    rxn.SaveRxnfileToFile("reaction.rxn")
-}
+   // 自动原子映射
+   rxn.Automap("discard")
+
+   // 保存为 RXN 文件
+   rxn.SaveToFile("reaction.rxn")
+}   
 ```
 
 ## 📚 文档
@@ -198,21 +228,30 @@ go-chem/
 │   ├── linux-aarch64/          # Linux ARM64库
 │   ├── darwin-x86_64/          # macOS Intel库
 │   └── darwin-aarch64/         # macOS Apple Silicon库
+├── core/                       # 核心功能
+│   ├── indigo.go               # Indigo 库核心功能
+│   ├── indigo_helper.go        # Indigo 辅助功能
+│   ├── indigo_inchi.go         # Indigo InChI 功能
+│   ├── indigo_molecule.go      # Indigo 分子功能
+│   └── indigo_reaction.go      # Indigo 反应功能
 ├── molecule/                   # 分子处理包
+│   ├── README.md               # 分子处理文档
 │   ├── molecule.go             # 核心分子结构
-│   ├── molecule_loader.go      # 分子加载
-│   ├── molecule_saver.go       # 分子保存
+│   ├── molecule_atom.go        # 原子操作
 │   ├── molecule_builder.go     # 分子构建
+│   ├── molecule_match.go       # 分子匹配
 │   ├── molecule_properties.go  # 属性计算
-│   ├── molecule_inchi.go       # InChI 支持
-│   └── elements.go             # 元素数据
+│   └── molecule_saver.go       # 分子保存
 ├── reaction/                   # 反应处理包
+│   ├── README.md               # 反应处理文档
 │   ├── reaction.go             # 核心反应结构
-│   ├── reaction_loader.go      # 反应加载
-│   ├── reaction_saver.go       # 反应保存
 │   ├── reaction_automap.go     # 自动原子映射
-│   └── reaction_iterator.go    # 反应迭代器
+│   ├── reaction_helpers.go     # 反应辅助功能
+│   ├── reaction_iterator.go    # 反应迭代器
+│   ├── reaction_loader.go      # 反应加载
+│   └── reaction_saver.go       # 反应保存
 ├── render/                     # 渲染包
+│   ├── README.md               # 渲染文档
 │   └── render.go               # 渲染功能
 ├── test/                       # 测试文件
 │   ├── molecule/               # 分子测试
@@ -220,8 +259,8 @@ go-chem/
 │   └── render/                 # 渲染测试
 ├── examples/                   # 示例代码
 │   ├── molecule/               # 分子示例
-│   ├── example_reaction.go     # 反应示例
-│   └── example_render.go       # 渲染示例
+│   ├── reaction/               # 反应示例
+│   └── render/                 # 渲染示例
 ├── docs/                       # 文档
 └── README.md                   # 本文件
 ```

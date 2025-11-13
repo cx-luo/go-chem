@@ -70,17 +70,20 @@ func main() {
     defer mol.Close()
 
     // Initialize renderer
-    render.InitRenderer()
-    defer render.DisposeRenderer()
+    renderer := &render.Renderer{}
+    defer renderer.DisposeRenderer()
 
     // Set render options
-    opts := render.DefaultRenderOptions()
-    opts.ImageWidth = 800
-    opts.ImageHeight = 600
-    opts.Apply()
+    opts := &render.RenderOptions{
+        OutputFormat: "png",
+        ImageWidth:   800,
+        ImageHeight:  600,
+    }
+    renderer.Options = opts
+    renderer.Apply()
 
     // Render to PNG
-    render.RenderToFile(mol.Handle(), "benzene.png")
+    renderer.RenderToFile(mol.Handle, "benzene.png")
 }
 ```
 
@@ -168,7 +171,7 @@ func main() {
     rxn.Automap("discard")
 
     // Save as RXN file
-    rxn.SaveRxnfileToFile("reaction.rxn")
+    rxn.SaveToFile("reaction.rxn")
 }
 ```
 
@@ -198,11 +201,39 @@ go-chem/
 │   ├── linux-aarch64/          # Linux ARM64
 │   ├── darwin-x86_64/          # macOS Intel
 │   └── darwin-aarch64/         # macOS Apple Silicon
+├── core/                       # Core functionality
+│   ├── indigo.go               # Indigo core functionality
+│   ├── indigo_helper.go        # Indigo helper functionality
+│   ├── indigo_inchi.go         # Indigo InChI functionality
+│   ├── indigo_molecule.go      # Indigo molecule functionality
+│   └── indigo_reaction.go      # Indigo reaction functionality
 ├── molecule/                   # Molecule processing package
+│   ├── README.md               # Molecule processing documentation
+│   ├── molecule.go             # Core molecule structure
+│   ├── molecule_atom.go        # Atom operations
+│   ├── molecule_builder.go     # Molecule building
+│   ├── molecule_match.go       # Molecule matching
+│   ├── molecule_properties.go  # Property calculations
+│   └── molecule_saver.go       # Molecule saving
 ├── reaction/                   # Reaction processing package
+│   ├── README.md               # Reaction processing documentation
+│   ├── reaction.go             # Core reaction structure
+│   ├── reaction_automap.go     # Automatic atom mapping
+│   ├── reaction_helpers.go     # Reaction helper functions
+│   ├── reaction_iterator.go    # Reaction iterator
+│   ├── reaction_loader.go      # Reaction loading
+│   └── reaction_saver.go       # Reaction saving
 ├── render/                     # Rendering package
+│   ├── README.md               # Rendering documentation
+│   └── render.go               # Rendering functionality
 ├── test/                       # Test files
+│   ├── molecule/               # Molecule tests
+│   ├── reaction/               # Reaction tests
+│   └── render/                 # Rendering tests
 ├── examples/                   # Example code
+│   ├── molecule/               # Molecule examples
+│   ├── reaction/               # Reaction examples
+│   └── render/                 # Rendering examples
 ├── docs/                       # Documentation
 └── README.md                   # This file
 ```

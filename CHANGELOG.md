@@ -7,14 +7,25 @@
 
 ## [Unreleased]
 
-### 计划中的功能
+### 新增
 
-- 分子指纹和相似度计算
-- 子结构搜索
-- SMARTS 模式匹配
-- 反应查询和搜索
-- 3D 坐标生成
-- 力场能量计算
+- **渲染器重构**:
+  - 将渲染函数移至 Indigo 实例方法
+  - 添加具有会话特定渲染的 IndigoRender 结构
+  - 重命名核心文件以使用下划线
+  - 更新测试和示例以使用新 API
+  - 移除全局渲染器状态
+
+### 改进
+
+- **InChI 会话管理重构**:
+  - 将 InChI 初始化状态从全局移至实例级别
+  - 添加 SessionPool 用于管理 Indigo 会话
+  - 更新所有调用方以使用 Indigo 实例上的新 InchiInit 方法
+
+### 文档
+
+- 更新核心包文档注释
 
 ## [0.4.4] - 2025-11-08
 
@@ -229,20 +240,22 @@
 
 ## 开发路线图
 
-### v0.4.0 (计划中)
+### v0.5.0 (计划中)
 
 - [ ] 分子指纹计算
 - [ ] Tanimoto 相似度
 - [ ] 子结构匹配
 - [ ] SMARTS 支持增强
+- [ ] 反应查询和搜索
+- [ ] 3D 坐标生成
+- [ ] 力场能量计算
 - [ ] 性能优化
 
-### v0.5.0 (计划中)
+### v0.6.0 (计划中)
 
-- [ ] 反应查询功能
-- [ ] 反应相似度搜索
 - [ ] 反应模板
 - [ ] 批量处理工具
+- [ ] 反应相似度搜索
 
 ### v1.0.0 (目标)
 
@@ -255,6 +268,23 @@
 ---
 
 ## 迁移指南
+
+### 从 0.4.x 迁移到 0.5.x
+
+**渲染器重构**:
+
+```go
+// 旧代码
+import "github.com/cx-luo/go-chem/render"
+renderer := &render.Renderer{}
+renderer.RenderToFile(mol.Handle, "output.png")
+
+// 新代码
+import "github.com/cx-luo/go-chem/core"
+indigo := core.NewIndigo()
+defer indigo.Close()
+indigo.RenderToFile(mol.Handle, "output.png")
+```
 
 ### 从 0.2.x 迁移到 0.3.x
 
