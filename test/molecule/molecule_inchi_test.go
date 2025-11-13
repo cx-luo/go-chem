@@ -199,7 +199,7 @@ func TestInChIHelperFunctions(t *testing.T) {
 // TestInChIOnClosedMolecule tests that InChI fails on closed molecule
 func TestInChIOnClosedMolecule(t *testing.T) {
 	m, _ := indigoInit.LoadMoleculeFromString("CCO")
-	defer m.Close()
+	m.Close()
 
 	inchi, err := indigoInchi.GenerateInChI(m)
 	if err == nil {

@@ -19,13 +19,13 @@ func TestHasSubstructure(t *testing.T) {
 	}
 	defer target.Close()
 
-	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadQueryMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load query: %v", err)
 	}
 	defer query.Close()
 
-	has, err := target.HasSubstructure(query)
+	has, err := target.HasSubstructure(query, nil)
 	if err != nil {
 		t.Fatalf("HasSubstructure failed: %v", err)
 	}
@@ -43,13 +43,14 @@ func TestCountSubstructureMatches(t *testing.T) {
 	}
 	defer target.Close()
 
-	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadQueryMoleculeFromString("c1ccccc1")
 	if err != nil {
 		t.Fatalf("Failed to load query: %v", err)
 	}
 	defer query.Close()
 
-	count, err := target.CountSubstructureMatches(query)
+	// set timeout to 10 seconds to avoid infinite loop
+	count, err := target.CountSubstructureMatches(query, nil)
 	if err != nil {
 		t.Fatalf("CountSubstructureMatches failed: %v", err)
 	}
@@ -66,13 +67,13 @@ func TestExactMatch(t *testing.T) {
 	}
 	defer mol1.Close()
 
-	mol2, err := indigoInit.LoadMoleculeFromString("CCO")
+	mol2, err := indigoInit.LoadQueryMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load mol2: %v", err)
 	}
 	defer mol2.Close()
 
-	mol3, err := indigoInit.LoadMoleculeFromString("CC")
+	mol3, err := indigoInit.LoadQueryMoleculeFromString("CC")
 	if err != nil {
 		t.Fatalf("Failed to load mol3: %v", err)
 	}
@@ -107,13 +108,13 @@ func TestSMARTSMatching(t *testing.T) {
 	}
 	defer mol.Close()
 
-	pattern, err := indigoInit.LoadSmartsFromString("[CX3](=O)[OX2H1]")
+	pattern, err := indigoInit.LoadQueryMoleculeFromString("[CX3](=O)[OX2H1]")
 	if err != nil {
 		t.Fatalf("Failed to load SMARTS: %v", err)
 	}
 	defer pattern.Close()
 
-	has, err := mol.HasSubstructure(pattern)
+	has, err := mol.HasSubstructure(pattern, nil)
 	if err != nil {
 		t.Fatalf("HasSubstructure failed: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestSMARTSMatching(t *testing.T) {
 		t.Error("Expected to find carboxylic acid group in acetic acid")
 	}
 
-	count, err := mol.CountSubstructureMatches(pattern)
+	count, err := mol.CountSubstructureMatches(pattern, nil)
 	if err != nil {
 		t.Fatalf("CountSubstructureMatches failed: %v", err)
 	}

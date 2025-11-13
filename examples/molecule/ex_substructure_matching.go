@@ -31,7 +31,7 @@ func main() {
 	}
 	defer target.Close()
 
-	query, err := indigoInit.LoadMoleculeFromString("c1ccccc1")
+	query, err := indigoInit.LoadQueryMoleculeFromString("c1ccccc1")
 	if err != nil {
 		log.Fatalf("Failed to load query molecule: %v", err)
 	}
@@ -40,10 +40,10 @@ func main() {
 	fmt.Println("  Target: c1ccccc1CCO (Phenylethanol)")
 	fmt.Println("  Query:  c1ccccc1 (Benzene)")
 
-	hasSubstruct, _ := target.HasSubstructure(query)
+	hasSubstruct, _ := target.HasSubstructure(query, nil)
 	fmt.Printf("  Has benzene ring: %v\n", hasSubstruct)
 
-	count, _ := target.CountSubstructureMatches(query)
+	count, _ := target.CountSubstructureMatches(query, nil)
 	fmt.Printf("  Number of matches: %d\n", count)
 
 	// Example 2: Multiple substructure matches
@@ -51,13 +51,13 @@ func main() {
 
 	target2, _ := indigoInit.LoadMoleculeFromString("c1ccc(cc1)c2ccccc2")
 	defer target2.Close()
-	query2, _ := indigoInit.LoadMoleculeFromString("c1ccccc1")
+	query2, _ := indigoInit.LoadQueryMoleculeFromString("c1ccccc1")
 	defer query2.Close()
 
 	fmt.Println("  Target: c1ccc(cc1)c2ccccc2 (Biphenyl)")
 	fmt.Println("  Query:  c1ccccc1 (Benzene)")
 
-	count2, _ := target2.CountSubstructureMatches(query2)
+	count2, _ := target2.CountSubstructureMatches(query2, nil)
 	fmt.Printf("  Number of benzene rings: %d\n", count2)
 
 	// Example 3: Exact match
@@ -65,9 +65,9 @@ func main() {
 
 	mol1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol1.Close()
-	mol2, _ := indigoInit.LoadMoleculeFromString("CCO")
+	mol2, _ := indigoInit.LoadQueryMoleculeFromString("CCO")
 	defer mol2.Close()
-	mol3, _ := indigoInit.LoadMoleculeFromString("OCC")
+	mol3, _ := indigoInit.LoadQueryMoleculeFromString("OCC")
 	defer mol3.Close()
 
 	isExact1, _ := mol1.ExactMatch(mol2)
@@ -83,14 +83,14 @@ func main() {
 	defer aspirin.Close()
 
 	// Search for carboxylic acid group
-	carboxyl, _ := indigoInit.LoadSmartsFromString("[CX3](=O)[OX2H1]")
+	carboxyl, _ := indigoInit.LoadQueryMoleculeFromString("[CX3](=O)[OX2H1]")
 	defer carboxyl.Close()
 
 	fmt.Println("  Molecule: Aspirin")
 	fmt.Println("  Pattern: Carboxylic acid [CX3](=O)[OX2H1]")
 
-	hasCarboxyl, _ := aspirin.HasSubstructure(carboxyl)
-	carboxylCount, _ := aspirin.CountSubstructureMatches(carboxyl)
+	hasCarboxyl, _ := aspirin.HasSubstructure(carboxyl, nil)
+	carboxylCount, _ := aspirin.CountSubstructureMatches(carboxyl, nil)
 
 	fmt.Printf("  Has carboxylic acid: %v\n", hasCarboxyl)
 	fmt.Printf("  Number of groups: %d\n", carboxylCount)
@@ -127,14 +127,14 @@ func main() {
 		fmt.Printf("\n  %s (%s):\n", testMol.name, testMol.smiles)
 
 		for _, fg := range functionalGroups {
-			pattern, err := indigoInit.LoadSmartsFromString(fg.smarts)
+			pattern, err := indigoInit.LoadQueryMoleculeFromString(fg.smarts)
 			if err != nil {
 				continue
 			}
 
-			has, _ := mol.HasSubstructure(pattern)
+			has, _ := mol.HasSubstructure(pattern, nil)
 			if has {
-				count, _ := mol.CountSubstructureMatches(pattern)
+				count, _ := mol.CountSubstructureMatches(pattern, nil)
 				fmt.Printf("    ✓ %s (×%d)\n", fg.name, count)
 			}
 

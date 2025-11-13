@@ -29,6 +29,7 @@ package molecule
 import "C"
 import (
 	"fmt"
+	"unsafe"
 )
 
 // SubstructureMatch represents a substructure match
@@ -59,21 +60,32 @@ func (m *Molecule) SubstructureMatcher(query *Molecule) (*SubstructureMatch, err
 }
 
 // CountSubstructureMatches counts the number of substructure matches
-func (m *Molecule) CountSubstructureMatches(query *Molecule) (int, error) {
+// modeStr is the matching mode, "" or NORMAL, RES or RESONANCE, TAU..., defaults to ""
+func (m *Molecule) CountSubstructureMatches(queryMolecule *Molecule, modeStr *string) (int, error) {
 	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
-	if query.Closed {
-		return 0, fmt.Errorf("query molecule is closed")
+	if queryMolecule.Closed {
+		return 0, fmt.Errorf("queryMolecule molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("substructure")))
+	// Prepare C string only if modeStr is provided and non-empty.
+	var cMode *C.char
+	if modeStr != nil && *modeStr != "" {
+		cMode = C.CString(*modeStr)
+		// ensure the C string is freed after the call
+		defer C.free(unsafe.Pointer(cMode))
+	} else {
+		cMode = nil
+	}
+
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), cMode))
 	if matcherHandle < 0 {
 		return 0, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
 	}
 	defer C.indigoFree(C.int(matcherHandle))
 
-	count := int(C.indigoCountMatches(C.int(matcherHandle), C.int(query.Handle)))
+	count := int(C.indigoCountMatches(C.int(matcherHandle), C.int(queryMolecule.Handle)))
 	if count < 0 {
 		return 0, fmt.Errorf("failed to count matches: %s", getLastError())
 	}
@@ -82,11 +94,31 @@ func (m *Molecule) CountSubstructureMatches(query *Molecule) (int, error) {
 }
 
 // HasSubstructure checks if the molecule contains the given substructure
-func (m *Molecule) HasSubstructure(query *Molecule) (bool, error) {
-	count, err := m.CountSubstructureMatches(query)
-	if err != nil {
-		return false, err
+// modeStr is the matching mode, NORMAL or RESONANCE or TAUTOMER
+func (m *Molecule) HasSubstructure(queryMolecule *Molecule, modeStr *string) (bool, error) {
+	if m.Closed {
+		return false, fmt.Errorf("molecule is closed")
 	}
+	if queryMolecule.Closed {
+		return false, fmt.Errorf("queryMolecule molecule is closed")
+	}
+
+	// Prepare C string only if modeStr is provided and non-empty.
+	var cMode *C.char
+	if modeStr != nil && *modeStr != "" {
+		cMode = C.CString(*modeStr)
+		// ensure the C string is freed after the call
+		defer C.free(unsafe.Pointer(cMode))
+	} else {
+		cMode = nil
+	}
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), cMode))
+	if matcherHandle < 0 {
+		return false, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
+	}
+	defer C.indigoFree(C.int(matcherHandle))
+
+	count := int(C.indigoCountMatchesWithLimit(C.int(matcherHandle), C.int(queryMolecule.Handle), 1))
 	return count > 0, nil
 }
 
