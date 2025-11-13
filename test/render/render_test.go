@@ -11,7 +11,6 @@ import (
 )
 
 var indigoInit *core.Indigo
-var indigoInchi *core.IndigoInchi
 
 func init() {
 	handle, err := core.IndigoInit()
@@ -19,23 +18,17 @@ func init() {
 		panic(err)
 	}
 	indigoInit = handle
-
-	indigoInchiHandle, err := indigoInit.InchiInit()
-	if err != nil {
-		panic(err)
-	}
-	indigoInchi = indigoInchiHandle
 }
 
 // TestInitRenderer tests initializing the renderer
 func TestInitRenderer(t *testing.T) {
-	err := render.InitRenderer()
+	_, err := indigoInit.InitRenderer()
 	if err != nil {
 		t.Fatalf("failed to initialize renderer: %v", err)
 	}
 
 	// Initialize again should not error
-	err = render.InitRenderer()
+	_, err = indigoInit.InitRenderer()
 	if err != nil {
 		t.Errorf("second initialization should not error: %v", err)
 	}
@@ -43,18 +36,18 @@ func TestInitRenderer(t *testing.T) {
 
 // TestDisposeRenderer tests disposing the renderer
 func TestDisposeRenderer(t *testing.T) {
-	err := render.InitRenderer()
+	indigoRender, err := indigoInit.InitRenderer()
 	if err != nil {
 		t.Fatalf("failed to initialize renderer: %v", err)
 	}
 
-	err = render.DisposeRenderer()
+	err = indigoRender.DisposeRenderer()
 	if err != nil {
 		t.Errorf("failed to dispose renderer: %v", err)
 	}
 
 	// Dispose again should not error
-	err = render.DisposeRenderer()
+	err = indigoRender.DisposeRenderer()
 	if err != nil {
 		t.Errorf("second dispose should not error: %v", err)
 	}
@@ -72,17 +65,21 @@ func TestRenderMoleculeToFile(t *testing.T) {
 	// Create temp file
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "benzene.png")
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 
 	// Set render options
-	opts := render.DefaultRenderOptions()
+	opts := indigoRender.Options
 	opts.ImageWidth = 300
 	opts.ImageHeight = 300
-	if err := opts.Apply(); err != nil {
+	if err := indigoRender.Apply(); err != nil {
 		t.Fatalf("failed to apply render options: %v", err)
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle, outputFile)
+	err = indigoRender.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to file: %v", err)
 	}
@@ -111,14 +108,17 @@ func TestRenderMoleculeSVG(t *testing.T) {
 	// Create temp file
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "ethanol.svg")
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 	// Set SVG format
-	if err := render.SetRenderOption("render-output-format", "svg"); err != nil {
+	if err := indigoRender.SetRenderOption("render-output-format", "svg"); err != nil {
 		t.Fatalf("failed to set SVG format: %v", err)
 	}
 
 	// Render to file
-	err = render.RenderToFile(mol.Handle, outputFile)
+	err = indigoRender.RenderToFile(mol.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render molecule to SVG: %v", err)
 	}
@@ -145,17 +145,20 @@ func TestRenderReactionToFile(t *testing.T) {
 	// Create temp file
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "reaction.png")
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 	// Set render options
-	opts := render.DefaultRenderOptions()
+	opts := indigoRender.Options
 	opts.ImageWidth = 600
 	opts.ImageHeight = 300
-	if err := opts.Apply(); err != nil {
+	if err := indigoRender.Apply(); err != nil {
 		t.Fatalf("failed to apply render options: %v", err)
 	}
 
 	// Render to file
-	err = render.RenderToFile(rxn.Handle, outputFile)
+	err = indigoRender.RenderToFile(rxn.Handle, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render reaction to file: %v", err)
 	}
@@ -183,9 +186,13 @@ func TestRenderOptions(t *testing.T) {
 		{"LabelMode", "render-label-mode", "hetero"},
 	}
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := render.SetRenderOption(tt.option, tt.value)
+			err := indigoRender.SetRenderOption(tt.option, tt.value)
 			if err != nil {
 				t.Errorf("failed to set option %s: %v", tt.option, err)
 			}
@@ -204,10 +211,14 @@ func TestRenderOptionsInt(t *testing.T) {
 		{"ImageHeight", "render-image-height", 600},
 		{"BondLength", "render-bond-length", 50},
 	}
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := render.SetRenderOptionInt(tt.option, tt.value)
+			err := indigoRender.SetRenderOptionInt(tt.option, tt.value)
 			if err != nil {
 				t.Errorf("failed to set option %s: %v", tt.option, err)
 			}
@@ -217,7 +228,11 @@ func TestRenderOptionsInt(t *testing.T) {
 
 // TestRenderOptionsFloat tests float render options
 func TestRenderOptionsFloat(t *testing.T) {
-	err := render.SetRenderOptionFloat("render-relative-thickness", 1.5)
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
+	err = indigoRender.SetRenderOptionFloat("render-relative-thickness", 1.5)
 	if err != nil {
 		t.Errorf("failed to set relative thickness: %v", err)
 	}
@@ -233,10 +248,13 @@ func TestRenderOptionsBool(t *testing.T) {
 		{"ShowAtomIDs", "render-atom-ids-visible", true},
 		{"ShowBondIDs", "render-bond-ids-visible", false},
 	}
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := render.SetRenderOptionBool(tt.option, tt.value)
+			err := indigoRender.SetRenderOptionBool(tt.option, tt.value)
 			if err != nil {
 				t.Errorf("failed to set option %s: %v", tt.option, err)
 			}
@@ -246,7 +264,12 @@ func TestRenderOptionsBool(t *testing.T) {
 
 // TestDefaultRenderOptions tests default render options
 func TestDefaultRenderOptions(t *testing.T) {
-	opts := render.DefaultRenderOptions()
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
+
+	opts := indigoRender.Options
 
 	if opts.OutputFormat != "png" {
 		t.Errorf("expected default format 'png', got '%s'", opts.OutputFormat)
@@ -257,7 +280,7 @@ func TestDefaultRenderOptions(t *testing.T) {
 	}
 
 	// Apply options
-	err := opts.Apply()
+	err = indigoRender.Apply()
 	if err != nil {
 		t.Errorf("failed to apply default options: %v", err)
 	}
@@ -265,7 +288,11 @@ func TestDefaultRenderOptions(t *testing.T) {
 
 // TestRenderOptionsApply tests applying custom render options
 func TestRenderOptionsApply(t *testing.T) {
-	opts := &render.RenderOptions{
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
+	indigoRender.Options = &render.RenderOptions{
 		OutputFormat:      "svg",
 		ImageWidth:        500,
 		ImageHeight:       500,
@@ -279,7 +306,7 @@ func TestRenderOptionsApply(t *testing.T) {
 		LabelMode:         "all",
 	}
 
-	err := opts.Apply()
+	err = indigoRender.Apply()
 	if err != nil {
 		t.Errorf("failed to apply custom options: %v", err)
 	}
@@ -287,12 +314,16 @@ func TestRenderOptionsApply(t *testing.T) {
 
 // TestResetRenderer tests resetting the renderer
 func TestResetRenderer(t *testing.T) {
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		t.Fatalf("failed to initialize renderer: %v", err)
+	}
 	// Set some options
-	render.SetRenderOptionInt("render-image-width", 800)
-	render.SetRenderOption("render-output-format", "svg")
+	indigoRender.SetRenderOptionInt("render-image-width", 800)
+	indigoRender.SetRenderOption("render-output-format", "svg")
 
 	// Reset
-	err := render.ResetRenderer()
+	err = indigoRender.ResetRenderer()
 	if err != nil {
 		t.Errorf("failed to reset renderer: %v", err)
 	}
@@ -311,20 +342,20 @@ func TestRenderGrid(t *testing.T) {
 	defer mol3.Close()
 
 	// Create array
-	arrayHandle, err := render.CreateArray()
+	arrayHandle, err := indigoInit.CreateArray()
 	if err != nil {
 		t.Fatalf("failed to create array: %v", err)
 	}
-	defer render.FreeObject(arrayHandle)
+	defer indigoInit.FreeObject(arrayHandle)
 
 	// Add molecules to array
-	if err := render.ArrayAdd(arrayHandle, mol1.Handle); err != nil {
+	if err := indigoInit.ArrayAdd(arrayHandle, mol1.Handle); err != nil {
 		t.Fatalf("failed to add mol1 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol2.Handle); err != nil {
+	if err := indigoInit.ArrayAdd(arrayHandle, mol2.Handle); err != nil {
 		t.Fatalf("failed to add mol2 to array: %v", err)
 	}
-	if err := render.ArrayAdd(arrayHandle, mol3.Handle); err != nil {
+	if err := indigoInit.ArrayAdd(arrayHandle, mol3.Handle); err != nil {
 		t.Fatalf("failed to add mol3 to array: %v", err)
 	}
 
@@ -332,8 +363,13 @@ func TestRenderGrid(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "grid.png")
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		panic(err)
+	}
+
 	// Render grid
-	err = render.RenderGridToFile(arrayHandle, nil, 2, outputFile)
+	err = indigoRender.RenderGridToFile(arrayHandle, nil, 2, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render grid: %v", err)
 	}
@@ -358,23 +394,27 @@ func TestRenderGridWithRefAtoms(t *testing.T) {
 	defer mol2.Close()
 
 	// Create array
-	arrayHandle, err := render.CreateArray()
+	arrayHandle, err := indigoInit.CreateArray()
 	if err != nil {
 		t.Fatalf("failed to create array: %v", err)
 	}
-	defer render.FreeObject(arrayHandle)
+	defer indigoInit.FreeObject(arrayHandle)
 
 	// Add molecules
-	render.ArrayAdd(arrayHandle, mol1.Handle)
-	render.ArrayAdd(arrayHandle, mol2.Handle)
+	indigoInit.ArrayAdd(arrayHandle, mol1.Handle)
+	indigoInit.ArrayAdd(arrayHandle, mol2.Handle)
 
 	// Create temp file
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "grid_ref.png")
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		panic(err)
+	}
 	// Render grid with reference atoms
 	refAtoms := []int{0, 0} // First atom of each molecule
-	err = render.RenderGridToFile(arrayHandle, refAtoms, 2, outputFile)
+	err = indigoRender.RenderGridToFile(arrayHandle, refAtoms, 2, outputFile)
 	if err != nil {
 		t.Fatalf("failed to render grid with ref atoms: %v", err)
 	}
@@ -395,23 +435,27 @@ func TestRenderToBuffer(t *testing.T) {
 	defer mol.Close()
 
 	// Create write buffer
-	bufferHandle, err := render.CreateWriteBuffer()
+	bufferHandle, err := indigoInit.CreateWriteBuffer()
 	if err != nil {
 		t.Fatalf("failed to create write buffer: %v", err)
 	}
-	defer render.FreeObject(bufferHandle)
+	defer indigoInit.FreeObject(bufferHandle)
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		panic(err)
+	}
 	// Set format to PNG
-	render.SetRenderOption("render-output-format", "png")
+	indigoRender.SetRenderOption("render-output-format", "png")
 
 	// Render to buffer
-	err = render.Render(mol.Handle, bufferHandle)
+	err = indigoRender.Render(mol.Handle, bufferHandle)
 	if err != nil {
 		t.Fatalf("failed to render to buffer: %v", err)
 	}
 
 	// Get buffer data
-	data, err := render.GetBufferData(bufferHandle)
+	data, err := indigoInit.GetBufferData(bufferHandle)
 	if err != nil {
 		t.Fatalf("failed to get buffer data: %v", err)
 	}
@@ -431,8 +475,13 @@ func TestRenderInvalidHandle(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputFile := filepath.Join(tmpDir, "invalid.png")
 
-	err := render.RenderToFile(-1, outputFile)
-	if err == nil {
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		panic(err)
+	}
+	defer indigoRender.DisposeRenderer()
+	err = indigoRender.RenderToFile(-1, outputFile)
+	if err != nil {
 		t.Error("expected error when rendering with invalid handle")
 	}
 }
@@ -454,13 +503,17 @@ func TestRenderMultipleFormats(t *testing.T) {
 		t.Run(format, func(t *testing.T) {
 			outputFile := filepath.Join(tmpDir, "benzene."+format)
 
+			indigoRender, err := indigoInit.InitRenderer()
+			if err != nil {
+				panic(err)
+			}
 			// Set format
-			if err := render.SetRenderOption("render-output-format", format); err != nil {
+			if err := indigoRender.SetRenderOption("render-output-format", format); err != nil {
 				t.Fatalf("failed to set format %s: %v", format, err)
 			}
 
 			// Render
-			if err := render.RenderToFile(mol.Handle, outputFile); err != nil {
+			if err := indigoRender.RenderToFile(mol.Handle, outputFile); err != nil {
 				t.Fatalf("failed to render to %s: %v", format, err)
 			}
 

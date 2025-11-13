@@ -25,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("=== InChI Examples ===\n")
+	fmt.Println("=== InChI Examples ===")
 
 	// Example 1: Generate InChI from SMILES
 	fmt.Println("1. Generating InChI from SMILES:")
@@ -126,9 +126,9 @@ func main() {
 	fmt.Printf("   Reloaded InChI: %s\n", inchi2)
 
 	if inchi1 == inchi2 {
-		fmt.Println("   ✓ Roundtrip successful: InChI preserved\n")
+		fmt.Println("   ✓ Roundtrip successful: InChI preserved")
 	} else {
-		fmt.Println("   ✗ Roundtrip failed: InChI changed\n")
+		fmt.Println("   ✗ Roundtrip failed: InChI changed")
 	}
 
 	// Example 6: InChI helper functions

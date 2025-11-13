@@ -1,12 +1,10 @@
 // Package core provides core functions for Indigo C API library via CGO
-//
-//	coding=utf-8
-//
+// coding=utf-8
 // @Project : go-chem
 // @Time    : 2025/11/12 13:47
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
-// @File    : indigo-molecule.go
+// @File    : indigo_molecule.go
 // @Software: GoLand
 package core
 

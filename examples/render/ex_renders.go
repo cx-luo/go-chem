@@ -21,16 +21,20 @@ func ExampleBasicRender(indigoInit *core.Indigo) {
 	}
 	defer mol.Close()
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings to defaults
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Set PNG format and size
-	render.SetRenderOption("render-output-format", "png")
-	render.SetRenderOptionInt("render-image-width", 800)
-	render.SetRenderOptionInt("render-image-height", 800)
+	indigoRender.SetRenderOption("render-output-format", "png")
+	indigoRender.SetRenderOptionInt("render-image-width", 800)
+	indigoRender.SetRenderOptionInt("render-image-height", 800)
 
 	// Render to file
-	if err := render.RenderToFile(mol.Handle, "benzene.png"); err != nil {
+	if err := indigoRender.RenderToFile(mol.Handle, "benzene.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -43,11 +47,16 @@ func ExampleWithOptions(indigoInit *core.Indigo) {
 	}
 	defer mol.Close()
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
+
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Configure render options
-	opts := render.DefaultRenderOptions()
+	opts := indigoRender.Options
 	opts.OutputFormat = "svg"
 	opts.ImageWidth = 600
 	opts.ImageHeight = 400
@@ -56,12 +65,12 @@ func ExampleWithOptions(indigoInit *core.Indigo) {
 	opts.ShowAtomIDs = true
 
 	// Apply options
-	if err := opts.Apply(); err != nil {
+	if err := indigoRender.Apply(); err != nil {
 		log.Fatal(err)
 	}
 
 	// Render
-	if err := render.RenderToFile(mol.Handle, "ethanol.svg"); err != nil {
+	if err := indigoRender.RenderToFile(mol.Handle, "ethanol.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -78,15 +87,20 @@ func ExampleGridRender(indigoInit *core.Indigo) {
 		"CCN",         // Ethylamine
 	}
 
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
+
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Create array
-	array, err := render.CreateArray()
+	array, err := indigoInit.CreateArray()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer render.FreeObject(array)
+	defer indigoInit.FreeObject(array)
 
 	// Load and add molecules to array
 	for _, smiles := range molecules {
@@ -95,23 +109,23 @@ func ExampleGridRender(indigoInit *core.Indigo) {
 			log.Printf("Warning: failed to load %s: %v", smiles, err)
 			continue
 		}
-		if err := render.ArrayAdd(array, mol.Handle); err != nil {
+		if err := indigoInit.ArrayAdd(array, mol.Handle); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 		// Note: molecules should be kept alive until rendering is done
-		defer mol.Close()
+		mol.Close()
 	}
 
 	// Set render options
-	opts := render.DefaultRenderOptions()
+	opts := indigoRender.Options
 	opts.ImageWidth = 1200
 	opts.ImageHeight = 800
-	if err := opts.Apply(); err != nil {
+	if err := indigoRender.Apply(); err != nil {
 		log.Fatal(err)
 	}
 
 	// Render grid (3 columns)
-	if err := render.RenderGridToFile(array, nil, 3, "molecules_grid.png"); err != nil {
+	if err := indigoRender.RenderGridToFile(array, nil, 3, "molecules_grid.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -124,18 +138,21 @@ func ExampleReactionRender(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer rxn.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Configure for reaction rendering
-	render.SetRenderOption("render-output-format", "png")
-	render.SetRenderOptionInt("render-image-width", 800)
-	render.SetRenderOptionInt("render-image-height", 400)
-	render.SetRenderOption("render-background-color", "1.0, 1.0, 1.0")
+	indigoRender.SetRenderOption("render-output-format", "png")
+	indigoRender.SetRenderOptionInt("render-image-width", 800)
+	indigoRender.SetRenderOptionInt("render-image-height", 400)
+	indigoRender.SetRenderOption("render-background-color", "1.0, 1.0, 1.0")
 
 	// Render reaction
-	if err := render.RenderToFile(rxn.Handle, "oxidation_reaction.png"); err != nil {
+	if err := indigoRender.RenderToFile(rxn.Handle, "oxidation_reaction.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -147,29 +164,32 @@ func ExampleBufferRender(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer mol.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Create write buffer
-	buffer, err := render.CreateWriteBuffer()
+	buffer, err := indigoInit.CreateWriteBuffer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer render.FreeObject(buffer)
+	defer indigoInit.FreeObject(buffer)
 
 	// Set format
-	if err := render.SetRenderOption("render-output-format", "png"); err != nil {
+	if err := indigoRender.SetRenderOption("render-output-format", "png"); err != nil {
 		log.Fatal(err)
 	}
 
 	// Render to buffer
-	if err := render.Render(mol.Handle, buffer); err != nil {
+	if err := indigoRender.Render(mol.Handle, buffer); err != nil {
 		log.Fatal(err)
 	}
 
 	// Get image data
-	imageData, err := render.GetBufferData(buffer)
+	imageData, err := indigoInit.GetBufferData(buffer)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,9 +209,12 @@ func ExampleBatchRender(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer mol.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Render with different styles
 	styles := map[string]string{
@@ -202,11 +225,11 @@ func ExampleBatchRender(indigoInit *core.Indigo) {
 	}
 
 	for name, labelMode := range styles {
-		if err := render.SetRenderOption("render-label-mode", labelMode); err != nil {
+		if err := indigoRender.SetRenderOption("render-label-mode", labelMode); err != nil {
 			log.Printf("Warning: failed to set label mode %s: %v", labelMode, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle, fmt.Sprintf("neopentane_%s.png", name)); err != nil {
+		if err := indigoRender.RenderToFile(mol.Handle, fmt.Sprintf("neopentane_%s.png", name)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", name, err)
 		}
 	}
@@ -219,12 +242,15 @@ func ExampleHighQualityRender(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer mol.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// High-quality settings
-	opts := &render.RenderOptions{
+	indigoRender.Options = &render.RenderOptions{
 		OutputFormat:      "svg", // Vector format for scalability
 		ImageWidth:        2400,  // Large size
 		ImageHeight:       2400,
@@ -237,11 +263,11 @@ func ExampleHighQualityRender(indigoInit *core.Indigo) {
 		StereoStyle:       "ext",
 		LabelMode:         "hetero",
 	}
-	if err := opts.Apply(); err != nil {
+	if err := indigoRender.Apply(); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := render.RenderToFile(mol.Handle, "benzoic_acid_hq.svg"); err != nil {
+	if err := indigoRender.RenderToFile(mol.Handle, "benzoic_acid_hq.svg"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -254,19 +280,22 @@ func ExampleStereoRender(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer mol.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Different stereo styles
 	stereoStyles := []string{"old", "ext", "none"}
 
 	for _, style := range stereoStyles {
-		if err := render.SetRenderOption("render-stereo-style", style); err != nil {
+		if err := indigoRender.SetRenderOption("render-stereo-style", style); err != nil {
 			log.Printf("Warning: failed to set stereo style %s: %v", style, err)
 			continue
 		}
-		if err := render.RenderToFile(mol.Handle, fmt.Sprintf("alanine_%s.png", style)); err != nil {
+		if err := indigoRender.RenderToFile(mol.Handle, fmt.Sprintf("alanine_%s.png", style)); err != nil {
 			log.Printf("Warning: failed to render %s: %v", style, err)
 		}
 	}
@@ -276,15 +305,18 @@ func ExampleStereoRender(indigoInit *core.Indigo) {
 func ExampleAlignedGrid(indigoInit *core.Indigo) {
 	// Series of alcohols - align on oxygen
 	alcohols := []string{"CO", "CCO", "CCCO", "CC(C)O"}
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
-	array, err := render.CreateArray()
+	array, err := indigoInit.CreateArray()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer render.FreeObject(array)
+	defer indigoInit.FreeObject(array)
 
 	var mols []*molecule.Molecule
 	for _, smiles := range alcohols {
@@ -294,7 +326,7 @@ func ExampleAlignedGrid(indigoInit *core.Indigo) {
 			continue
 		}
 		mols = append(mols, mol)
-		if err := render.ArrayAdd(array, mol.Handle); err != nil {
+		if err := indigoInit.ArrayAdd(array, mol.Handle); err != nil {
 			log.Printf("Warning: failed to add molecule: %v", err)
 		}
 	}
@@ -308,7 +340,7 @@ func ExampleAlignedGrid(indigoInit *core.Indigo) {
 	// This aligns all molecules on their oxygen atoms
 	refAtoms := []int{0, 2, 3, 2} // Oxygen positions
 
-	if err := render.RenderGridToFile(array, refAtoms, 2, "alcohols_aligned.png"); err != nil {
+	if err := indigoRender.RenderGridToFile(array, refAtoms, 2, "alcohols_aligned.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -320,20 +352,23 @@ func ExampleCustomColors(indigoInit *core.Indigo) {
 		log.Fatal(err)
 	}
 	defer mol.Close()
-
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
+	}
 	// Reset renderer settings
-	render.ResetRenderer()
+	indigoRender.ResetRenderer()
 
 	// Custom background color (light blue)
-	render.SetRenderOption("render-background-color", "0.9, 0.95, 1.0")
+	indigoRender.SetRenderOption("render-background-color", "0.9, 0.95, 1.0")
 
 	// Thicker lines
-	render.SetRenderOptionFloat("render-relative-thickness", 2.0)
+	indigoRender.SetRenderOptionFloat("render-relative-thickness", 2.0)
 
 	// Larger bonds
-	render.SetRenderOptionInt("render-bond-length", 60)
+	indigoRender.SetRenderOptionInt("render-bond-length", 60)
 
-	if err := render.RenderToFile(mol.Handle, "benzene_custom.png"); err != nil {
+	if err := indigoRender.RenderToFile(mol.Handle, "benzene_custom.png"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -345,12 +380,12 @@ func main() {
 	}
 
 	fmt.Println("=== Render Package Example ===")
-
-	// Initialize renderer once at the start
-	if err := render.InitRenderer(); err != nil {
-		log.Fatalf("Failed to initialize renderer: %v", err)
+	indigoRender, err := indigoInit.InitRenderer()
+	if err != nil {
+		fmt.Printf("failed to initialize renderer: %v", err)
 	}
-	defer render.DisposeRenderer()
+
+	defer indigoRender.DisposeRenderer()
 
 	// Run all examples
 	ExampleBasicRender(indigoInit)

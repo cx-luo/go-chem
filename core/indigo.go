@@ -29,6 +29,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"unsafe"
 )
 
@@ -189,6 +190,81 @@ func (in *Indigo) SetOption(option string, v1 interface{}, v2 interface{}, v3 in
 	}
 
 	return errors.New("indigo: bad option parameter combination")
+}
+
+// CreateArray creates an Indigo array for rendering multiple objects
+func (in *Indigo) CreateArray() (int, error) {
+	handle := int(C.indigoCreateArray())
+	if handle < 0 {
+		return 0, fmt.Errorf("failed to create array: %s", lastErrorString())
+	}
+	return handle, nil
+}
+
+// ArrayAdd adds an object to an array
+func (in *Indigo) ArrayAdd(arrayHandle int, objectHandle int) error {
+	if arrayHandle < 0 {
+		return fmt.Errorf("invalid array handle")
+	}
+	if objectHandle < 0 {
+		return fmt.Errorf("invalid object handle")
+	}
+
+	ret := int(C.indigoArrayAdd(C.int(arrayHandle), C.int(objectHandle)))
+	if ret < 0 {
+		return fmt.Errorf("failed to add object to array: %s", lastErrorString())
+	}
+
+	return nil
+}
+
+// FreeObject frees an Indigo object (array, buffer, etc.)
+func (in *Indigo) FreeObject(handle int) error {
+	if handle < 0 {
+		return nil // Already invalid
+	}
+
+	ret := int(C.indigoFree(C.int(handle)))
+	if ret < 0 {
+		return fmt.Errorf("failed to free object: %s", lastErrorString())
+	}
+
+	return nil
+}
+
+// CreateWriteBuffer creates an output buffer for rendering
+func (in *Indigo) CreateWriteBuffer() (int, error) {
+	handle := int(C.indigoWriteBuffer())
+	if handle < 0 {
+		return 0, fmt.Errorf("failed to create write buffer: %s", lastErrorString())
+	}
+
+	runtime.SetFinalizer(&handle, func(h *int) {
+		if *h >= 0 {
+			C.indigoFree(C.int(*h))
+		}
+	})
+
+	return handle, nil
+}
+
+// GetBufferData retrieves data from a write buffer
+func (in *Indigo) GetBufferData(bufferHandle int) ([]byte, error) {
+	if bufferHandle < 0 {
+		return nil, fmt.Errorf("invalid buffer handle")
+	}
+
+	var size C.int
+	var dataPtr *C.char
+	ret := C.indigoToBuffer(C.int(bufferHandle), &dataPtr, &size)
+	if ret < 0 || dataPtr == nil {
+		return nil, fmt.Errorf("failed to get buffer data: %s", lastErrorString())
+	}
+
+	// Copy C data to Go slice
+	// Note: dataPtr is managed by Indigo internally, don't free it
+	data := C.GoBytes(unsafe.Pointer(dataPtr), size)
+	return data, nil
 }
 
 // GetOption returns option value as string.

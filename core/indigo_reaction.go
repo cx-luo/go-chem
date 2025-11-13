@@ -4,7 +4,7 @@
 // @Time    : 2025/11/12 13:47
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
-// @File    : indigo-reaction.go
+// @File    : indigo_reaction.go
 // @Software: GoLand
 package core
 

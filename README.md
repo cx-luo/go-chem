@@ -70,17 +70,17 @@ func main() {
     defer mol.Close()
 
     // 初始化渲染器
-    render.InitRenderer()
-    defer render.DisposeRenderer()
+    renderer := render.NewRenderer()
+    defer renderer.Dispose()
 
     // 设置渲染选项
-    opts := render.DefaultRenderOptions()
+    opts := renderer.DefaultRenderOptions()
     opts.ImageWidth = 800
     opts.ImageHeight = 600
     opts.Apply()
 
     // 渲染为 PNG
-    render.RenderToFile(mol.Handle(), "benzene.png")
+    renderer.RenderToFile(mol.Handle(), "benzene.png")
 }
 ```
 

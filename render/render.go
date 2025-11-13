@@ -30,57 +30,35 @@ package render
 import "C"
 import (
 	"fmt"
-	"runtime"
 	"unsafe"
 )
 
-// indigoSessionID holds the session ID for Indigo (defined in molecule package)
-var indigoSessionID C.qword
-
-// rendererInitialized tracks whether the renderer has been initialized
-var rendererInitialized = false
-
-func init() {
-	// Initialize Indigo session if not already initialized
-	indigoSessionID = C.indigoAllocSessionId()
-	C.indigoSetSessionId(indigoSessionID)
-}
-
-// InitRenderer initializes the Indigo renderer for the current session
-// This should be called before using rendering functions
-func InitRenderer() error {
-	if rendererInitialized {
-		return nil // Already initialized
-	}
-
-	ret := int(C.indigoRendererInit(indigoSessionID))
-	if ret < 0 {
-		return fmt.Errorf("failed to initialize renderer: %s", getLastError())
-	}
-
-	rendererInitialized = true
-	return nil
+type Renderer struct {
+	Sid                 uint64
+	Options             *RenderOptions
+	RendererInitialized bool
 }
 
 // DisposeRenderer disposes the Indigo renderer
 // This should be called when done using rendering functions
-func DisposeRenderer() error {
-	if !rendererInitialized {
+func (r *Renderer) DisposeRenderer() error {
+	if !r.RendererInitialized {
 		return nil // Not initialized
 	}
 
-	ret := int(C.indigoRendererDispose(indigoSessionID))
+	ret := int(C.indigoRendererDispose(C.ulonglong(r.Sid)))
 	if ret < 0 {
 		return fmt.Errorf("failed to dispose renderer: %s", getLastError())
 	}
 
-	rendererInitialized = false
+	r.RendererInitialized = false
 	return nil
 }
 
 // ResetRenderer resets all rendering settings to defaults
-func ResetRenderer() error {
+func (r *Renderer) ResetRenderer() error {
 	ret := int(C.indigoRenderReset())
+	r.RendererInitialized = false
 	if ret < 0 {
 		return fmt.Errorf("failed to reset renderer: %s", getLastError())
 	}
@@ -90,16 +68,9 @@ func ResetRenderer() error {
 // RenderToFile renders an object (molecule or reaction) to a file
 // objectHandle: the Indigo handle of the object to render
 // filename: the output file path (e.g., "molecule.png", "reaction.svg")
-func RenderToFile(objectHandle int, filename string) error {
+func (r *Renderer) RenderToFile(objectHandle int, filename string) error {
 	if objectHandle < 0 {
 		return fmt.Errorf("invalid object handle")
-	}
-
-	// Ensure renderer is initialized
-	if !rendererInitialized {
-		if err := InitRenderer(); err != nil {
-			return fmt.Errorf("failed to initialize renderer: %w", err)
-		}
 	}
 
 	cFilename := C.CString(filename)
@@ -116,19 +87,12 @@ func RenderToFile(objectHandle int, filename string) error {
 // Render renders an object to an output buffer
 // objectHandle: the Indigo handle of the object to render
 // outputHandle: the Indigo handle of the output buffer (from indigoWriteBuffer or indigoWriteFile)
-func Render(objectHandle int, outputHandle int) error {
+func (r *Renderer) Render(objectHandle int, outputHandle int) error {
 	if objectHandle < 0 {
 		return fmt.Errorf("invalid object handle")
 	}
 	if outputHandle < 0 {
 		return fmt.Errorf("invalid output handle")
-	}
-
-	// Ensure renderer is initialized
-	if !rendererInitialized {
-		if err := InitRenderer(); err != nil {
-			return fmt.Errorf("failed to initialize renderer: %w", err)
-		}
 	}
 
 	ret := int(C.indigoRender(C.int(objectHandle), C.int(outputHandle)))
@@ -144,19 +108,12 @@ func Render(objectHandle int, outputHandle int) error {
 // refAtoms: optional array of reference atom indices (nil for automatic)
 // nColumns: number of columns in the grid
 // filename: the output file path
-func RenderGridToFile(arrayHandle int, refAtoms []int, nColumns int, filename string) error {
+func (r *Renderer) RenderGridToFile(arrayHandle int, refAtoms []int, nColumns int, filename string) error {
 	if arrayHandle < 0 {
 		return fmt.Errorf("invalid array handle")
 	}
 	if nColumns <= 0 {
 		return fmt.Errorf("invalid number of columns: %d", nColumns)
-	}
-
-	// Ensure renderer is initialized
-	if !rendererInitialized {
-		if err := InitRenderer(); err != nil {
-			return fmt.Errorf("failed to initialize renderer: %w", err)
-		}
 	}
 
 	cFilename := C.CString(filename)
@@ -185,7 +142,7 @@ func RenderGridToFile(arrayHandle int, refAtoms []int, nColumns int, filename st
 // refAtoms: optional array of reference atom indices (nil for automatic)
 // nColumns: number of columns in the grid
 // outputHandle: the Indigo handle of the output buffer
-func RenderGrid(arrayHandle int, refAtoms []int, nColumns int, outputHandle int) error {
+func (r *Renderer) RenderGrid(arrayHandle int, refAtoms []int, nColumns int, outputHandle int) error {
 	if arrayHandle < 0 {
 		return fmt.Errorf("invalid array handle")
 	}
@@ -194,13 +151,6 @@ func RenderGrid(arrayHandle int, refAtoms []int, nColumns int, outputHandle int)
 	}
 	if outputHandle < 0 {
 		return fmt.Errorf("invalid output handle")
-	}
-
-	// Ensure renderer is initialized
-	if !rendererInitialized {
-		if err := InitRenderer(); err != nil {
-			return fmt.Errorf("failed to initialize renderer: %w", err)
-		}
 	}
 
 	var refAtomsPtr *C.int
@@ -234,7 +184,7 @@ func RenderGrid(arrayHandle int, refAtoms []int, nColumns int, outputHandle int)
 //   - "render-margins": "10, 10" (x, y margins)
 //   - "render-stereo-style": "none", "old", "ext", "bondmark"
 //   - "render-label-mode": "hetero", "terminal-hetero", "all", "none"
-func SetRenderOption(option string, value string) error {
+func (r *Renderer) SetRenderOption(option string, value string) error {
 	cOption := C.CString(option)
 	defer C.free(unsafe.Pointer(cOption))
 
@@ -250,7 +200,7 @@ func SetRenderOption(option string, value string) error {
 }
 
 // SetRenderOptionInt sets a rendering option with an integer value
-func SetRenderOptionInt(option string, value int) error {
+func (r *Renderer) SetRenderOptionInt(option string, value int) error {
 	cOption := C.CString(option)
 	defer C.free(unsafe.Pointer(cOption))
 
@@ -266,7 +216,7 @@ func SetRenderOptionInt(option string, value int) error {
 }
 
 // SetRenderOptionFloat sets a rendering option with a float value
-func SetRenderOptionFloat(option string, value float64) error {
+func (r *Renderer) SetRenderOptionFloat(option string, value float64) error {
 	cOption := C.CString(option)
 	defer C.free(unsafe.Pointer(cOption))
 
@@ -282,12 +232,12 @@ func SetRenderOptionFloat(option string, value float64) error {
 }
 
 // SetRenderOptionBool sets a rendering option with a boolean value
-func SetRenderOptionBool(option string, value bool) error {
+func (r *Renderer) SetRenderOptionBool(option string, value bool) error {
 	strValue := "false"
 	if value {
 		strValue = "true"
 	}
-	return SetRenderOption(option, strValue)
+	return r.SetRenderOption(option, strValue)
 }
 
 // RenderOptions provides a convenient way to configure rendering settings
@@ -305,163 +255,72 @@ type RenderOptions struct {
 	LabelMode         string  // "hetero", "terminal-hetero", "all", "none"
 }
 
-// DefaultRenderOptions returns default rendering options
-func DefaultRenderOptions() *RenderOptions {
-	return &RenderOptions{
-		OutputFormat:      "png",
-		ImageWidth:        1600,
-		ImageHeight:       1600,
-		BackgroundColor:   "1.0, 1.0, 1.0",
-		BondLength:        40,
-		RelativeThickness: 1.0,
-		ShowAtomIDs:       false,
-		ShowBondIDs:       false,
-		Margins:           "10, 10",
-		StereoStyle:       "ext",
-		LabelMode:         "hetero",
-	}
-}
-
 // Apply applies the render options to the renderer
-func (opts *RenderOptions) Apply() error {
+func (r *Renderer) Apply() error {
+	opts := r.Options
 	if opts.OutputFormat != "" {
-		if err := SetRenderOption("render-output-format", opts.OutputFormat); err != nil {
+		if err := r.SetRenderOption("render-output-format", opts.OutputFormat); err != nil {
 			return err
 		}
 	}
 
 	if opts.ImageWidth > 0 {
-		if err := SetRenderOptionInt("render-image-width", opts.ImageWidth); err != nil {
+		if err := r.SetRenderOptionInt("render-image-width", opts.ImageWidth); err != nil {
 			return err
 		}
 	}
 
 	if opts.ImageHeight > 0 {
-		if err := SetRenderOptionInt("render-image-height", opts.ImageHeight); err != nil {
+		if err := r.SetRenderOptionInt("render-image-height", opts.ImageHeight); err != nil {
 			return err
 		}
 	}
 
 	if opts.BackgroundColor != "" {
-		if err := SetRenderOption("render-background-color", opts.BackgroundColor); err != nil {
+		if err := r.SetRenderOption("render-background-color", opts.BackgroundColor); err != nil {
 			return err
 		}
 	}
 
 	if opts.BondLength > 0 {
-		if err := SetRenderOptionInt("render-bond-length", opts.BondLength); err != nil {
+		if err := r.SetRenderOptionInt("render-bond-length", opts.BondLength); err != nil {
 			return err
 		}
 	}
 
 	if opts.RelativeThickness > 0 {
-		if err := SetRenderOptionFloat("render-relative-thickness", opts.RelativeThickness); err != nil {
+		if err := r.SetRenderOptionFloat("render-relative-thickness", opts.RelativeThickness); err != nil {
 			return err
 		}
 	}
 
-	if err := SetRenderOptionBool("render-atom-ids-visible", opts.ShowAtomIDs); err != nil {
+	if err := r.SetRenderOptionBool("render-atom-ids-visible", opts.ShowAtomIDs); err != nil {
 		return err
 	}
 
-	if err := SetRenderOptionBool("render-bond-ids-visible", opts.ShowBondIDs); err != nil {
+	if err := r.SetRenderOptionBool("render-bond-ids-visible", opts.ShowBondIDs); err != nil {
 		return err
 	}
 
 	if opts.Margins != "" {
-		if err := SetRenderOption("render-margins", opts.Margins); err != nil {
+		if err := r.SetRenderOption("render-margins", opts.Margins); err != nil {
 			return err
 		}
 	}
 
 	if opts.StereoStyle != "" {
-		if err := SetRenderOption("render-stereo-style", opts.StereoStyle); err != nil {
+		if err := r.SetRenderOption("render-stereo-style", opts.StereoStyle); err != nil {
 			return err
 		}
 	}
 
 	if opts.LabelMode != "" {
-		if err := SetRenderOption("render-label-mode", opts.LabelMode); err != nil {
+		if err := r.SetRenderOption("render-label-mode", opts.LabelMode); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-// CreateArray creates an Indigo array for rendering multiple objects
-func CreateArray() (int, error) {
-	handle := int(C.indigoCreateArray())
-	if handle < 0 {
-		return 0, fmt.Errorf("failed to create array: %s", getLastError())
-	}
-	return handle, nil
-}
-
-// ArrayAdd adds an object to an array
-func ArrayAdd(arrayHandle int, objectHandle int) error {
-	if arrayHandle < 0 {
-		return fmt.Errorf("invalid array handle")
-	}
-	if objectHandle < 0 {
-		return fmt.Errorf("invalid object handle")
-	}
-
-	ret := int(C.indigoArrayAdd(C.int(arrayHandle), C.int(objectHandle)))
-	if ret < 0 {
-		return fmt.Errorf("failed to add object to array: %s", getLastError())
-	}
-
-	return nil
-}
-
-// FreeObject frees an Indigo object (array, buffer, etc.)
-func FreeObject(handle int) error {
-	if handle < 0 {
-		return nil // Already invalid
-	}
-
-	ret := int(C.indigoFree(C.int(handle)))
-	if ret < 0 {
-		return fmt.Errorf("failed to free object: %s", getLastError())
-	}
-
-	return nil
-}
-
-// CreateWriteBuffer creates an output buffer for rendering
-func CreateWriteBuffer() (int, error) {
-	handle := int(C.indigoWriteBuffer())
-	if handle < 0 {
-		return 0, fmt.Errorf("failed to create write buffer: %s", getLastError())
-	}
-
-	runtime.SetFinalizer(&handle, func(h *int) {
-		if *h >= 0 {
-			C.indigoFree(C.int(*h))
-		}
-	})
-
-	return handle, nil
-}
-
-// GetBufferData retrieves data from a write buffer
-func GetBufferData(bufferHandle int) ([]byte, error) {
-	if bufferHandle < 0 {
-		return nil, fmt.Errorf("invalid buffer handle")
-	}
-
-	var size C.int
-	var dataPtr *C.char
-	ret := C.indigoToBuffer(C.int(bufferHandle), &dataPtr, &size)
-	if ret < 0 || dataPtr == nil {
-		return nil, fmt.Errorf("failed to get buffer data: %s", getLastError())
-	}
-
-	// Copy C data to Go slice
-	// Note: dataPtr is managed by Indigo internally, don't free it
-	data := C.GoBytes(unsafe.Pointer(dataPtr), size)
-	return data, nil
 }
 
 // getLastError retrieves the last error message from Indigo

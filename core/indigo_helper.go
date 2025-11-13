@@ -1,3 +1,11 @@
+// Package core provides core functions for Indigo C API library via CGO
+// coding=utf-8
+// @Project : go-chem
+// @Time    : 2025/11/12
+// @Author  : chengxiang.luo
+// @Email   : chengxiang.luo@foxmail.com
+// @File    : indigo_helper.go
+// @Software: GoLand
 package core
 
 type SessionPool struct {
