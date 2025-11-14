@@ -9,9 +9,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/cx-luo/go-chem/core"
 	"github.com/cx-luo/go-chem/molecule"
-	"log"
 )
 
 func main() {
@@ -70,22 +71,40 @@ func main() {
 	mol3, _ := indigoInit.LoadMoleculeFromString("OCC")
 	defer mol3.Close()
 
-	isExact1, _, _ := mol1.ExactMatch(mol2, nil)
-	isExact2, mapping2, _ := mol1.ExactMatch(mol3, nil)
+	flags := "ALL"
+	isExact1, _, _ := mol1.ExactMatch(mol2, &flags)
+	isExact2, mapping2, _ := mol1.ExactMatch(mol3, &flags)
 
-	// todo:  fix, when get atom mapping handle, it return #-1
-	if isExact2 {
-		atomHandle := molecule.MapAtom(mapping2, mol1.Handle)
-		index, err := indigoInit.Index(atomHandle)
+	// fixed: demonstrate atom mapping with correct handles
+	if isExact2 && mapping2 != 0 {
+		// Try to map the first atom (index 0) of mol1 to mol3
+		queryAtom, err := mol1.GetAtom(0)
 		if err != nil {
-			fmt.Printf("Failed to get atom index: %v", err)
+			fmt.Printf("Failed to get first atom from mol1: %v\n", err)
+		} else {
+			// Use atom handle from queryAtom to map
+			mappedAtomHandle := molecule.MapAtom(mapping2, queryAtom.Handle)
+			if mappedAtomHandle <= 0 {
+				fmt.Printf("  CCO matches OCC: true (atom not mapped)\n")
+			} else {
+				targetAtomIndex, err := indigoInit.Index(mappedAtomHandle)
+				if err != nil {
+					fmt.Printf("Failed to get mapped atom index: %v\n", err)
+				} else {
+					targetAtom, err := mol3.GetAtom(targetAtomIndex)
+					if err != nil {
+						fmt.Printf("Failed to get atom from OCC: %v\n", err)
+					} else {
+						symbol, err := targetAtom.Symbol()
+						if err != nil {
+							fmt.Printf("Failed to get atom symbol: %v\n", err)
+						} else {
+							fmt.Printf("  CCO matches OCC: %v (first mapped atom: %s)\n", isExact2, symbol)
+						}
+					}
+				}
+			}
 		}
-		atom, _ := mol3.GetAtom(index)
-		symbol, err := atom.Symbol()
-		if err != nil {
-			fmt.Printf("Failed to get atom symbol: %v", err)
-		}
-		fmt.Printf("  CCO matches CCO: %v (mapping atom: %s)\n", isExact1, symbol)
 	}
 
 	// When ExactMatch returns true, mapping1 is a mapping handle that can be used
@@ -152,7 +171,7 @@ func main() {
 			has, _ := mol.HasSubstructure(pattern, nil)
 			if has {
 				count, _ := mol.CountSubstructureMatches(pattern, nil)
-				fmt.Printf("    ✓ %s (×%d)\n", fg.name, count)
+				fmt.Printf("    \u2713 %s (%d matches)\n", fg.name, count)
 			}
 
 			pattern.Close()

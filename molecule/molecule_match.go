@@ -124,6 +124,14 @@ func (m *Molecule) HasSubstructure(queryMolecule *Molecule, modeStr *string) (bo
 
 // ExactMatch checks if the molecule exactly matches another molecule.
 // Returns (matched, mappingId, error). mappingId is >0 when matched.
+// The flags string consists of space-separated flags.
+// The more flags, the more restrictive matching is done.
+// "ELE": Distribution of electrons: bond types, atom charges, radicals, valences
+// "MAS": Atom isotopes
+// "STE": Stereochemistry: chiral centers, stereogroups, and cis-trans bonds
+// "FRA": Connected fragments: disallows match of separate ions in salts
+// "ALL": All of the above
+// By default (with null or empty flags string) all flags are on.
 func (m *Molecule) ExactMatch(other *Molecule, flags *string) (bool, int, error) {
 	if m.Closed {
 		return false, 0, fmt.Errorf("molecule is closed")
