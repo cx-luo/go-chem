@@ -290,3 +290,53 @@ func (in *Indigo) GetOptionInt(option string) (int, error) {
 	}
 	return int(out), nil
 }
+
+// Next obtains the next element from an iterator, returns 0 if there is no next element
+func (in *Indigo) Next(iterHandle int) (int, error) {
+	in.setSession()
+	result := int(C.indigoNext(C.int(iterHandle)))
+	if result < 0 {
+		return 0, fmt.Errorf("failed to get next element: %s", lastErrorString())
+	}
+	return result, nil
+}
+
+// HasNext checks if there is a next element without obtaining it
+func (in *Indigo) HasNext(iterHandle int) (bool, error) {
+	in.setSession()
+	result := int(C.indigoHasNext(C.int(iterHandle)))
+	if result < 0 {
+		return false, fmt.Errorf("failed to check next element: %s", lastErrorString())
+	}
+	return result != 0, nil
+}
+
+// Index returns the index of an element
+func (in *Indigo) Index(itemHandle int) (int, error) {
+	in.setSession()
+	result := int(C.indigoIndex(C.int(itemHandle)))
+	if result < 0 {
+		return 0, fmt.Errorf("failed to get index: %s", lastErrorString())
+	}
+	return result, nil
+}
+
+// Remove removes an item from its container (usually a molecule)
+func (in *Indigo) Remove(itemHandle int) error {
+	in.setSession()
+	result := int(C.indigoRemove(C.int(itemHandle)))
+	if result < 0 {
+		return fmt.Errorf("failed to remove item: %s", lastErrorString())
+	}
+	return nil
+}
+
+// GetOriginalFormat returns the original format of an item
+func (in *Indigo) GetOriginalFormat(itemHandle int) (string, error) {
+	in.setSession()
+	cStr := C.indigoGetOriginalFormat(C.int(itemHandle))
+	if cStr == nil {
+		return "", fmt.Errorf("failed to get original format: %s", lastErrorString())
+	}
+	return C.GoString(cStr), nil
+}

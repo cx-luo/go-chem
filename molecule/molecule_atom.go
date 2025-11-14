@@ -33,7 +33,7 @@ import (
 
 // Atom represents an atom in a molecule
 type Atom struct {
-	handle int
+	Handle int
 }
 
 // GetAtom returns an atom by its index
@@ -47,7 +47,7 @@ func (m *Molecule) GetAtom(index int) (*Atom, error) {
 		return nil, fmt.Errorf("failed to get atom at index %d: %s", index, getLastError())
 	}
 
-	return &Atom{handle: handle}, nil
+	return &Atom{Handle: handle}, nil
 }
 
 // GetBond returns a bond by its index
@@ -66,7 +66,7 @@ func (m *Molecule) GetBond(index int) (int, error) {
 
 // Symbol returns the element symbol of an atom
 func (a *Atom) Symbol() (string, error) {
-	cStr := C.indigoSymbol(C.int(a.handle))
+	cStr := C.indigoSymbol(C.int(a.Handle))
 	if cStr == nil {
 		return "", fmt.Errorf("failed to get atom symbol: %s", getLastError())
 	}
@@ -75,7 +75,7 @@ func (a *Atom) Symbol() (string, error) {
 
 // Degree returns the number of neighbors of an atom
 func (a *Atom) Degree() (int, error) {
-	degree := int(C.indigoDegree(C.int(a.handle)))
+	degree := int(C.indigoDegree(C.int(a.Handle)))
 	if degree < 0 {
 		return 0, fmt.Errorf("failed to get atom degree: %s", getLastError())
 	}
@@ -84,7 +84,7 @@ func (a *Atom) Degree() (int, error) {
 
 // Index returns the index of an atom in its molecule
 func (a *Atom) Index() (int, error) {
-	index := int(C.indigoAtomIndex(C.int(a.handle)))
+	index := int(C.indigoAtomIndex(C.int(a.Handle)))
 	if index < 0 {
 		return 0, fmt.Errorf("failed to get atom index: %s", getLastError())
 	}
@@ -93,7 +93,7 @@ func (a *Atom) Index() (int, error) {
 
 // AtomicNumber returns the atomic number of an atom
 func (a *Atom) AtomicNumber() (int, error) {
-	number := int(C.indigoAtomicNumber(C.int(a.handle)))
+	number := int(C.indigoAtomicNumber(C.int(a.Handle)))
 	if number < 0 {
 		return 0, fmt.Errorf("failed to get atomic number: %s", getLastError())
 	}
@@ -103,7 +103,7 @@ func (a *Atom) AtomicNumber() (int, error) {
 // Charge returns the charge of an atom
 func (a *Atom) Charge() (int, error) {
 	var charge C.int
-	ret := int(C.indigoGetCharge(C.int(a.handle), &charge))
+	ret := int(C.indigoGetCharge(C.int(a.Handle), &charge))
 	if ret < 0 {
 		return 0, fmt.Errorf("failed to get atom charge: %s", getLastError())
 	}
@@ -112,7 +112,7 @@ func (a *Atom) Charge() (int, error) {
 
 // SetCharge sets the charge of an atom
 func (a *Atom) SetCharge(charge int) error {
-	ret := int(C.indigoSetCharge(C.int(a.handle), C.int(charge)))
+	ret := int(C.indigoSetCharge(C.int(a.Handle), C.int(charge)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set atom charge: %s", getLastError())
 	}
@@ -121,7 +121,7 @@ func (a *Atom) SetCharge(charge int) error {
 
 // Isotope returns the isotope of an atom (0 if not set)
 func (a *Atom) Isotope() (int, error) {
-	isotope := int(C.indigoIsotope(C.int(a.handle)))
+	isotope := int(C.indigoIsotope(C.int(a.Handle)))
 	if isotope < 0 {
 		return 0, fmt.Errorf("failed to get isotope: %s", getLastError())
 	}
@@ -130,7 +130,7 @@ func (a *Atom) Isotope() (int, error) {
 
 // SetIsotope sets the isotope of an atom
 func (a *Atom) SetIsotope(isotope int) error {
-	ret := int(C.indigoSetIsotope(C.int(a.handle), C.int(isotope)))
+	ret := int(C.indigoSetIsotope(C.int(a.Handle), C.int(isotope)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set isotope: %s", getLastError())
 	}
@@ -139,7 +139,7 @@ func (a *Atom) SetIsotope(isotope int) error {
 
 // Valence returns the valence of an atom
 func (a *Atom) Valence() (int, error) {
-	valence := int(C.indigoValence(C.int(a.handle)))
+	valence := int(C.indigoValence(C.int(a.Handle)))
 	if valence < 0 {
 		return 0, fmt.Errorf("failed to get valence: %s", getLastError())
 	}
@@ -149,7 +149,7 @@ func (a *Atom) Valence() (int, error) {
 // ExplicitValence returns the explicit valence of an atom
 func (a *Atom) ExplicitValence() (int, error) {
 	var valence C.int
-	ret := int(C.indigoGetExplicitValence(C.int(a.handle), &valence))
+	ret := int(C.indigoGetExplicitValence(C.int(a.Handle), &valence))
 	if ret < 0 {
 		return 0, fmt.Errorf("failed to get explicit valence: %s", getLastError())
 	}
@@ -158,7 +158,7 @@ func (a *Atom) ExplicitValence() (int, error) {
 
 // SetExplicitValence sets the explicit valence of an atom
 func (a *Atom) SetExplicitValence(valence int) error {
-	ret := int(C.indigoSetExplicitValence(C.int(a.handle), C.int(valence)))
+	ret := int(C.indigoSetExplicitValence(C.int(a.Handle), C.int(valence)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set explicit valence: %s", getLastError())
 	}
@@ -168,7 +168,7 @@ func (a *Atom) SetExplicitValence(valence int) error {
 // Radical returns the radical type of an atom
 func (a *Atom) Radical() (int, error) {
 	var radical C.int
-	ret := int(C.indigoGetRadical(C.int(a.handle), &radical))
+	ret := int(C.indigoGetRadical(C.int(a.Handle), &radical))
 	if ret < 0 {
 		return 0, fmt.Errorf("failed to get radical: %s", getLastError())
 	}
@@ -177,7 +177,7 @@ func (a *Atom) Radical() (int, error) {
 
 // SetRadical sets the radical type of an atom
 func (a *Atom) SetRadical(radical int) error {
-	ret := int(C.indigoSetRadical(C.int(a.handle), C.int(radical)))
+	ret := int(C.indigoSetRadical(C.int(a.Handle), C.int(radical)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set radical: %s", getLastError())
 	}
@@ -186,7 +186,7 @@ func (a *Atom) SetRadical(radical int) error {
 
 // CountImplicitHydrogens returns the number of implicit hydrogens
 func (a *Atom) CountImplicitHydrogens() (int, error) {
-	count := int(C.indigoCountImplicitHydrogens(C.int(a.handle)))
+	count := int(C.indigoCountImplicitHydrogens(C.int(a.Handle)))
 	if count < 0 {
 		return 0, fmt.Errorf("failed to count implicit hydrogens: %s", getLastError())
 	}
@@ -195,7 +195,7 @@ func (a *Atom) CountImplicitHydrogens() (int, error) {
 
 // SetImplicitHCount sets the implicit hydrogen count
 func (a *Atom) SetImplicitHCount(count int) error {
-	ret := int(C.indigoSetImplicitHCount(C.int(a.handle), C.int(count)))
+	ret := int(C.indigoSetImplicitHCount(C.int(a.Handle), C.int(count)))
 	if ret < 0 {
 		return fmt.Errorf("failed to set implicit H count: %s", getLastError())
 	}
@@ -204,12 +204,12 @@ func (a *Atom) SetImplicitHCount(count int) error {
 
 // IsPseudoatom checks if an atom is a pseudoatom
 func (a *Atom) IsPseudoatom() bool {
-	return int(C.indigoIsPseudoatom(C.int(a.handle))) > 0
+	return int(C.indigoIsPseudoatom(C.int(a.Handle))) > 0
 }
 
 // IsRSite checks if an atom is an R-site
 func (a *Atom) IsRSite() bool {
-	return int(C.indigoIsRSite(C.int(a.handle))) > 0
+	return int(C.indigoIsRSite(C.int(a.Handle))) > 0
 }
 
 // BondOrder returns the order of a bond
@@ -246,4 +246,12 @@ func BondDestination(bondHandle int) (int, error) {
 		return 0, fmt.Errorf("failed to get bond destination: %s", getLastError())
 	}
 	return handle, nil
+}
+
+// MapAtom maps an atom from a query molecule to the target molecule using an exact match mapping.
+// mappingHandle is the handle returned by ExactMatch()
+// queryAtomHandle is the atom handle from the query molecule
+// Returns the corresponding atom handle in the target molecule, or 0 if no mapping exists
+func MapAtom(mappingHandle int, queryAtomHandle int) int {
+	return int(C.indigoMapAtom(C.int(mappingHandle), C.int(queryAtomHandle)))
 }

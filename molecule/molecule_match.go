@@ -122,27 +122,38 @@ func (m *Molecule) HasSubstructure(queryMolecule *Molecule, modeStr *string) (bo
 	return count > 0, nil
 }
 
-// ExactMatch checks if the molecule exactly matches another molecule
-func (m *Molecule) ExactMatch(other *Molecule) (bool, error) {
+// ExactMatch checks if the molecule exactly matches another molecule.
+// Returns (matched, mappingId, error). mappingId is >0 when matched.
+func (m *Molecule) ExactMatch(other *Molecule, flags *string) (bool, int, error) {
 	if m.Closed {
-		return false, fmt.Errorf("molecule is closed")
+		return false, 0, fmt.Errorf("molecule is closed")
 	}
 	if other.Closed {
-		return false, fmt.Errorf("other molecule is closed")
+		return false, 0, fmt.Errorf("other molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("exact")))
-	if matcherHandle < 0 {
-		return false, fmt.Errorf("failed to create exact matcher: %s", getLastError())
+	var cFlags *C.char
+	if flags != nil && *flags != "" {
+		cFlags = C.CString(*flags)
+		defer C.free(unsafe.Pointer(cFlags))
+	} else {
+		cFlags = nil
 	}
-	defer C.indigoFree(C.int(matcherHandle))
 
-	matchHandle := int(C.indigoMatch(C.int(matcherHandle), C.int(other.Handle)))
-	return matchHandle >= 0, nil
+	match := int(C.indigoExactMatch(C.int(m.Handle), C.int(other.Handle), cFlags))
+
+	if match < 0 {
+		return false, 0, fmt.Errorf("indigo error: %s", getLastError())
+	}
+	if match == 0 {
+		return false, 0, nil
+	}
+	// match > 0
+	return true, match, nil
 }
 
 // IterateSubstructureMatches iterates through all substructure matches
-func (m *Molecule) IterateSubstructureMatches(query *Molecule) (int, error) {
+func (m *Molecule) IterateSubstructureMatches(query *Molecule, modeStr *string) (int, error) {
 	if m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
@@ -150,7 +161,17 @@ func (m *Molecule) IterateSubstructureMatches(query *Molecule) (int, error) {
 		return 0, fmt.Errorf("query molecule is closed")
 	}
 
-	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), C.CString("substructure")))
+	// Prepare C string only if modeStr is provided and non-empty.
+	var cMode *C.char
+	if modeStr != nil && *modeStr != "" {
+		cMode = C.CString(*modeStr)
+		// ensure the C string is freed after the call
+		defer C.free(unsafe.Pointer(cMode))
+	} else {
+		cMode = nil
+	}
+
+	matcherHandle := int(C.indigoSubstructureMatcher(C.int(m.Handle), cMode))
 	if matcherHandle < 0 {
 		return 0, fmt.Errorf("failed to create substructure matcher: %s", getLastError())
 	}

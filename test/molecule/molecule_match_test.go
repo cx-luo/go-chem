@@ -67,20 +67,20 @@ func TestExactMatch(t *testing.T) {
 	}
 	defer mol1.Close()
 
-	mol2, err := indigoInit.LoadQueryMoleculeFromString("CCO")
+	mol2, err := indigoInit.LoadMoleculeFromString("CCO")
 	if err != nil {
 		t.Fatalf("Failed to load mol2: %v", err)
 	}
 	defer mol2.Close()
 
-	mol3, err := indigoInit.LoadQueryMoleculeFromString("CC")
+	mol3, err := indigoInit.LoadMoleculeFromString("CC")
 	if err != nil {
 		t.Fatalf("Failed to load mol3: %v", err)
 	}
 	defer mol3.Close()
 
 	// Test exact match
-	isExact, err := mol1.ExactMatch(mol2)
+	isExact, _, err := mol1.ExactMatch(mol2, nil)
 	if err != nil {
 		t.Fatalf("ExactMatch failed: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestExactMatch(t *testing.T) {
 	}
 
 	// Test non-match
-	isExact2, err := mol1.ExactMatch(mol3)
+	isExact2, _, err := mol1.ExactMatch(mol3, nil)
 	if err != nil {
 		t.Fatalf("ExactMatch failed: %v", err)
 	}

@@ -68,16 +68,6 @@ func (m *Molecule) Close() error {
 	return nil
 }
 
-// Handle returns the internal Indigo handle
-//func (m *Molecule) Handle() int {
-//	return m.handle
-//}
-
-// IsClosed returns true if the molecule is closed
-func (m *Molecule) IsClosed() bool {
-	return m.Closed
-}
-
 // Clone creates a deep copy of the molecule
 func (m *Molecule) Clone() (*Molecule, error) {
 	if m.Closed {

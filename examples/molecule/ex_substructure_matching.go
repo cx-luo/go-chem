@@ -5,12 +5,12 @@
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
 // @File    : substructure_matching.go
-// @Software: GoLand
 package main
 
 import (
 	"fmt"
 	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-chem/molecule"
 	"log"
 )
 
@@ -65,15 +65,32 @@ func main() {
 
 	mol1, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol1.Close()
-	mol2, _ := indigoInit.LoadQueryMoleculeFromString("CCO")
+	mol2, _ := indigoInit.LoadMoleculeFromString("CCO")
 	defer mol2.Close()
-	mol3, _ := indigoInit.LoadQueryMoleculeFromString("OCC")
+	mol3, _ := indigoInit.LoadMoleculeFromString("OCC")
 	defer mol3.Close()
 
-	isExact1, _ := mol1.ExactMatch(mol2)
-	isExact2, _ := mol1.ExactMatch(mol3)
+	isExact1, _, _ := mol1.ExactMatch(mol2, nil)
+	isExact2, mapping2, _ := mol1.ExactMatch(mol3, nil)
 
-	fmt.Printf("  CCO matches CCO: %v\n", isExact1)
+	// todo:  fix, when get atom mapping handle, it return #-1
+	if isExact2 {
+		atomHandle := molecule.MapAtom(mapping2, mol1.Handle)
+		index, err := indigoInit.Index(atomHandle)
+		if err != nil {
+			fmt.Printf("Failed to get atom index: %v", err)
+		}
+		atom, _ := mol3.GetAtom(index)
+		symbol, err := atom.Symbol()
+		if err != nil {
+			fmt.Printf("Failed to get atom symbol: %v", err)
+		}
+		fmt.Printf("  CCO matches CCO: %v (mapping atom: %s)\n", isExact1, symbol)
+	}
+
+	// When ExactMatch returns true, mapping1 is a mapping handle that can be used
+	// to query atom-to-atom correspondences between the molecules
+	fmt.Printf("  CCO matches CCO: %v (mapping handle: %d)\n", isExact1, mapping2)
 	fmt.Printf("  CCO matches OCC: %v (same molecule, different notation)\n", isExact2)
 
 	// Example 4: SMARTS pattern matching
