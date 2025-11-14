@@ -150,13 +150,13 @@ func (m *Molecule) TPSA(includeSP bool) (float64, error) {
 
 // NumRotatableBonds returns the number of rotatable bonds
 func (m *Molecule) NumRotatableBonds() (int, error) {
-	if m.Closed {
+	if m == nil || m.Closed {
 		return 0, fmt.Errorf("molecule is closed")
 	}
 
 	count := int(C.indigoNumRotatableBonds(C.int(m.Handle)))
 	if count < 0 {
-		return 0, fmt.Errorf("failed to get rotatable bonds count: %s", getLastError())
+		return 0, fmt.Errorf("failed to get number of rotatable bonds: %s", getLastError())
 	}
 
 	return count, nil
