@@ -10,8 +10,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-indigo/core"
 	"log"
+
+	"github.com/cx-luo/go-indigo/core"
 )
 
 func main() {
@@ -149,6 +150,20 @@ func main() {
 
 	components, _ := mixture.CountComponents()
 	fmt.Printf("   Mixture 'CCO.C.O' has %d components\n\n", components)
+
+	// Example 9: Convert chemical name to structure
+	fmt.Println("9. Name to structure conversion:")
+	benzaldehyde, err := indigoInit.NameToStructure("1,7-disila-3,5-dithia-2,4-octadiene", "")
+	if err != nil {
+		log.Printf("   Failed to convert name to structure: %v\n", err)
+	} else {
+		defer benzaldehyde.Close()
+		smies, _ := benzaldehyde.ToSmiles()
+		fmt.Printf("   Benzaldehyde SMILES: %s\n", smies)
+		atomCount, _ := benzaldehyde.CountAtoms()
+		fmt.Printf("   Benzaldehyde parsed successfully with %d atoms\n", atomCount)
+	}
+	fmt.Println()
 
 	fmt.Println("=== Examples completed successfully ===")
 }

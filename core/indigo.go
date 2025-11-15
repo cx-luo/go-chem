@@ -31,6 +31,8 @@ import (
 	"fmt"
 	"runtime"
 	"unsafe"
+
+	"github.com/cx-luo/go-indigo/molecule"
 )
 
 //// indigoSessionID holds the session ID for Indigo
@@ -109,7 +111,25 @@ func checkResultLong(res C.long) (int, error) {
 	return int(res), nil
 }
 
-// ---------- Example methods ----------
+// NameToStructure converts a chemical name into a structure using Indigo's parser options
+func (in *Indigo) NameToStructure(name string, params string) (*molecule.Molecule, error) {
+	in.setSession()
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	var cParams *C.char
+	if params != "" {
+		cParams = C.CString(params)
+		defer C.free(unsafe.Pointer(cParams))
+	}
+
+	handle := int(C.indigoNameToStructure(cName, cParams))
+	if handle < 0 {
+		return nil, fmt.Errorf("failed to convert name to structure: %s", lastErrorString())
+	}
+
+	return newMolecule(handle), nil
+}
 
 // Deserialize creates molecule/reaction object from binary serialized CMF format.
 func (in *Indigo) Deserialize(arr []byte) (*IndigoObject, error) {
