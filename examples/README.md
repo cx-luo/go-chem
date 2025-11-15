@@ -1,6 +1,6 @@
-# Go-Chem Examples
+# go-indigo Examples
 
-This directory contains comprehensive examples demonstrating how to use the go-chem library.
+This directory contains comprehensive examples demonstrating how to use the go-indigo library.
 
 ## Directory Structure
 
@@ -52,7 +52,7 @@ go run examples/molecule/basic_usage.go
 ## Example Categories
 
 ### 1. Getting Started
-Start with these examples if you're new to go-chem:
+Start with these examples if you're new to go-indigo:
 1. `molecule/basic_usage.go` - Learn fundamental concepts
 2. `molecule/molecule_io.go` - Understand I/O operations
 3. `reaction/reaction_basic.go` - Work with reactions

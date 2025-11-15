@@ -3,12 +3,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"log"
 	"strings"
 	"sync"
 
-	"github.com/cx-luo/go-chem/molecule"
+	"github.com/cx-luo/go-indigo/molecule"
 )
 
 func main() {

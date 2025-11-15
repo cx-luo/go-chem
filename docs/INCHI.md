@@ -54,7 +54,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+    "github.com/cx-luo/go-indigo/molecule"
 )
 
 func main() {

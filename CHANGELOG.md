@@ -1,6 +1,6 @@
 # 更新日志 / Changelog
 
-本文档记录 go-chem 项目的所有重要变更。
+本文档记录 go-indigo 项目的所有重要变更。
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
@@ -275,12 +275,12 @@
 
 ```go
 // 旧代码
-import "github.com/cx-luo/go-chem/render"
+import "github.com/cx-luo/go-indigo/render"
 renderer := &render.Renderer{}
 renderer.RenderToFile(mol.Handle, "output.png")
 
 // 新代码
-import "github.com/cx-luo/go-chem/core"
+import "github.com/cx-luo/go-indigo/core"
 indigo := core.NewIndigo()
 defer indigo.Close()
 indigo.RenderToFile(mol.Handle, "output.png")
@@ -292,7 +292,7 @@ indigo.RenderToFile(mol.Handle, "output.png")
 
 ```go
 // 新功能：渲染分子
-import "github.com/cx-luo/go-chem/render"
+import "github.com/cx-luo/go-indigo/render"
 
 render.InitRenderer()
 defer render.DisposeRenderer()
@@ -335,7 +335,7 @@ defer mol.Close()  // 必须关闭
 
 ## 贡献者
 
-感谢所有为 go-chem 做出贡献的开发者！
+感谢所有为 go-indigo 做出贡献的开发者！
 
 - [@cx-luo](https://github.com/cx-luo) - 项目创建者和维护者
 
@@ -351,12 +351,12 @@ defer mol.Close()  // 必须关闭
 
 ---
 
-[Unreleased]: https://github.com/cx-luo/go-chem/compare/v0.4.4...HEAD
-[0.4.4]: https://github.com/cx-luo/go-chem/compare/v0.4.3...v0.4.4
-[0.4.3]: https://github.com/cx-luo/go-chem/compare/v0.4.2...v0.4.3
-[0.4.2]: https://github.com/cx-luo/go-chem/compare/v0.4.0...v0.4.2
-[0.4.0]: https://github.com/cx-luo/go-chem/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/cx-luo/go-chem/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/cx-luo/go-chem/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/cx-luo/go-chem/compare/v0.0.1...v0.1.0
-[0.0.1]: https://github.com/cx-luo/go-chem/releases/tag/v0.0.1
+[Unreleased]: https://github.com/cx-luo/go-indigo/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/cx-luo/go-indigo/compare/v0.4.3...v0.4.4
+[0.4.3]: https://github.com/cx-luo/go-indigo/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/cx-luo/go-indigo/compare/v0.4.0...v0.4.2
+[0.4.0]: https://github.com/cx-luo/go-indigo/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/cx-luo/go-indigo/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/cx-luo/go-indigo/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/cx-luo/go-indigo/compare/v0.0.1...v0.1.0
+[0.0.1]: https://github.com/cx-luo/go-indigo/releases/tag/v0.0.1

@@ -1,6 +1,6 @@
 # Reaction Examples
 
-Examples demonstrating chemical reaction manipulation using go-chem.
+Examples demonstrating chemical reaction manipulation using go-indigo.
 
 ## Files
 
@@ -22,7 +22,7 @@ go run reaction_molecules.go
 ### Loading a Reaction
 
 ```go
-import "github.com/cx-luo/go-chem/reaction"
+import "github.com/cx-luo/go-indigo/reaction"
 
 // From reaction SMILES
 rxn, err := reaction.LoadReactionFromString("CCO.CC(=O)O>>CC(=O)OCC.O")
@@ -164,7 +164,7 @@ catalystIter, _ := rxn.IterateCatalysts()
 ## Creating Reactions
 
 ```go
-import "github.com/cx-luo/go-chem/molecule"
+import "github.com/cx-luo/go-indigo/molecule"
 
 // Create empty reaction
 rxn, _ := reaction.CreateReaction()

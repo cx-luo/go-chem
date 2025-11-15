@@ -1,6 +1,6 @@
 # 环境配置指南
 
-本指南详细说明如何配置 go-chem 的开发和运行环境。
+本指南详细说明如何配置 go-indigo 的开发和运行环境。
 
 ## 目录
 
@@ -69,18 +69,18 @@ pacman -S mingw-w64-x86_64-gcc
 
 ```cmd
 set CGO_ENABLED=1
-set CGO_CFLAGS=-ID:/path/to/go-chem/3rd
-set CGO_LDFLAGS=-LD:/path/to/go-chem/3rd/windows-x86_64
-set PATH=%PATH%;D:/path/to/go-chem/3rd/windows-x86_64
+set CGO_CFLAGS=-ID:/path/to/go-indigo/3rd
+set CGO_LDFLAGS=-LD:/path/to/go-indigo/3rd/windows-x86_64
+set PATH=%PATH%;D:/path/to/go-indigo/3rd/windows-x86_64
 ```
 
 #### 临时设置（PowerShell）
 
 ```powershell
 $env:CGO_ENABLED="1"
-$env:CGO_CFLAGS="-ID:/path/to/go-chem/3rd"
-$env:CGO_LDFLAGS="-LD:/path/to/go-chem/3rd/windows-x86_64"
-$env:PATH="$env:PATH;D:/path/to/go-chem/3rd/windows-x86_64"
+$env:CGO_CFLAGS="-ID:/path/to/go-indigo/3rd"
+$env:CGO_LDFLAGS="-LD:/path/to/go-indigo/3rd/windows-x86_64"
+$env:PATH="$env:PATH;D:/path/to/go-indigo/3rd/windows-x86_64"
 ```
 
 #### 永久设置
@@ -88,15 +88,15 @@ $env:PATH="$env:PATH;D:/path/to/go-chem/3rd/windows-x86_64"
 1. 右键"此电脑" → 属性 → 高级系统设置 → 环境变量
 2. 在"系统变量"中添加：
    - `CGO_ENABLED` = `1`
-   - `CGO_CFLAGS` = `-ID:\path\to\go-chem\3rd`
-   - `CGO_LDFLAGS` = `-LD:\path\to\go-chem\3rd\windows-x86_64`
+   - `CGO_CFLAGS` = `-ID:\path\to\go-indigo\3rd`
+   - `CGO_LDFLAGS` = `-LD:\path\to\go-indigo\3rd\windows-x86_64`
 3. 在 `PATH` 中添加：
-   - `D:\path\to\go-chem\3rd\windows-x86_64`
+   - `D:\path\to\go-indigo\3rd\windows-x86_64`
 
 ### 4. 验证配置
 
 ```cmd
-cd go-chem
+cd go-indigo
 go test ./test/molecule/... -v
 ```
 
@@ -114,7 +114,7 @@ exit status 0xc0000135
 
 ```cmd
 # 确保 DLL 目录在 PATH 中
-set PATH=%PATH%;D:/path/to/go-chem/3rd/windows-x86_64
+set PATH=%PATH%;D:/path/to/go-indigo/3rd/windows-x86_64
 
 # 或者复制 DLL 到可执行文件目录
 copy 3rd\windows-x86_64\*.dll .
@@ -179,11 +179,11 @@ export LD_LIBRARY_PATH="$(pwd)/3rd/linux-x86_64:$LD_LIBRARY_PATH"
 编辑 `~/.bashrc` 或 `~/.zshrc`:
 
 ```bash
-# go-chem 配置
+# go-indigo 配置
 export CGO_ENABLED=1
-export CGO_CFLAGS="-I$HOME/go-chem/3rd"
-export CGO_LDFLAGS="-L$HOME/go-chem/3rd/linux-x86_64"
-export LD_LIBRARY_PATH="$HOME/go-chem/3rd/linux-x86_64:$LD_LIBRARY_PATH"
+export CGO_CFLAGS="-I$HOME/go-indigo/3rd"
+export CGO_LDFLAGS="-L$HOME/go-indigo/3rd/linux-x86_64"
+export LD_LIBRARY_PATH="$HOME/go-indigo/3rd/linux-x86_64:$LD_LIBRARY_PATH"
 ```
 
 然后：
@@ -195,7 +195,7 @@ source ~/.bashrc  # 或 source ~/.zshrc
 ### 4. 验证配置
 
 ```bash
-cd go-chem
+cd go-indigo
 go test ./test/molecule/... -v
 ```
 
@@ -271,21 +271,21 @@ export DYLD_LIBRARY_PATH="$(pwd)/3rd/darwin-aarch64:$DYLD_LIBRARY_PATH"
 编辑 `~/.zshrc`:
 
 ```bash
-# go-chem 配置
+# go-indigo 配置
 export CGO_ENABLED=1
-export CGO_CFLAGS="-I$HOME/go-chem/3rd"
+export CGO_CFLAGS="-I$HOME/go-indigo/3rd"
 
 # 根据架构选择一个：
-export CGO_LDFLAGS="-L$HOME/go-chem/3rd/darwin-aarch64"  # M1/M2
-# export CGO_LDFLAGS="-L$HOME/go-chem/3rd/darwin-x86_64"  # Intel
+export CGO_LDFLAGS="-L$HOME/go-indigo/3rd/darwin-aarch64"  # M1/M2
+# export CGO_LDFLAGS="-L$HOME/go-indigo/3rd/darwin-x86_64"  # Intel
 
-export DYLD_LIBRARY_PATH="$HOME/go-chem/3rd/darwin-aarch64:$DYLD_LIBRARY_PATH"
+export DYLD_LIBRARY_PATH="$HOME/go-indigo/3rd/darwin-aarch64:$DYLD_LIBRARY_PATH"
 ```
 
 ### 4. 验证配置
 
 ```bash
-cd go-chem
+cd go-indigo
 go test ./test/molecule/... -v
 ```
 

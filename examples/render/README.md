@@ -29,8 +29,8 @@ go run render_examples.go
 
 ```go
 import (
-    "github.com/cx-luo/go-chem/molecule"
-    "github.com/cx-luo/go-chem/render"
+    "github.com/cx-luo/go-indigo/molecule"
+    "github.com/cx-luo/go-indigo/render"
 )
 
 // Initialize renderer

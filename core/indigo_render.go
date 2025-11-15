@@ -1,5 +1,5 @@
 // Package core coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/13 10:47
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -30,7 +30,7 @@ import "C"
 import (
 	"fmt"
 
-	"github.com/cx-luo/go-chem/render"
+	"github.com/cx-luo/go-indigo/render"
 )
 
 // DefaultRenderOptions returns default rendering options

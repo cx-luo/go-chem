@@ -1,6 +1,6 @@
-// Package main demonstrates basic molecule operations using go-chem
+// Package main demonstrates basic molecule operations using go-indigo
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/03
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -10,7 +10,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"log"
 )
 
@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("=== Go-Chem Molecule Basic Usage Examples ===\n")
+	fmt.Println("=== go-indigo Molecule Basic Usage Examples ===\n")
 
 	// Example 1: Create an empty molecule
 	fmt.Println("1. Creating an empty molecule:")

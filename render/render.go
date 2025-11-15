@@ -1,6 +1,6 @@
 // Package render provides molecule and reaction rendering using Indigo Renderer via CGO
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/04
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com

@@ -4,12 +4,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"log"
 	"os"
 
-	"github.com/cx-luo/go-chem/molecule"
-	"github.com/cx-luo/go-chem/render"
+	"github.com/cx-luo/go-indigo/molecule"
+	"github.com/cx-luo/go-indigo/render"
 )
 
 // Example 1: Basic molecule rendering

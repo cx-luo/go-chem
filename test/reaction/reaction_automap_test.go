@@ -3,7 +3,7 @@ package reaction_test
 import (
 	"testing"
 
-	"github.com/cx-luo/go-chem/reaction"
+	"github.com/cx-luo/go-indigo/reaction"
 )
 
 // TestReactionAutomap tests automatic atom-to-atom mapping

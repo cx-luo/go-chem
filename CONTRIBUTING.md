@@ -6,7 +6,7 @@
 
 ## English
 
-Thank you for your interest in contributing to go-chem! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to go-indigo! This document provides guidelines for contributing to the project.
 
 ### How to Contribute
 
@@ -262,7 +262,7 @@ Fixes #56
 
 ## 简体中文
 
-感谢您对 go-chem 项目的关注！本文档提供了贡献指南。
+感谢您对 go-indigo 项目的关注！本文档提供了贡献指南。
 
 ### 如何贡献
 
@@ -435,6 +435,6 @@ Closes #42
 
 ---
 
-Thank you for contributing to go-chem! 🙏
+Thank you for contributing to go-indigo! 🙏
 
-感谢您为 go-chem 做出贡献！🙏
+感谢您为 go-indigo 做出贡献！🙏

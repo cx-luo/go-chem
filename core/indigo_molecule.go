@@ -1,6 +1,6 @@
 // Package core provides core functions for Indigo C API library via CGO
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/12 13:47
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -28,7 +28,7 @@ package core
 import "C"
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/molecule"
+	"github.com/cx-luo/go-indigo/molecule"
 	"runtime"
 	"unsafe"
 )

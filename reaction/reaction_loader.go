@@ -1,6 +1,6 @@
 // Package reaction provides reaction loading functionality using Indigo library via CGO
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/03
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com

@@ -1,6 +1,6 @@
 // Package main demonstrates reaction format conversion examples
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/08
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -10,7 +10,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"log"
 	"os"
 )

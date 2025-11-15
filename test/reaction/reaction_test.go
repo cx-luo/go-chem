@@ -3,7 +3,7 @@ package reaction_test
 import (
 	"testing"
 
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 )
 
 var indigoInit *core.Indigo

@@ -37,8 +37,8 @@ Place the required libraries in one of the following locations:
 package main
 
 import (
- "github.com/cx-luo/go-chem/molecule"
- "github.com/cx-luo/go-chem/render"
+ "github.com/cx-luo/go-indigo/molecule"
+ "github.com/cx-luo/go-indigo/render"
 )
 
 func main() {
@@ -122,7 +122,7 @@ data, _ := render.GetBufferData(buffer)
 ### Render Reactions
 
 ```go
-import "github.com/cx-luo/go-chem/reaction"
+import "github.com/cx-luo/go-indigo/reaction"
 
 // Load a reaction
 rxn, _ := reaction.LoadReactionFromString("CCO>>CC=O")

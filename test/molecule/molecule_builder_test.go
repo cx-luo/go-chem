@@ -1,10 +1,10 @@
 package molecule_test
 
 import (
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"testing"
 
-	"github.com/cx-luo/go-chem/molecule"
+	"github.com/cx-luo/go-indigo/molecule"
 )
 
 var indigoInit *core.Indigo

@@ -1,6 +1,6 @@
 // Package molecule provides substructure matching functionality using Indigo library via CGO
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/08
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com

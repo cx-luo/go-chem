@@ -1,6 +1,6 @@
 // Package main demonstrates how to access individual molecules from reactions
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/08
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 )
 
 func main() {

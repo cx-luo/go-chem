@@ -1,6 +1,6 @@
-# Go-Chem Molecule Examples
+# go-indigo Molecule Examples
 
-这个文件夹包含了使用 go-chem molecule 包的各种示例。
+这个文件夹包含了使用 go-indigo molecule 包的各种示例。
 
 ## 示例文件
 
@@ -110,14 +110,14 @@ go run molecule_inchi.go
 ### Windows
 
 ```cmd
-set PATH=%PATH%;D:\for_github\go-chem\3rd\win
+set PATH=%PATH%;D:\for_github\go-indigo\3rd\win
 set CGO_ENABLED=1
 ```
 
 ### Linux
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd/linux
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-indigo/3rd/linux
 export CGO_ENABLED=1
 ```
 

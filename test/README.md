@@ -1,6 +1,6 @@
-# Go-Chem Test Suite
+# go-indigo Test Suite
 
-Comprehensive test suite for the go-chem library.
+Comprehensive test suite for the go-indigo library.
 
 ## Directory Structure
 

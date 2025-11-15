@@ -1,6 +1,6 @@
 # API 参考文档
 
-go-chem 完整 API 参考文档。
+go-indigo 完整 API 参考文档。
 
 ## 目录
 

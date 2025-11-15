@@ -24,7 +24,7 @@ These files are located in the `3rd/win` directory. You have two options:
 **Option A: Add to System PATH (Recommended)**
 
 ```cmd
-set PATH=%PATH%;D:\for_github\go-chem\3rd\win
+set PATH=%PATH%;D:\for_github\go-indigo\3rd\win
 ```
 
 Or permanently add the `3rd/win` directory to your system PATH through System Properties.
@@ -39,8 +39,8 @@ copy 3rd\win\*.dll <your_project_directory>\
 
 ```cmd
 set CGO_ENABLED=1
-set CGO_CFLAGS=-ID:/for_github/go-chem/3rd
-set CGO_LDFLAGS=-LD:/for_github/go-chem/3rd/win
+set CGO_CFLAGS=-ID:/for_github/go-indigo/3rd
+set CGO_LDFLAGS=-LD:/for_github/go-indigo/3rd/win
 ```
 
 ### 3. Build and run
@@ -55,13 +55,13 @@ go build
 ### 1. Ensure shared libraries are accessible
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd/linux
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-indigo/3rd/linux
 ```
 
 Or add to `~/.bashrc`:
 
 ```bash
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-chem/3rd/linux' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/go-indigo/3rd/linux' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -69,8 +69,8 @@ source ~/.bashrc
 
 ```bash
 export CGO_ENABLED=1
-export CGO_CFLAGS="-I/path/to/go-chem/3rd"
-export CGO_LDFLAGS="-L/path/to/go-chem/3rd/linux -lindigo"
+export CGO_CFLAGS="-I/path/to/go-indigo/3rd"
+export CGO_LDFLAGS="-L/path/to/go-indigo/3rd/linux -lindigo"
 ```
 
 ### 3. Build and run
@@ -86,7 +86,7 @@ go build
 
 ```bash
 # Set PATH first (Windows)
-set PATH=%PATH%;D:\for_github\go-chem\3rd\win
+set PATH=%PATH%;D:\for_github\go-indigo\3rd\win
 
 # Run tests
 cd test/reaction
@@ -110,7 +110,7 @@ go tool cover -html=coverage.out
 
 ```bash
 # Set PATH first (Windows)
-set PATH=%PATH%;D:\for_github\go-chem\3rd\win
+set PATH=%PATH%;D:\for_github\go-indigo\3rd\win
 
 # Run example
 cd reaction
@@ -161,8 +161,8 @@ Add to `.vscode/settings.json`:
 {
     "go.toolsEnvVars": {
         "CGO_ENABLED": "1",
-        "CGO_CFLAGS": "-ID:/for_github/go-chem/3rd",
-        "CGO_LDFLAGS": "-LD:/for_github/go-chem/3rd/win"
+        "CGO_CFLAGS": "-ID:/for_github/go-indigo/3rd",
+        "CGO_LDFLAGS": "-LD:/for_github/go-indigo/3rd/win"
     }
 }
 ```
@@ -172,8 +172,8 @@ Add to `.vscode/settings.json`:
 1. Go to Settings → Go → Build Tags & Vendoring
 2. Add custom environment variables:
    - `CGO_ENABLED=1`
-   - `CGO_CFLAGS=-ID:/for_github/go-chem/3rd`
-   - `CGO_LDFLAGS=-LD:/for_github/go-chem/3rd/win` (Windows) or `-LD:/for_github/go-chem/3rd/linux` (Linux)
+   - `CGO_CFLAGS=-ID:/for_github/go-indigo/3rd`
+   - `CGO_LDFLAGS=-LD:/for_github/go-indigo/3rd/win` (Windows) or `-LD:/for_github/go-indigo/3rd/linux` (Linux)
 
 ## Testing Indigo Installation
 
@@ -184,7 +184,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cx-luo/go-chem/reaction"
+    "github.com/cx-luo/go-indigo/reaction"
 )
 
 func main() {

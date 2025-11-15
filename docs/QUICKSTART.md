@@ -1,6 +1,6 @@
 # 5分钟快速开始
 
-本指南帮助你在 5 分钟内开始使用 go-chem。
+本指南帮助你在 5 分钟内开始使用 go-indigo。
 
 ## 前置要求
 
@@ -12,8 +12,8 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/cx-luo/go-chem.git
-cd go-chem
+git clone https://github.com/cx-luo/go-indigo.git
+cd go-indigo
 ```
 
 ### 2. 配置环境
@@ -59,7 +59,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+    "github.com/cx-luo/go-indigo/molecule"
 )
 
 func main() {
@@ -147,7 +147,7 @@ mol.AddBond(c2, o, molecule.BOND_SINGLE)
 ### 渲染分子
 
 ```go
-import "github.com/cx-luo/go-chem/render"
+import "github.com/cx-luo/go-indigo/render"
 
 // 初始化渲染器
 render.InitRenderer()
@@ -164,7 +164,7 @@ render.RenderToFile(mol.Handle(), "molecule.png")
 ### 处理反应
 
 ```go
-import "github.com/cx-luo/go-chem/reaction"
+import "github.com/cx-luo/go-indigo/reaction"
 
 // 加载反应
 rxn, _ := reaction.LoadReactionFromString("CCO>>CC=O")
@@ -202,7 +202,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+    "github.com/cx-luo/go-indigo/molecule"
 )
 
 func main() {
@@ -248,7 +248,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cx-luo/go-chem/molecule"
+    "github.com/cx-luo/go-indigo/molecule"
 )
 
 func main() {
@@ -290,8 +290,8 @@ func main() {
 package main
 
 import (
-    "github.com/cx-luo/go-chem/molecule"
-    "github.com/cx-luo/go-chem/render"
+    "github.com/cx-luo/go-indigo/molecule"
+    "github.com/cx-luo/go-indigo/render"
 )
 
 func main() {
@@ -356,7 +356,7 @@ A: 确保设置了 PATH (Windows) 或 LD_LIBRARY_PATH (Linux)：
 
 ```bash
 # Windows
-set PATH=%PATH%;D:\path\to\go-chem\3rd\windows-x86_64
+set PATH=%PATH%;D:\path\to\go-indigo\3rd\windows-x86_64
 
 # Linux
 export LD_LIBRARY_PATH=$(pwd)/3rd/linux-x86_64:$LD_LIBRARY_PATH

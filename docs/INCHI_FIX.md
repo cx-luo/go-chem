@@ -72,8 +72,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/cx-luo/go-chem/molecule"
-    "github.com/cx-luo/go-chem/reaction"
+    "github.com/cx-luo/go-indigo/molecule"
+    "github.com/cx-luo/go-indigo/reaction"
 )
 
 func main() {

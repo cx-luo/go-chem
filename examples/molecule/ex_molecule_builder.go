@@ -1,6 +1,6 @@
 // Package main demonstrates building molecules from scratch
 // coding=utf-8
-// @Project : go-chem
+// @Project : go-indigo
 // @Time    : 2025/11/03
 // @Author  : chengxiang.luo
 // @Email   : chengxiang.luo@foxmail.com
@@ -10,10 +10,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 	"log"
 
-	"github.com/cx-luo/go-chem/molecule"
+	"github.com/cx-luo/go-indigo/molecule"
 )
 
 var indigoInit *core.Indigo

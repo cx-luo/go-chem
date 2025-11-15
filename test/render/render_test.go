@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cx-luo/go-chem/core"
+	"github.com/cx-luo/go-indigo/core"
 
-	"github.com/cx-luo/go-chem/render"
+	"github.com/cx-luo/go-indigo/render"
 )
 
 var indigoInit *core.Indigo

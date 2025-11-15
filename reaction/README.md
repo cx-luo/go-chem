@@ -21,7 +21,7 @@ This package requires the Indigo library to be installed. The library files shou
 ### Creating a Reaction
 
 ```go
-import "github.com/cx-luo/go-chem/reaction"
+import "github.com/cx-luo/go-indigo/reaction"
 
 // Create an empty reaction
 r, err := reaction.CreateReaction()
@@ -296,4 +296,4 @@ See the `test/reaction` directory for comprehensive examples of all functionalit
 
 ## License
 
-This package is part of the go-chem project and follows the same license as the Indigo library.
+This package is part of the go-indigo project and follows the same license as the Indigo library.
