@@ -157,8 +157,8 @@ func TestNumRotatableBonds(t *testing.T) {
 		smiles   string
 		expected int
 	}{
-		{"Ethanol", "CCO", 1},
-		{"Propanol", "CCCO", 2},
+		{"Ethanol", "CCO", 0},
+		{"Propanol", "CCCO", 1},
 		{"Benzene", "c1ccccc1", 0},
 	}
 
@@ -173,6 +173,7 @@ func TestNumRotatableBonds(t *testing.T) {
 			count, err := m.NumRotatableBonds()
 			if err != nil {
 				t.Errorf("failed to get rotatable bonds: %v", err)
+				return
 			}
 
 			if count != tt.expected {

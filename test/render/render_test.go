@@ -500,13 +500,16 @@ func TestRenderMultipleFormats(t *testing.T) {
 	formats := []string{"png", "svg"}
 
 	for _, format := range formats {
+		format := format // capture range variable
 		t.Run(format, func(t *testing.T) {
+			indigoInit.SetOption("reset-render-options", nil, nil, nil)
 			outputFile := filepath.Join(tmpDir, "benzene."+format)
 
 			indigoRender, err := indigoInit.InitRenderer()
 			if err != nil {
-				panic(err)
+				t.Fatalf("failed to init renderer: %v", err)
 			}
+			defer indigoRender.DisposeRenderer()
 			// Set format
 			if err := indigoRender.SetRenderOption("render-output-format", format); err != nil {
 				t.Fatalf("failed to set format %s: %v", format, err)
@@ -521,6 +524,7 @@ func TestRenderMultipleFormats(t *testing.T) {
 			info, err := os.Stat(outputFile)
 			if err != nil {
 				t.Errorf("output file not created for format %s: %v", format, err)
+				return
 			}
 			if info.Size() == 0 {
 				t.Errorf("output file is empty for format %s", format)
