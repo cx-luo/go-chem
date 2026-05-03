@@ -20,18 +20,35 @@ func (a *AromatizerBase) Aromatize(m *Molecule) {
 	// Initialize bond aromatic counts
 	a.bondsAromaticCount = make([]int, len(m.Bonds))
 
-	// Precalculate pi labels for all atoms
-	piLabels := make([]int, len(m.Atoms))
-	for i := range m.Atoms {
-		piLabels[i] = a.getPiLabel(m, i)
-	}
-
-	// Find all simple cycles (5-8 membered rings are most common aromatic rings)
+	// Find all simple cycles (5-8 membered rings are most common aromatic rings).
+	// Iterate until no further changes so that fused aromatic systems
+	// propagate (e.g. quinoline / benzo-fused heterocycles whose Kekulé form
+	// has a C=C bond shared with an as-yet-unaromatized neighbouring ring).
+	allCycles := make(map[int][][]int, 4)
 	for size := 5; size <= 8; size++ {
-		cycles := findSimpleCyclesOfLength(m, size)
-		for _, cycle := range cycles {
-			if a.isCycleAromatic(m, cycle, piLabels) {
+		allCycles[size] = findSimpleCyclesOfLength(m, size)
+	}
+	for changed := true; changed; {
+		changed = false
+		// Recalculate per-atom pi labels each iteration so that bonds that
+		// were promoted to BOND_AROMATIC by a previous cycle propagate into
+		// the heuristics for fused neighbouring cycles (e.g. the thiophene
+		// half of thieno[3,2-d]pyrimidine becomes aromatic only after the
+		// pyrimidine half has).
+		piLabels := make([]int, len(m.Atoms))
+		for i := range m.Atoms {
+			piLabels[i] = a.getPiLabel(m, i)
+		}
+		for size := 5; size <= 8; size++ {
+			for _, cycle := range allCycles[size] {
+				if !a.isCycleAromatic(m, cycle, piLabels) {
+					continue
+				}
+				if cycleAlreadyAromatic(a, m, cycle) {
+					continue
+				}
 				a.aromatizeCycle(m, cycle)
+				changed = true
 			}
 		}
 	}
@@ -87,10 +104,27 @@ func (a *AromatizerBase) isCycleAromatic(m *Molecule, cycle []int, piLabels []in
 		return false
 	}
 
-	// Calculate π electron count using precalculated pi labels
+	cycleSet := make(map[int]bool, len(cycle))
+	for _, atomIdx := range cycle {
+		cycleSet[atomIdx] = true
+	}
+
+	// Rings whose atoms carry an exocyclic C=O / C=S behave like vinylogous
+	// amides (pyridinone, acridone, quinazolinone, ...) and PubChem/CACTVS as
+	// well as RDKit's MDL aromaticity treat them as non-aromatic. Skipping
+	// aromatization here lets the surrounding code see the original Kekulé
+	// bonds when scoring TPSA / HBA fragments.
+	if cycleHasExocyclicOxygen(m, cycle, cycleSet) {
+		return false
+	}
+
+	// Calculate π electron count, overriding the per-atom heuristic when a
+	// double bond is internal to this cycle. This ensures that, for example,
+	// the C=N inside a pyridazinone ring contributes 1 π electron from each
+	// endpoint instead of being misclassified as an exocyclic substituent.
 	piCount := 0
 	for _, atomIdx := range cycle {
-		piCount += piLabels[atomIdx]
+		piCount += a.piLabelInCycle(m, atomIdx, cycleSet, piLabels[atomIdx])
 	}
 
 	// Huckel's rule: 4n+2 π electrons (where n = 0, 1, 2, ...)
@@ -100,6 +134,76 @@ func (a *AromatizerBase) isCycleAromatic(m *Molecule, cycle []int, piLabels []in
 	}
 
 	return true
+}
+
+func cycleAlreadyAromatic(a *AromatizerBase, m *Molecule, cycle []int) bool {
+	cycleLen := len(cycle)
+	for i := 0; i < cycleLen; i++ {
+		u := cycle[i]
+		v := cycle[(i+1)%cycleLen]
+		marked := false
+		for _, eidx := range m.Vertices[u].Edges {
+			e := m.Bonds[eidx]
+			if (e.Beg == u && e.End == v) || (e.Beg == v && e.End == u) {
+				if a.bondsAromaticCount[eidx] > 0 {
+					marked = true
+				}
+				break
+			}
+		}
+		if !marked {
+			return false
+		}
+	}
+	return true
+}
+
+func nitrogenAttachedHydrogens(m *Molecule, atomIdx int) int {
+	count := 0
+	for _, eidx := range m.Vertices[atomIdx].Edges {
+		bond := m.Bonds[eidx]
+		neighbor := bond.End
+		if neighbor == atomIdx {
+			neighbor = bond.Beg
+		}
+		if m.GetAtomNumber(neighbor) == ELEM_H {
+			count++
+		}
+	}
+	if !m.IsPseudoAtom(atomIdx) && !m.IsTemplateAtom(atomIdx) && m.Atoms[atomIdx].Number > 0 {
+		count += m.GetImplicitH(atomIdx)
+	}
+	return count
+}
+
+func (a *AromatizerBase) piLabelInCycle(m *Molecule, atomIdx int, cycleSet map[int]bool, fallback int) int {
+	internalDouble := 0
+	externalAromatic := 0
+	for _, eidx := range m.Vertices[atomIdx].Edges {
+		bond := m.Bonds[eidx]
+		neighbor := bond.End
+		if neighbor == atomIdx {
+			neighbor = bond.Beg
+		}
+		isAromatic := bond.Order == BOND_AROMATIC || a.bondsAromaticCount[eidx] > 0
+		switch {
+		case bond.Order == BOND_DOUBLE && cycleSet[neighbor]:
+			internalDouble++
+		case isAromatic && !cycleSet[neighbor]:
+			externalAromatic++
+		}
+	}
+	if internalDouble > 0 {
+		return 1
+	}
+	// Bridgehead atoms whose lone pair already participates in another aromatic
+	// ring can only spare a single π electron for the present cycle. Without
+	// this correction fused systems such as triazolo-quinolines or indolizines
+	// would fail Hückel's count for their non-shared 6-ring.
+	if fallback == 2 && externalAromatic > 0 {
+		return 1
+	}
+	return fallback
 }
 
 // checkDoubleBonds verifies that double bonds in the cycle are acceptable for aromaticity.
@@ -183,8 +287,13 @@ func (a *AromatizerBase) getPiLabel(m *Molecule, atomIdx int) int {
 		return -1
 	}
 
-	// Check if element can be aromatic
-	if !ElementCanBeAromatic(atom.Number) {
+	// Check if element can be aromatic. Use the same set as
+	// AromatizerBase.canBeAromatic; the global elementData table marks O and S
+	// as non-aromatic which contradicts known aromatic systems (furan,
+	// thiophene), so we rely on the explicit list here instead.
+	switch atom.Number {
+	case ELEM_C, ELEM_N, ELEM_O, ELEM_S, ELEM_P, ELEM_As, ELEM_Se:
+	default:
 		return -1
 	}
 
@@ -202,7 +311,10 @@ func (a *AromatizerBase) getPiLabel(m *Molecule, atomIdx int) int {
 			return -1 // Triple bonds cannot participate in aromaticity
 		}
 
-		if bondOrder == BOND_AROMATIC {
+		// Bonds marked aromatic by an earlier cycle in the same Aromatize()
+		// pass are treated as aromatic even though their stored order has not
+		// yet been rewritten (that happens at the end of Aromatize()).
+		if bondOrder == BOND_AROMATIC || a.bondsAromaticCount[edgeIdx] > 0 {
 			aromBonds++
 		} else if bondOrder == BOND_DOUBLE {
 			nDoubleTotal++
@@ -249,26 +361,16 @@ func (a *AromatizerBase) getPiLabel(m *Molecule, atomIdx int) int {
 	// For proper aromaticity detection, we need to account for implicit hydrogens
 	connectivity := nonAromConn + aromBonds
 
-	// If no aromatic bonds and only single bonds, check if atom is saturated
-	if aromBonds == 0 && nDoubleTotal == 0 {
-		// For carbon, if connectivity is 2 and we could add 2 more H to reach 4,
-		// it would be sp3 (saturated), not aromatic
-		if atom.Number == ELEM_C && connectivity == 2 {
-			// Could be aromatic (sp2) OR saturated (sp3)
-			// Need to check if implicit H count suggests sp3
-			// In a proper implementation, this would check getImplicitH
-			// For now, if no double bonds in the molecule and pure single bonds,
-			// assume it's saturated
-			hasAnyDoubleBonds := false
-			for i := range m.Bonds {
-				if m.Bonds[i].Order == BOND_DOUBLE || m.Bonds[i].Order == BOND_AROMATIC {
-					hasAnyDoubleBonds = true
-					break
-				}
-			}
-			if !hasAnyDoubleBonds {
-				return -1 // Saturated ring, not aromatic
-			}
+	// If no aromatic bonds and only single bonds, check if atom is saturated.
+	// For carbon: a 2-connected carbon with implicit H reaching valence 4 is
+	// sp3 (e.g. cyclohexane CH2), which cannot be aromatic.
+	if aromBonds == 0 && nDoubleTotal == 0 && atom.Number == ELEM_C {
+		hcount := 0
+		if !m.IsPseudoAtom(atomIdx) && !m.IsTemplateAtom(atomIdx) {
+			hcount = m.GetImplicitH(atomIdx)
+		}
+		if connectivity+hcount >= 4 {
+			return -1
 		}
 	}
 
@@ -300,16 +402,18 @@ func (a *AromatizerBase) getPiLabelByConnectivity(m *Molecule, atomIdx int, conn
 			return 1
 		}
 	case ELEM_N:
-		// Nitrogen: 5 valence electrons, charge affects behavior
+		// Nitrogen: 5 valence electrons, charge affects behavior. We fall here
+		// only when there are no double bonds on this atom, so the lone pair
+		// is available to contribute to an aromatic system if the nitrogen is
+		// trivalent (connectivity + H == 3).
 		charge := atom.Charge
+		hcount := nitrogenAttachedHydrogens(m, atomIdx)
 		if charge == 0 {
-			if connectivity == 2 {
-				// =N- (pyridine): 1 π electron
-				return 1
-			}
-			if connectivity == 3 {
-				// -N< (pyrrole): lone pair contributes 2
+			if connectivity+hcount >= 3 {
 				return 2
+			}
+			if connectivity == 2 {
+				return 1
 			}
 		} else if charge == 1 {
 			// N+ with 3 bonds: pyridinium (vacant orbital)
