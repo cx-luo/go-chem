@@ -121,7 +121,10 @@ func TestMoleculeClone(t *testing.T) {
 
 	c1 := m1.AddAtom(molecule.ELEM_C)
 	c2 := m1.AddAtom(molecule.ELEM_C)
-	m1.AddBond(c1, c2, molecule.BOND_DOUBLE)
+	b1 := m1.AddBond(c1, c2, molecule.BOND_DOUBLE)
+	m1.CisTrans.Add(b1, [4]int{-1, -1, -1, -1}, molecule.TRANS)
+	m1.Stereocenters.Add(c1, molecule.STEREO_ATOM_ABS, 1, [4]int{c2, -1, -1, -1})
+	m1.AddSuperatom("Et", []int{c1, c2})
 
 	// Clone the molecule
 	m2 := m1.Clone()
@@ -137,12 +140,25 @@ func TestMoleculeClone(t *testing.T) {
 	if m2.Name != "Original" {
 		t.Errorf("clone name should be 'Original', got '%s'", m2.Name)
 	}
+	if m2.CisTrans == nil || m2.CisTrans.GetParity(b1) != molecule.TRANS {
+		t.Error("clone should preserve cis/trans stereochemistry")
+	}
+	if m2.Stereocenters == nil || !m2.Stereocenters.Exists(c1) {
+		t.Error("clone should preserve stereocenters")
+	}
+	if m2.SGroups == nil || m2.SGroups.Count() != 1 {
+		t.Error("clone should preserve molecule S-Groups")
+	}
 
 	// Modify clone and ensure original is unchanged
 	m2.AddAtom(molecule.ELEM_O)
+	m2.CisTrans.SetParity(b1, molecule.CIS)
 
 	if m1.AtomCount() != 2 {
 		t.Error("modifying clone should not affect original")
+	}
+	if m1.CisTrans.GetParity(b1) != molecule.TRANS {
+		t.Error("modifying clone stereochemistry should not affect original")
 	}
 
 	if m2.AtomCount() != 3 {

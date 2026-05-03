@@ -120,6 +120,7 @@ type Molecule struct {
 	// Stereochemistry
 	CisTrans      *MoleculeCisTrans      // Cis/trans stereochemistry management
 	Stereocenters *MoleculeStereocenters // Stereocenter management
+	SGroups       *MoleculeSGroups       // S-Group management
 
 	// Metadata
 	Name             string // Molecule name
@@ -137,6 +138,7 @@ func NewMolecule() *Molecule {
 	return &Molecule{
 		CisTrans:         NewMoleculeCisTrans(),
 		Stereocenters:    NewMoleculeStereocenters(),
+		SGroups:          NewMoleculeSGroups(),
 		Aromatized:       false,
 		IgnoreBadValence: false,
 		ChiralFlag:       -1,
@@ -150,6 +152,15 @@ func (m *Molecule) Clone() *Molecule {
 		Atoms:            make([]Atom, len(m.Atoms)),
 		Bonds:            make([]Bond, len(m.Bonds)),
 		Vertices:         make([]Vertex, len(m.Vertices)),
+		BondOrders:       cloneIntSlice(m.BondOrders),
+		Connectivity:     cloneIntSlice(m.Connectivity),
+		Aromaticity:      cloneIntSlice(m.Aromaticity),
+		ImplicitH:        cloneIntSlice(m.ImplicitH),
+		TotalH:           cloneIntSlice(m.TotalH),
+		Valence:          cloneIntSlice(m.Valence),
+		CisTrans:         NewMoleculeCisTrans(),
+		Stereocenters:    NewMoleculeStereocenters(),
+		SGroups:          NewMoleculeSGroups(),
 		Name:             m.Name,
 		IgnoreBadValence: m.IgnoreBadValence,
 		Aromatized:       m.Aromatized,
@@ -166,7 +177,26 @@ func (m *Molecule) Clone() *Molecule {
 		copy(clone.Vertices[i].Edges, m.Vertices[i].Edges)
 	}
 
+	if m.CisTrans != nil {
+		clone.CisTrans = m.CisTrans.Clone()
+	}
+	if m.Stereocenters != nil {
+		clone.Stereocenters = m.Stereocenters.Clone()
+	}
+	if m.SGroups != nil {
+		clone.SGroups = m.SGroups.Clone()
+	}
+
 	return clone
+}
+
+func cloneIntSlice(src []int) []int {
+	if src == nil {
+		return nil
+	}
+	dst := make([]int, len(src))
+	copy(dst, src)
+	return dst
 }
 
 // GetEditRevision returns the current edit revision number
@@ -190,6 +220,9 @@ func (m *Molecule) Clear() {
 	m.ImplicitH = nil
 	m.TotalH = nil
 	m.Valence = nil
+	m.CisTrans = NewMoleculeCisTrans()
+	m.Stereocenters = NewMoleculeStereocenters()
+	m.SGroups = NewMoleculeSGroups()
 	m.Name = ""
 	m.Aromatized = false
 	m.IgnoreBadValence = false

@@ -247,6 +247,69 @@ func NewMoleculeSGroups() *MoleculeSGroups {
 	}
 }
 
+// Clone creates a deep copy of all S-Groups
+func (msg *MoleculeSGroups) Clone() *MoleculeSGroups {
+	clone := NewMoleculeSGroups()
+	if msg == nil {
+		return clone
+	}
+	for _, group := range msg.groups {
+		clone.Add(cloneSGroupValue(group))
+	}
+	return clone
+}
+
+func cloneSGroupBase(src SGroup) SGroup {
+	dst := src
+	dst.Atoms = append([]int(nil), src.Atoms...)
+	dst.Bonds = append([]int(nil), src.Bonds...)
+	dst.Brackets = append([]Bracket(nil), src.Brackets...)
+	return dst
+}
+
+func cloneSGroupValue(group interface{}) interface{} {
+	switch sg := group.(type) {
+	case *SGroup:
+		if sg == nil {
+			return (*SGroup)(nil)
+		}
+		copied := cloneSGroupBase(*sg)
+		return &copied
+	case *DataSGroup:
+		if sg == nil {
+			return (*DataSGroup)(nil)
+		}
+		copied := *sg
+		copied.SGroup = cloneSGroupBase(sg.SGroup)
+		return &copied
+	case *Superatom:
+		if sg == nil {
+			return (*Superatom)(nil)
+		}
+		copied := *sg
+		copied.SGroup = cloneSGroupBase(sg.SGroup)
+		copied.AttachmentPoints = append([]int(nil), sg.AttachmentPoints...)
+		return &copied
+	case *MultipleGroup:
+		if sg == nil {
+			return (*MultipleGroup)(nil)
+		}
+		copied := *sg
+		copied.SGroup = cloneSGroupBase(sg.SGroup)
+		copied.ParentAtoms = append([]int(nil), sg.ParentAtoms...)
+		return &copied
+	case *SRUGroup:
+		if sg == nil {
+			return (*SRUGroup)(nil)
+		}
+		copied := *sg
+		copied.SGroup = cloneSGroupBase(sg.SGroup)
+		return &copied
+	default:
+		return group
+	}
+}
+
 // Add adds an S-Group
 func (msg *MoleculeSGroups) Add(sg interface{}) int {
 	idx := len(msg.groups)
@@ -255,15 +318,25 @@ func (msg *MoleculeSGroups) Add(sg interface{}) int {
 	// Set index if it's a base SGroup
 	switch g := sg.(type) {
 	case *SGroup:
-		g.Index = idx
+		if g != nil {
+			g.Index = idx
+		}
 	case *DataSGroup:
-		g.Index = idx
+		if g != nil {
+			g.Index = idx
+		}
 	case *Superatom:
-		g.Index = idx
+		if g != nil {
+			g.Index = idx
+		}
 	case *MultipleGroup:
-		g.Index = idx
+		if g != nil {
+			g.Index = idx
+		}
 	case *SRUGroup:
-		g.Index = idx
+		if g != nil {
+			g.Index = idx
+		}
 	}
 
 	return idx
@@ -466,8 +539,11 @@ func (m *Molecule) AddSuperatom(label string, atomIndices []int) *Superatom {
 	sa.Atoms = make([]int, len(atomIndices))
 	copy(sa.Atoms, atomIndices)
 
-	// Note: This requires extending Molecule struct to have SGroups field
-	// For now, this is a standalone function
+	if m.SGroups == nil {
+		m.SGroups = NewMoleculeSGroups()
+	}
+	m.SGroups.Add(sa)
+	m.UpdateEditRevision()
 	return sa
 }
 

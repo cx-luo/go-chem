@@ -4,6 +4,7 @@ package molecule
 
 import (
 	"fmt"
+	"sort"
 )
 
 // SubstructureMatcher finds substructure matches in molecules
@@ -31,29 +32,20 @@ func (sm *SubstructureMatcher) FindAll() []*MatchResult {
 	if sm.query.AtomCount() > sm.target.AtomCount() {
 		return nil // Query can't be larger than target
 	}
+	if sm.query.AtomCount() == 0 {
+		return []*MatchResult{{AtomMapping: []int{}, BondMapping: []int{}}}
+	}
 
 	var results []*MatchResult
-
-	// Try each atom in target as potential match for first query atom
-	for targetStart := 0; targetStart < sm.target.AtomCount(); targetStart++ {
-		// Initialize mapping
-		atomMapping := make([]int, sm.query.AtomCount())
-		for i := range atomMapping {
-			atomMapping[i] = -1
-		}
-
-		used := make([]bool, sm.target.AtomCount())
-
-		// Try to build a complete mapping starting from this atom
-		if sm.recursiveMatch(0, targetStart, atomMapping, used) {
-			result := &MatchResult{
-				AtomMapping: make([]int, len(atomMapping)),
-				BondMapping: sm.buildBondMapping(atomMapping),
-			}
-			copy(result.AtomMapping, atomMapping)
-			results = append(results, result)
-		}
+	seen := make(map[string]bool)
+	order := sm.matchOrder()
+	atomMapping := make([]int, sm.query.AtomCount())
+	for i := range atomMapping {
+		atomMapping[i] = -1
 	}
+	used := make([]bool, sm.target.AtomCount())
+
+	sm.enumerateMatches(0, order, atomMapping, used, seen, &results)
 
 	return results
 }
@@ -63,23 +55,23 @@ func (sm *SubstructureMatcher) FindFirst() *MatchResult {
 	if sm.query.AtomCount() > sm.target.AtomCount() {
 		return nil
 	}
+	if sm.query.AtomCount() == 0 {
+		return &MatchResult{AtomMapping: []int{}, BondMapping: []int{}}
+	}
 
-	for targetStart := 0; targetStart < sm.target.AtomCount(); targetStart++ {
-		atomMapping := make([]int, sm.query.AtomCount())
-		for i := range atomMapping {
-			atomMapping[i] = -1
+	order := sm.matchOrder()
+	atomMapping := make([]int, sm.query.AtomCount())
+	for i := range atomMapping {
+		atomMapping[i] = -1
+	}
+	used := make([]bool, sm.target.AtomCount())
+
+	if sm.findFirstMatch(0, order, atomMapping, used) {
+		result := &MatchResult{
+			AtomMapping: append([]int(nil), atomMapping...),
+			BondMapping: sm.buildBondMapping(atomMapping),
 		}
-
-		used := make([]bool, sm.target.AtomCount())
-
-		if sm.recursiveMatch(0, targetStart, atomMapping, used) {
-			result := &MatchResult{
-				AtomMapping: make([]int, len(atomMapping)),
-				BondMapping: sm.buildBondMapping(atomMapping),
-			}
-			copy(result.AtomMapping, atomMapping)
-			return result
-		}
+		return result
 	}
 
 	return nil
@@ -90,76 +82,90 @@ func (sm *SubstructureMatcher) HasMatch() bool {
 	return sm.FindFirst() != nil
 }
 
-// recursiveMatch performs recursive backtracking to find matches
-func (sm *SubstructureMatcher) recursiveMatch(queryIdx, targetIdx int, mapping []int, used []bool) bool {
-	// Check if this query atom can match this target atom
-	if !sm.atomsMatch(queryIdx, targetIdx) {
-		return false
+func (sm *SubstructureMatcher) matchOrder() []int {
+	order := make([]int, sm.query.AtomCount())
+	for i := range order {
+		order[i] = i
+	}
+	sort.Slice(order, func(i, j int) bool {
+		degI := len(sm.query.Vertices[order[i]].Edges)
+		degJ := len(sm.query.Vertices[order[j]].Edges)
+		if degI != degJ {
+			return degI > degJ
+		}
+		numI := sm.query.Atoms[order[i]].Number
+		numJ := sm.query.Atoms[order[j]].Number
+		if numI != numJ {
+			return numI > numJ
+		}
+		return order[i] < order[j]
+	})
+	return order
+}
+
+func (sm *SubstructureMatcher) enumerateMatches(depth int, order []int, mapping []int, used []bool, seen map[string]bool, results *[]*MatchResult) {
+	if depth == len(order) {
+		bondMapping := sm.buildBondMapping(mapping)
+		key := matchKey(mapping, bondMapping)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		*results = append(*results, &MatchResult{
+			AtomMapping: append([]int(nil), mapping...),
+			BondMapping: bondMapping,
+		})
+		return
 	}
 
-	// Mark this mapping
-	mapping[queryIdx] = targetIdx
-	used[targetIdx] = true
+	queryIdx := order[depth]
+	for targetIdx := 0; targetIdx < sm.target.AtomCount(); targetIdx++ {
+		if used[targetIdx] || !sm.atomsMatch(queryIdx, targetIdx) {
+			continue
+		}
+		if !sm.hasRequiredConnections(queryIdx, targetIdx, mapping) {
+			continue
+		}
 
-	// If we've mapped all query atoms, we have a complete match
-	if queryIdx == sm.query.AtomCount()-1 {
+		mapping[queryIdx] = targetIdx
+		used[targetIdx] = true
+		sm.enumerateMatches(depth+1, order, mapping, used, seen, results)
+		used[targetIdx] = false
+		mapping[queryIdx] = -1
+	}
+}
+
+func (sm *SubstructureMatcher) findFirstMatch(depth int, order []int, mapping []int, used []bool) bool {
+	if depth == len(order) {
 		return true
 	}
 
-	// Try to match the next query atom
-	nextQueryIdx := queryIdx + 1
-
-	// Get neighbors of current query atom that need to be matched
-	queryNeighbors := sm.query.GetNeighbors(queryIdx)
-
-	// For each unmapped neighbor of current query atom
-	for _, qNeighbor := range queryNeighbors {
-		if mapping[qNeighbor] == -1 {
-			// This neighbor needs to be matched
-			// Try each unused target atom
-			for targetNeighbor := 0; targetNeighbor < sm.target.AtomCount(); targetNeighbor++ {
-				if !used[targetNeighbor] {
-					// Check if there should be a bond between them
-					if sm.shouldHaveBond(queryIdx, qNeighbor, targetIdx, targetNeighbor, mapping) {
-						if sm.recursiveMatch(qNeighbor, targetNeighbor, mapping, used) {
-							return true
-						}
-					}
-				}
-			}
-
-			// If we couldn't match this neighbor, backtrack
-			mapping[queryIdx] = -1
-			used[targetIdx] = false
-			return false
+	queryIdx := order[depth]
+	for targetIdx := 0; targetIdx < sm.target.AtomCount(); targetIdx++ {
+		if used[targetIdx] || !sm.atomsMatch(queryIdx, targetIdx) {
+			continue
 		}
-	}
-
-	// All neighbors are already mapped, continue with next unmapped atom
-	for nextQueryIdx < sm.query.AtomCount() && mapping[nextQueryIdx] != -1 {
-		nextQueryIdx++
-	}
-
-	if nextQueryIdx >= sm.query.AtomCount() {
-		return true // All atoms matched
-	}
-
-	// Try to match next unmapped query atom with any unused target atom
-	for targetNext := 0; targetNext < sm.target.AtomCount(); targetNext++ {
-		if !used[targetNext] {
-			// Check connectivity constraints
-			if sm.hasRequiredConnections(nextQueryIdx, targetNext, mapping) {
-				if sm.recursiveMatch(nextQueryIdx, targetNext, mapping, used) {
-					return true
-				}
-			}
+		if !sm.hasRequiredConnections(queryIdx, targetIdx, mapping) {
+			continue
 		}
-	}
 
-	// Backtrack
-	mapping[queryIdx] = -1
-	used[targetIdx] = false
+		mapping[queryIdx] = targetIdx
+		used[targetIdx] = true
+		if sm.findFirstMatch(depth+1, order, mapping, used) {
+			return true
+		}
+		used[targetIdx] = false
+		mapping[queryIdx] = -1
+	}
 	return false
+}
+
+func matchKey(atomMapping, bondMapping []int) string {
+	atoms := append([]int(nil), atomMapping...)
+	bonds := append([]int(nil), bondMapping...)
+	sort.Ints(atoms)
+	sort.Ints(bonds)
+	return fmt.Sprintf("a:%v|b:%v", atoms, bonds)
 }
 
 // atomsMatch checks if two atoms are compatible
@@ -201,11 +207,22 @@ func (sm *SubstructureMatcher) shouldHaveBond(qIdx1, qIdx2, tIdx1, tIdx2 int, ma
 		return false
 	}
 
-	// Bond orders must match
-	qOrder := sm.query.GetBondOrder(qBond)
-	tOrder := sm.target.GetBondOrder(tBond)
+	return bondsMatch(sm.query.GetBondOrder(qBond), sm.target.GetBondOrder(tBond))
+}
 
-	return qOrder == tOrder
+func bondsMatch(queryOrder, targetOrder int) bool {
+	switch queryOrder {
+	case BOND_ANY:
+		return targetOrder != BOND_ZERO && targetOrder != -1
+	case BOND_SINGLE_OR_DOUBLE:
+		return targetOrder == BOND_SINGLE || targetOrder == BOND_DOUBLE
+	case BOND_SINGLE_OR_AROMATIC:
+		return targetOrder == BOND_SINGLE || targetOrder == BOND_AROMATIC
+	case BOND_DOUBLE_OR_AROMATIC:
+		return targetOrder == BOND_DOUBLE || targetOrder == BOND_AROMATIC
+	default:
+		return queryOrder == targetOrder
+	}
 }
 
 // hasRequiredConnections checks if mapped neighbors have correct connections
@@ -221,17 +238,12 @@ func (sm *SubstructureMatcher) hasRequiredConnections(queryIdx, targetIdx int, m
 			qBond := sm.query.FindBond(queryIdx, qNeighbor)
 			tBond := sm.target.FindBond(targetIdx, tNeighbor)
 
-			if qBond == -1 && tBond != -1 {
-				return false // Query has no bond but target does
-			}
-
 			if qBond != -1 {
 				if tBond == -1 {
 					return false // Query has bond but target doesn't
 				}
 
-				// Check bond orders match
-				if sm.query.GetBondOrder(qBond) != sm.target.GetBondOrder(tBond) {
+				if !bondsMatch(sm.query.GetBondOrder(qBond), sm.target.GetBondOrder(tBond)) {
 					return false
 				}
 			}
@@ -337,40 +349,163 @@ func NewMaxCommonSubstructure(mol1, mol2 *Molecule) *MaxCommonSubstructure {
 	}
 }
 
-// Find finds the maximum common substructure (simplified implementation)
+// Find finds a maximum common edge-preserving substructure.
 func (mcs *MaxCommonSubstructure) Find() *Molecule {
-	// This is a simplified placeholder implementation
-	// A full MCS algorithm is quite complex (typically using backtracking or clique detection)
-
-	maxSize := 0
-
-	// Try substructures of mol1 in mol2
-	for size := min(mcs.mol1.AtomCount(), mcs.mol2.AtomCount()); size > 0; size-- {
-		// Generate substructures of mol1 with 'size' atoms
-		// Check if any match in mol2
-		// This is simplified - a real implementation would be more sophisticated
-
-		if size > maxSize {
-			maxSize = size
-			break
-		}
+	if mcs == nil || mcs.mol1 == nil || mcs.mol2 == nil {
+		return NewMolecule()
 	}
-
-	// Build MCS molecule from best mapping
-	if maxSize == 0 {
+	if mcs.mol1.AtomCount() == 0 || mcs.mol2.AtomCount() == 0 {
 		return NewMolecule()
 	}
 
-	// Return empty molecule for now (placeholder)
-	// A full implementation would build the actual MCS from the mapping
-	return NewMolecule()
+	small := mcs.mol1
+	large := mcs.mol2
+	if mcs.mol2.AtomCount() < mcs.mol1.AtomCount() {
+		small = mcs.mol2
+		large = mcs.mol1
+	}
+
+	order := make([]int, small.AtomCount())
+	for i := range order {
+		order[i] = i
+	}
+	sort.Slice(order, func(i, j int) bool {
+		degI := len(small.Vertices[order[i]].Edges)
+		degJ := len(small.Vertices[order[j]].Edges)
+		if degI != degJ {
+			return degI > degJ
+		}
+		return order[i] < order[j]
+	})
+
+	current := make([]int, small.AtomCount())
+	best := make([]int, small.AtomCount())
+	for i := range current {
+		current[i] = -1
+		best[i] = -1
+	}
+	used := make([]bool, large.AtomCount())
+	bestAtoms := 0
+	bestBonds := 0
+
+	var search func(depth, mappedAtoms int)
+	search = func(depth, mappedAtoms int) {
+		if mappedAtoms+(len(order)-depth) < bestAtoms {
+			return
+		}
+		if depth == len(order) {
+			bonds := countMappedBonds(small, large, current)
+			if mappedAtoms > bestAtoms || (mappedAtoms == bestAtoms && bonds > bestBonds) {
+				bestAtoms = mappedAtoms
+				bestBonds = bonds
+				copy(best, current)
+			}
+			return
+		}
+
+		atomIdx := order[depth]
+		for targetIdx := 0; targetIdx < large.AtomCount(); targetIdx++ {
+			if used[targetIdx] || !mcsAtomsCompatible(small, atomIdx, large, targetIdx) {
+				continue
+			}
+			if !mcsConnectionsCompatible(small, large, atomIdx, targetIdx, current) {
+				continue
+			}
+
+			current[atomIdx] = targetIdx
+			used[targetIdx] = true
+			search(depth+1, mappedAtoms+1)
+			used[targetIdx] = false
+			current[atomIdx] = -1
+		}
+
+		// MCS may require skipping atoms from the smaller input.
+		search(depth+1, mappedAtoms)
+	}
+
+	search(0, 0)
+	if bestAtoms == 0 {
+		return NewMolecule()
+	}
+
+	return buildMappedSubstructure(small, large, best)
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
+func mcsAtomsCompatible(mol1 *Molecule, atom1 int, mol2 *Molecule, atom2 int) bool {
+	a1 := mol1.Atoms[atom1]
+	a2 := mol2.Atoms[atom2]
+	return a1.Number == a2.Number &&
+		a1.Charge == a2.Charge &&
+		a1.Isotope == a2.Isotope &&
+		a1.Radical == a2.Radical
+}
+
+func mcsConnectionsCompatible(small, large *Molecule, atomIdx, targetIdx int, mapping []int) bool {
+	for _, neighbor := range small.GetNeighbors(atomIdx) {
+		mappedNeighbor := mapping[neighbor]
+		if mappedNeighbor == -1 {
+			continue
+		}
+
+		smallBond := small.FindBond(atomIdx, neighbor)
+		largeBond := large.FindBond(targetIdx, mappedNeighbor)
+		if smallBond == -1 {
+			continue
+		}
+		if largeBond == -1 {
+			return false
+		}
+		if !bondsMatch(small.GetBondOrder(smallBond), large.GetBondOrder(largeBond)) {
+			return false
+		}
 	}
-	return b
+	return true
+}
+
+func countMappedBonds(small, large *Molecule, mapping []int) int {
+	count := 0
+	for _, bond := range small.Bonds {
+		tBeg := mapping[bond.Beg]
+		tEnd := mapping[bond.End]
+		if tBeg == -1 || tEnd == -1 {
+			continue
+		}
+		targetBond := large.FindBond(tBeg, tEnd)
+		if targetBond != -1 && bondsMatch(bond.Order, large.GetBondOrder(targetBond)) {
+			count++
+		}
+	}
+	return count
+}
+
+func buildMappedSubstructure(small, large *Molecule, mapping []int) *Molecule {
+	result := NewMolecule()
+	atomMap := make(map[int]int)
+
+	for smallIdx, largeIdx := range mapping {
+		if largeIdx == -1 {
+			continue
+		}
+		newIdx := result.AddAtom(small.Atoms[smallIdx].Number)
+		result.Atoms[newIdx] = small.Atoms[smallIdx]
+		atomMap[smallIdx] = newIdx
+	}
+
+	for _, bond := range small.Bonds {
+		newBeg, okBeg := atomMap[bond.Beg]
+		newEnd, okEnd := atomMap[bond.End]
+		if !okBeg || !okEnd {
+			continue
+		}
+		targetBond := large.FindBond(mapping[bond.Beg], mapping[bond.End])
+		if targetBond == -1 || !bondsMatch(bond.Order, large.GetBondOrder(targetBond)) {
+			continue
+		}
+		newBond := result.AddBond(newBeg, newEnd, bond.Order)
+		result.Bonds[newBond].Direction = bond.Direction
+	}
+
+	return result
 }
 
 // Convenience functions

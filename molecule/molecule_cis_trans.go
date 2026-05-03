@@ -32,6 +32,22 @@ func NewMoleculeCisTrans() *MoleculeCisTrans {
 	}
 }
 
+// Clone creates a deep copy of the cis/trans collection
+func (mct *MoleculeCisTrans) Clone() *MoleculeCisTrans {
+	clone := NewMoleculeCisTrans()
+	if mct == nil {
+		return clone
+	}
+	for bondIdx, ct := range mct.bonds {
+		if ct == nil {
+			continue
+		}
+		copied := *ct
+		clone.bonds[bondIdx] = &copied
+	}
+	return clone
+}
+
 // Clear removes all cis/trans information
 func (mct *MoleculeCisTrans) Clear() {
 	mct.bonds = make(map[int]*CisTrans)

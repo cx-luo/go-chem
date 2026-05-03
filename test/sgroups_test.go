@@ -186,6 +186,29 @@ func TestMoleculeSGroups(t *testing.T) {
 	t.Logf("Added S-Groups at indices: %d, %d, %d", idx1, idx2, idx3)
 }
 
+func TestMoleculeAddSuperatomAttachesSGroup(t *testing.T) {
+	mol := molecule.NewMolecule()
+	c1 := mol.AddAtom(molecule.ELEM_C)
+	c2 := mol.AddAtom(molecule.ELEM_C)
+	mol.AddBond(c1, c2, molecule.BOND_SINGLE)
+
+	sa := mol.AddSuperatom("Et", []int{c1, c2})
+	if sa.Index != 0 {
+		t.Errorf("superatom index should be 0, got %d", sa.Index)
+	}
+	if mol.SGroups == nil || mol.SGroups.Count() != 1 {
+		t.Fatal("molecule should own the added superatom S-Group")
+	}
+
+	retrieved, err := mol.SGroups.Get(0)
+	if err != nil {
+		t.Fatalf("error retrieving attached superatom: %v", err)
+	}
+	if retrieved != sa {
+		t.Error("retrieved superatom should be the one added to the molecule")
+	}
+}
+
 // TestSGroupsGetByType tests getting S-Groups by type
 func TestSGroupsGetByType(t *testing.T) {
 	sgroups := molecule.NewMoleculeSGroups()

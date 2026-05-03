@@ -37,6 +37,22 @@ func NewMoleculeStereocenters() *MoleculeStereocenters {
 	}
 }
 
+// Clone creates a deep copy of the stereocenter collection
+func (ms *MoleculeStereocenters) Clone() *MoleculeStereocenters {
+	clone := NewMoleculeStereocenters()
+	if ms == nil {
+		return clone
+	}
+	for atomIdx, center := range ms.centers {
+		if center == nil {
+			continue
+		}
+		copied := *center
+		clone.centers[atomIdx] = &copied
+	}
+	return clone
+}
+
 // Clear removes all stereocenters
 func (ms *MoleculeStereocenters) Clear() {
 	ms.centers = make(map[int]*Stereocenter)

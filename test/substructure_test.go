@@ -176,6 +176,51 @@ func TestSubstructureConvenienceFunctions(t *testing.T) {
 	t.Logf("Found %d matches using convenience function", len(matches))
 }
 
+func TestSubstructureFindAllUniqueBondMatches(t *testing.T) {
+	query := molecule.NewMolecule()
+	q1 := query.AddAtom(molecule.ELEM_C)
+	q2 := query.AddAtom(molecule.ELEM_C)
+	query.AddBond(q1, q2, molecule.BOND_SINGLE)
+
+	target := molecule.NewMolecule()
+	for i := 0; i < 3; i++ {
+		target.AddAtom(molecule.ELEM_C)
+	}
+	target.AddBond(0, 1, molecule.BOND_SINGLE)
+	target.AddBond(1, 2, molecule.BOND_SINGLE)
+
+	matches := molecule.FindSubstructureMatches(query, target)
+	if len(matches) != 2 {
+		t.Fatalf("C-C should match the two unique bonds in propane, got %d", len(matches))
+	}
+}
+
+func TestMaxCommonSubstructureFind(t *testing.T) {
+	mol1 := molecule.NewMolecule()
+	c1 := mol1.AddAtom(molecule.ELEM_C)
+	c2 := mol1.AddAtom(molecule.ELEM_C)
+	o1 := mol1.AddAtom(molecule.ELEM_O)
+	mol1.AddBond(c1, c2, molecule.BOND_SINGLE)
+	mol1.AddBond(c2, o1, molecule.BOND_SINGLE)
+
+	mol2 := molecule.NewMolecule()
+	n2 := mol2.AddAtom(molecule.ELEM_N)
+	c3 := mol2.AddAtom(molecule.ELEM_C)
+	c4 := mol2.AddAtom(molecule.ELEM_C)
+	o2 := mol2.AddAtom(molecule.ELEM_O)
+	mol2.AddBond(n2, c3, molecule.BOND_SINGLE)
+	mol2.AddBond(c3, c4, molecule.BOND_SINGLE)
+	mol2.AddBond(c4, o2, molecule.BOND_SINGLE)
+
+	mcs := molecule.NewMaxCommonSubstructure(mol1, mol2).Find()
+	if mcs.AtomCount() != 3 {
+		t.Fatalf("MCS should contain C-C-O atoms, got %d atoms", mcs.AtomCount())
+	}
+	if mcs.BondCount() != 2 {
+		t.Fatalf("MCS should contain two bonds, got %d", mcs.BondCount())
+	}
+}
+
 // TestSubstructureDifferentAtomTypes tests matching with different atom types
 func TestSubstructureDifferentAtomTypes(t *testing.T) {
 	// Query: C-O
