@@ -63,3 +63,17 @@ func bondOrder(mol *molecule.Molecule, bondIdx int) int {
 	}
 	return mol.Bonds[bondIdx].Order
 }
+
+func atomClearance(mol *molecule.Molecule, atomIdx int, opt Options) float64 {
+	label := atomLabel(mol, atomIdx, opt)
+	if label == "" {
+		return 0
+	}
+	return opt.FontSize*0.45 + opt.LabelPadding
+}
+
+func labelBox(label string, center Point, opt Options) (x, y, w, h float64) {
+	width := float64(len(label))*opt.FontSize*0.62 + 2*opt.LabelPadding
+	height := opt.FontSize + 2*opt.LabelPadding
+	return center.X - width/2, center.Y - height/2, width, height
+}

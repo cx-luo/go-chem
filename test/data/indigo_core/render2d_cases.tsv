@@ -1,0 +1,6 @@
+# Go render2d smoke cases inspired by Indigo core/render2d molecule rendering.
+# expected_svg_tokens is pipe-separated.
+# name	smiles	width	height	expected_svg_tokens
+ethanol	CCO	200	120	<svg|>O</text>|#000000
+benzene	c1ccccc1	220	160	<svg|#000000
+phenol	c1ccccc1O	220	160	>O</text>|#000000

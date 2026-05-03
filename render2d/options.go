@@ -22,8 +22,10 @@ type Options struct {
 	AtomOutlineColor  string
 
 	BondLineWidth float64
+	BondSpacing   float64
 	AtomRadius    float64
 	FontSize      float64
+	LabelPadding  float64
 
 	ShowCarbonLabels         bool
 	ShowTerminalCarbonLabels bool
@@ -37,12 +39,14 @@ func DefaultOptions() Options {
 		Height:                   300,
 		Margin:                   24,
 		BackgroundColor:          "#FFFFFF",
-		BondColor:                "#333333",
-		AromaticBondColor:        "#AA7733",
-		AtomOutlineColor:         "#222222",
-		BondLineWidth:            2,
-		AtomRadius:               6,
-		FontSize:                 14,
+		BondColor:                "#000000",
+		AromaticBondColor:        "#000000",
+		AtomOutlineColor:         "#000000",
+		BondLineWidth:            1.4,
+		BondSpacing:              3.6,
+		AtomRadius:               7,
+		FontSize:                 15,
+		LabelPadding:             2.5,
 		ShowCarbonLabels:         false,
 		ShowTerminalCarbonLabels: false,
 		UseAtomColors:            true,
@@ -77,11 +81,17 @@ func normalizeOptions(options []Options) Options {
 		if user.BondLineWidth != 0 {
 			opt.BondLineWidth = user.BondLineWidth
 		}
+		if user.BondSpacing != 0 {
+			opt.BondSpacing = user.BondSpacing
+		}
 		if user.AtomRadius != 0 {
 			opt.AtomRadius = user.AtomRadius
 		}
 		if user.FontSize != 0 {
 			opt.FontSize = user.FontSize
+		}
+		if user.LabelPadding != 0 {
+			opt.LabelPadding = user.LabelPadding
 		}
 		opt.ShowCarbonLabels = user.ShowCarbonLabels
 		opt.ShowTerminalCarbonLabels = user.ShowTerminalCarbonLabels

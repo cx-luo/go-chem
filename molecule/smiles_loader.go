@@ -73,10 +73,8 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 		}
 
 		ch := rune(s[i])
-		// aromatic lower-case atoms (c, n, o, s, p per SMILES specification)
-		// Note: 'b' is not a valid aromatic atom in standard SMILES
-		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
-			return string(ch), i + 1, true, 0, 0, 0, false, nil
+		if ch == '*' {
+			return "*", i + 1, false, 0, 0, 0, false, nil
 		}
 		// Two-character aromatic atoms: as, se
 		if i+1 < len(s) {
@@ -85,14 +83,21 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 				return twoChar, i + 2, true, 0, 0, 0, false, nil
 			}
 		}
-		// uppercase + optional lowercase (Cl, Br)
+		// aromatic lower-case atoms (c, n, o, s, p per SMILES specification)
+		// Note: 'b' is not a valid aromatic atom in standard SMILES
+		if ch == 'c' || ch == 'n' || ch == 'o' || ch == 's' || ch == 'p' {
+			return string(ch), i + 1, true, 0, 0, 0, false, nil
+		}
+		// uppercase + optional lowercase for real two-letter element symbols.
 		if unicode.IsUpper(ch) {
 			sym = string(ch)
 			if i+1 < len(s) {
 				ch2 := rune(s[i+1])
 				if unicode.IsLower(ch2) {
-					sym += string(ch2)
-					return sym, i + 2, false, 0, 0, 0, false, nil
+					twoChar := sym + string(ch2)
+					if _, err := ElementFromString(twoChar); err == nil {
+						return twoChar, i + 2, false, 0, 0, 0, false, nil
+					}
 				}
 			}
 			return sym, i + 1, false, 0, 0, 0, false, nil
@@ -101,6 +106,9 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 	}
 
 	elemToNum := func(sym string, aromatic bool) (int, error) {
+		if sym == "*" {
+			return ELEM_PSEUDO, nil
+		}
 		if aromatic {
 			switch sym {
 			case "c":
@@ -138,6 +146,8 @@ func (loader SmilesLoader) Parse(s string) (*Molecule, error) {
 			return BOND_DOUBLE, true
 		case '#':
 			return BOND_TRIPLE, true
+		case ':':
+			return BOND_AROMATIC, true
 		default:
 			return 0, false
 		}
@@ -406,12 +416,20 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	}
 
 	ch := rune(s[i])
-	if unicode.IsUpper(ch) {
+	if ch == '*' {
+		sym = "*"
+		i++
+	} else if i+1 < len(s) && (s[i:i+2] == "as" || s[i:i+2] == "se") {
+		sym = s[i : i+2]
+		aromatic = true
+		i += 2
+	} else if unicode.IsUpper(ch) {
 		sym = string(ch)
-		if i+1 < len(s) && s[i+1] != '@' && s[i+1] != 'H' && s[i+1] != '+' && s[i+1] != '-' && s[i+1] != ']' {
+		if i+1 < len(s) && unicode.IsLower(rune(s[i+1])) {
 			ch2 := rune(s[i+1])
-			if unicode.IsLower(ch2) {
-				sym += string(ch2)
+			twoChar := sym + string(ch2)
+			if _, err := ElementFromString(twoChar); err == nil {
+				sym = twoChar
 				i++
 			}
 		}
@@ -420,10 +438,6 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 		sym = string(ch)
 		aromatic = true
 		i++
-	} else if i+1 < len(s) && (s[i:i+2] == "as" || s[i:i+2] == "se") {
-		sym = s[i : i+2]
-		aromatic = true
-		i += 2
 	} else if ch == 'H' {
 		// Explicit hydrogen - allowed in brackets like [H] or [2H]
 		sym = "H"
@@ -432,10 +446,15 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 		return "", i, false, 0, 0, 0, fmt.Errorf("invalid element in bracketed atom at %d", i)
 	}
 
-	// Parse stereochemistry (@, @@) - must come before H count
-	// In SMILES, stereochemistry comes as @, @@, or @H, @@H, etc.
-	for i < len(s) && s[i] == '@' {
+	// Parse stereochemistry (@, @@, @TH1, @AL2, etc.) before H count.
+	if i < len(s) && s[i] == '@' {
 		i++
+		if i < len(s) && s[i] == '@' {
+			i++
+		}
+		for i < len(s) && s[i] != 'H' && s[i] != '+' && s[i] != '-' && s[i] != ':' && s[i] != ']' {
+			i++
+		}
 	}
 
 	// Parse explicit H count (like NH3+, CH2, [HH], etc.)
@@ -460,50 +479,35 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	}
 
 	// Parse charge
-	if i < len(s) {
-		if s[i] == '+' {
-			charge = 1
-			i++
-			// Check for multiple + or number
-			if i < len(s) && s[i] == '+' {
-				charge = 2
+	if i < len(s) && (s[i] == '+' || s[i] == '-') {
+		signChar := s[i]
+		sign := 1
+		if signChar == '-' {
+			sign = -1
+		}
+		i++
+		if i < len(s) && unicode.IsDigit(rune(s[i])) {
+			numStart := i
+			for i < len(s) && unicode.IsDigit(rune(s[i])) {
 				i++
-			} else if i < len(s) && unicode.IsDigit(rune(s[i])) {
-				// Parse number after +
-				numStart := i
-				for i < len(s) && unicode.IsDigit(rune(s[i])) {
-					i++
-				}
-				if i > numStart {
-					chargeStr := s[numStart:i]
-					charge = 0
-					for _, c := range chargeStr {
-						charge = charge*10 + int(c-'0')
-					}
-				}
 			}
-		} else if s[i] == '-' {
-			charge = -1
-			i++
-			// Check for multiple - or number
-			if i < len(s) && s[i] == '-' {
-				charge = -2
+			charge = sign * atoiASCII(s[numStart:i])
+		} else {
+			count := 1
+			for i < len(s) && s[i] == signChar {
+				count++
 				i++
-			} else if i < len(s) && unicode.IsDigit(rune(s[i])) {
-				// Parse number after -
-				numStart := i
-				for i < len(s) && unicode.IsDigit(rune(s[i])) {
-					i++
-				}
-				if i > numStart {
-					chargeStr := s[numStart:i]
-					charge = 0
-					for _, c := range chargeStr {
-						charge = charge*10 + int(c-'0')
-					}
-					charge = -charge
-				}
 			}
+			charge = sign * count
+		}
+	}
+
+	// Skip atom class / mapping, e.g. [C:12]. The current Molecule model does
+	// not expose atom maps, but PubChem-like mapped SMILES should still parse.
+	if i < len(s) && s[i] == ':' {
+		i++
+		for i < len(s) && unicode.IsDigit(rune(s[i])) {
+			i++
 		}
 	}
 
@@ -513,6 +517,17 @@ func readBracketedAtom(s string, start int) (sym string, next int, aromatic bool
 	}
 
 	return sym, i + 1, aromatic, isotope, charge, explicitH, nil
+}
+
+func atoiASCII(s string) int {
+	n := 0
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			break
+		}
+		n = n*10 + int(c-'0')
+	}
+	return n
 }
 
 // isAromaticElement checks if an element number can be aromatic

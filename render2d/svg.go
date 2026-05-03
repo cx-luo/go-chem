@@ -61,6 +61,11 @@ func DrawSVG(w io.Writer, mol *molecule.Molecule, options ...Options) error {
 		}
 		p := points[i]
 		color := atomColor(mol, i, opt)
+		x, y, width, height := labelBox(label, p, opt)
+		if _, err := fmt.Fprintf(w, "  <rect x=\"%s\" y=\"%s\" width=\"%s\" height=\"%s\" rx=\"%s\" ry=\"%s\" fill=\"%s\"/>\n",
+			fmtFloat(x), fmtFloat(y), fmtFloat(width), fmtFloat(height), fmtFloat(opt.LabelPadding), fmtFloat(opt.LabelPadding), opt.BackgroundColor); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintf(w, "  <text x=\"%s\" y=\"%s\" fill=\"%s\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"%s\" font-weight=\"600\" text-anchor=\"middle\" dominant-baseline=\"central\">%s</text>\n",
 			fmtFloat(p.X), fmtFloat(p.Y), color, fmtFloat(opt.FontSize), svgEscape(label)); err != nil {
 			return err
@@ -74,7 +79,7 @@ func DrawSVG(w io.Writer, mol *molecule.Molecule, options ...Options) error {
 func drawSVGBond(w io.Writer, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options) error {
 	bond := mol.Bonds[bondIdx]
 	order := bondOrder(mol, bondIdx)
-	a, b = shorten(a, b, opt.AtomRadius*0.6)
+	a, b = shortenAsymmetric(a, b, atomClearance(mol, bond.Beg, opt), atomClearance(mol, bond.End, opt))
 
 	if bond.Direction == molecule.BOND_UP {
 		return drawSVGSolidWedge(w, a, b, opt)
@@ -92,7 +97,7 @@ func drawSVGBond(w io.Writer, mol *molecule.Molecule, bondIdx int, a, b Point, o
 	case molecule.BOND_TRIPLE:
 		return drawSVGParallelLines(w, a, b, opt, 3, opt.BondColor, "")
 	case molecule.BOND_AROMATIC:
-		return drawSVGParallelLines(w, a, b, opt, 1, opt.AromaticBondColor, " stroke-dasharray=\"4 3\"")
+		return drawSVGLine(w, a, b, opt.AromaticBondColor, opt.BondLineWidth, "")
 	default:
 		return drawSVGLine(w, a, b, opt.BondColor, opt.BondLineWidth, "")
 	}
@@ -103,7 +108,7 @@ func drawSVGParallelLines(w io.Writer, a, b Point, opt Options, count int, color
 		return drawSVGLine(w, a, b, color, opt.BondLineWidth, extra)
 	}
 	nx, ny := unitNormal(a, b)
-	spacing := opt.BondLineWidth * 2.2
+	spacing := opt.BondSpacing
 	for i := 0; i < count; i++ {
 		offset := (float64(i) - float64(count-1)/2) * spacing
 		pa := Point{X: a.X + nx*offset, Y: a.Y + ny*offset}
@@ -123,7 +128,7 @@ func drawSVGLine(w io.Writer, a, b Point, color string, width float64, extra str
 
 func drawSVGSolidWedge(w io.Writer, a, b Point, opt Options) error {
 	nx, ny := unitNormal(a, b)
-	halfWidth := opt.BondLineWidth * 3
+	halfWidth := opt.BondLineWidth * 3.2
 	p1 := Point{X: b.X + nx*halfWidth, Y: b.Y + ny*halfWidth}
 	p2 := Point{X: b.X - nx*halfWidth, Y: b.Y - ny*halfWidth}
 	_, err := fmt.Fprintf(w, "  <polygon points=\"%s,%s %s,%s %s,%s\" fill=\"%s\"/>\n",
@@ -132,12 +137,12 @@ func drawSVGSolidWedge(w io.Writer, a, b Point, opt Options) error {
 }
 
 func drawSVGDashedWedge(w io.Writer, a, b Point, opt Options) error {
-	steps := 7
+	steps := 8
 	nx, ny := unitNormal(a, b)
 	for i := 1; i <= steps; i++ {
 		t := float64(i) / float64(steps)
 		c := Point{X: a.X + (b.X-a.X)*t, Y: a.Y + (b.Y-a.Y)*t}
-		halfWidth := opt.BondLineWidth * 3 * t
+		halfWidth := opt.BondLineWidth * 3.2 * t
 		p1 := Point{X: c.X + nx*halfWidth, Y: c.Y + ny*halfWidth}
 		p2 := Point{X: c.X - nx*halfWidth, Y: c.Y - ny*halfWidth}
 		if err := drawSVGLine(w, p1, p2, opt.BondColor, opt.BondLineWidth*0.8, ""); err != nil {

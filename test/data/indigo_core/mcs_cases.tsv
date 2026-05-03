@@ -1,0 +1,6 @@
+# Cases adapted from Indigo core mcs.cpp.
+# name	query_smiles	target_smiles	min_atoms	min_bonds
+one_atom	C	CCO	1	0
+two_atom_chain	CCO	CCC	2	1
+chain_overlap	CCO	NCCO	3	2
+aromatic_ring	c1ccccc1	c1ccccc1O	6	6

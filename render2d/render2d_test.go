@@ -3,6 +3,7 @@ package render2d
 import (
 	"bytes"
 	"image/png"
+	"math"
 	"strings"
 	"testing"
 
@@ -67,17 +68,82 @@ func TestDrawPNG(t *testing.T) {
 	}
 }
 
-func TestLayoutFallsBackForMissingCoordinates(t *testing.T) {
+func TestLayoutGeneratesChainForMissingCoordinates(t *testing.T) {
 	mol := molecule.NewMolecule()
 	for i := 0; i < 3; i++ {
 		mol.AddAtom(molecule.ELEM_C)
 	}
+	mol.AddBond(0, 1, molecule.BOND_SINGLE)
+	mol.AddBond(1, 2, molecule.BOND_SINGLE)
 
 	points := Layout(mol, Options{Width: 120, Height: 120})
 	if len(points) != 3 {
 		t.Fatalf("expected 3 points, got %d", len(points))
 	}
 	if points[0] == points[1] {
-		t.Fatal("fallback layout should place atoms at distinct positions")
+		t.Fatal("generated layout should place atoms at distinct positions")
 	}
+	if math.Abs(points[0].X-points[2].X) < 20 {
+		t.Fatalf("chain layout should extend across the canvas, got points: %#v", points)
+	}
+}
+
+func TestLayoutPlacesRingSubstituentOutside(t *testing.T) {
+	mol, err := (molecule.SmilesLoader{}).Parse("c1ccccc1O")
+	if err != nil {
+		t.Fatalf("parse phenol: %v", err)
+	}
+
+	points := Layout(mol, Options{Width: 220, Height: 160})
+	if len(points) != 7 {
+		t.Fatalf("expected 7 points, got %d", len(points))
+	}
+
+	center := Point{}
+	for i := 0; i < 6; i++ {
+		center.X += points[i].X
+		center.Y += points[i].Y
+	}
+	center.X /= 6
+	center.Y /= 6
+
+	ringRadius := 0.0
+	for i := 0; i < 6; i++ {
+		ringRadius += distance(points[i], center)
+	}
+	ringRadius /= 6
+	substituentDistance := distance(points[6], center)
+	if substituentDistance <= ringRadius+10 {
+		t.Fatalf("phenol oxygen should be outside the benzene ring: ring %.2f oxygen %.2f points %#v", ringRadius, substituentDistance, points)
+	}
+}
+
+func TestLayoutSeparatesCarbonylBranches(t *testing.T) {
+	mol, err := (molecule.SmilesLoader{}).Parse("CC(=O)O")
+	if err != nil {
+		t.Fatalf("parse acetic acid: %v", err)
+	}
+
+	points := Layout(mol, Options{Width: 180, Height: 140})
+	if len(points) != 4 {
+		t.Fatalf("expected 4 points, got %d", len(points))
+	}
+
+	oDistance := distance(points[2], points[3])
+	if oDistance < 35 {
+		t.Fatalf("carbonyl and hydroxyl oxygens should be visually separated, got %.2f points %#v", oDistance, points)
+	}
+
+	v1x := points[2].X - points[1].X
+	v1y := points[2].Y - points[1].Y
+	v2x := points[3].X - points[1].X
+	v2y := points[3].Y - points[1].Y
+	cosine := (v1x*v2x + v1y*v2y) / (math.Hypot(v1x, v1y) * math.Hypot(v2x, v2y))
+	if cosine > 0.2 {
+		t.Fatalf("carbonyl branches should not point in the same direction, cosine %.2f points %#v", cosine, points)
+	}
+}
+
+func distance(a, b Point) float64 {
+	return math.Hypot(a.X-b.X, a.Y-b.Y)
 }

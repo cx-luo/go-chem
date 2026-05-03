@@ -1,0 +1,8 @@
+# Small substructure cases in the same spirit as Indigo core smarts.cpp,
+# limited to molecule-vs-molecule matching supported by this Go implementation.
+# name	query_smiles	target_smiles	expected_unique_matches
+single_carbon	C	CCO	2
+carbon_carbon_bond	CC	CCC	2
+carbon_oxygen_bond	CO	CCOC	2
+double_bond	C=C	C=CC	1
+benzene_in_phenol	c1ccccc1	c1ccccc1O	1

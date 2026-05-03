@@ -11,6 +11,10 @@ import (
 	"os"
 
 	"github.com/cx-luo/go-chem/molecule"
+	"github.com/fogleman/gg"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/font/opentype"
 )
 
 // RenderImage renders a molecule into an RGBA image.
@@ -19,29 +23,150 @@ func RenderImage(mol *molecule.Molecule, options ...Options) (*image.RGBA, error
 		return nil, errNilMolecule()
 	}
 	opt := normalizeOptions(options)
-	img := image.NewRGBA(image.Rect(0, 0, opt.Width, opt.Height))
-	draw.Draw(img, img.Bounds(), &image.Uniform{C: parseHexColor(opt.BackgroundColor)}, image.Point{}, draw.Src)
+	dc := gg.NewContext(opt.Width, opt.Height)
+	dc.SetHexColor(opt.BackgroundColor)
+	dc.Clear()
+	if face, err := goFontFace(opt.FontSize); err == nil {
+		dc.SetFontFace(face)
+	}
+
 	points := Layout(mol, opt)
 
 	for i, bond := range mol.Bonds {
 		if bond.Beg < 0 || bond.Beg >= len(points) || bond.End < 0 || bond.End >= len(points) {
 			continue
 		}
-		drawRasterBond(img, mol, i, points[bond.Beg], points[bond.End], opt)
+		drawGGBond(dc, mol, i, points[bond.Beg], points[bond.End], opt)
 	}
 
 	for i := range mol.Atoms {
 		label := atomLabel(mol, i, opt)
-		if label == "" && mol.Atoms[i].Number == molecule.ELEM_C {
+		if label == "" {
 			continue
 		}
 		p := points[i]
-		fill := parseHexColor(atomColor(mol, i, opt))
-		drawFilledCircle(img, int(math.Round(p.X)), int(math.Round(p.Y)), int(math.Round(opt.AtomRadius)), color.RGBA{R: 255, G: 255, B: 255, A: 255})
-		drawCircle(img, int(math.Round(p.X)), int(math.Round(p.Y)), int(math.Round(opt.AtomRadius)), fill)
+		x, y, w, h := labelBox(label, p, opt)
+		dc.SetHexColor(opt.BackgroundColor)
+		dc.DrawRoundedRectangle(x, y, w, h, opt.LabelPadding)
+		dc.Fill()
+
+		dc.SetHexColor(atomColor(mol, i, opt))
+		dc.DrawStringAnchored(label, p.X, p.Y, 0.5, 0.5)
 	}
 
+	img := image.NewRGBA(image.Rect(0, 0, opt.Width, opt.Height))
+	draw.Draw(img, img.Bounds(), dc.Image(), image.Point{}, draw.Src)
 	return img, nil
+}
+
+func goFontFace(size float64) (font.Face, error) {
+	ttf, err := opentype.Parse(goregular.TTF)
+	if err != nil {
+		return nil, err
+	}
+	return opentype.NewFace(ttf, &opentype.FaceOptions{
+		Size:    size,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+}
+
+func drawGGBond(dc *gg.Context, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options) {
+	bond := mol.Bonds[bondIdx]
+	order := bondOrder(mol, bondIdx)
+	a, b = shortenAsymmetric(a, b, atomClearance(mol, bond.Beg, opt), atomClearance(mol, bond.End, opt))
+
+	if bond.Direction == molecule.BOND_UP {
+		drawGGSolidWedge(dc, a, b, opt)
+		return
+	}
+	if bond.Direction == molecule.BOND_DOWN {
+		drawGGHashedWedge(dc, a, b, opt)
+		return
+	}
+	if bond.Direction == molecule.BOND_EITHER {
+		drawGGWavyBond(dc, a, b, opt)
+		return
+	}
+
+	switch order {
+	case molecule.BOND_DOUBLE:
+		drawGGParallelLines(dc, a, b, opt, 2, opt.BondColor)
+	case molecule.BOND_TRIPLE:
+		drawGGParallelLines(dc, a, b, opt, 3, opt.BondColor)
+	case molecule.BOND_AROMATIC:
+		drawGGLine(dc, a, b, opt.AromaticBondColor, opt.BondLineWidth)
+	default:
+		drawGGLine(dc, a, b, opt.BondColor, opt.BondLineWidth)
+	}
+}
+
+func drawGGParallelLines(dc *gg.Context, a, b Point, opt Options, count int, color string) {
+	if count <= 1 {
+		drawGGLine(dc, a, b, color, opt.BondLineWidth)
+		return
+	}
+	nx, ny := unitNormal(a, b)
+	for i := 0; i < count; i++ {
+		offset := (float64(i) - float64(count-1)/2) * opt.BondSpacing
+		pa := Point{X: a.X + nx*offset, Y: a.Y + ny*offset}
+		pb := Point{X: b.X + nx*offset, Y: b.Y + ny*offset}
+		drawGGLine(dc, pa, pb, color, opt.BondLineWidth)
+	}
+}
+
+func drawGGLine(dc *gg.Context, a, b Point, color string, width float64) {
+	dc.SetHexColor(color)
+	dc.SetLineWidth(width)
+	dc.DrawLine(a.X, a.Y, b.X, b.Y)
+	dc.Stroke()
+}
+
+func drawGGSolidWedge(dc *gg.Context, a, b Point, opt Options) {
+	nx, ny := unitNormal(a, b)
+	halfWidth := opt.BondLineWidth * 3.2
+	p1 := Point{X: b.X + nx*halfWidth, Y: b.Y + ny*halfWidth}
+	p2 := Point{X: b.X - nx*halfWidth, Y: b.Y - ny*halfWidth}
+
+	dc.SetHexColor(opt.BondColor)
+	dc.MoveTo(a.X, a.Y)
+	dc.LineTo(p1.X, p1.Y)
+	dc.LineTo(p2.X, p2.Y)
+	dc.ClosePath()
+	dc.Fill()
+}
+
+func drawGGHashedWedge(dc *gg.Context, a, b Point, opt Options) {
+	nx, ny := unitNormal(a, b)
+	for i := 1; i <= 8; i++ {
+		t := float64(i) / 8
+		c := Point{X: a.X + (b.X-a.X)*t, Y: a.Y + (b.Y-a.Y)*t}
+		halfWidth := opt.BondLineWidth * 3.2 * t
+		p1 := Point{X: c.X + nx*halfWidth, Y: c.Y + ny*halfWidth}
+		p2 := Point{X: c.X - nx*halfWidth, Y: c.Y - ny*halfWidth}
+		drawGGLine(dc, p1, p2, opt.BondColor, opt.BondLineWidth*0.8)
+	}
+}
+
+func drawGGWavyBond(dc *gg.Context, a, b Point, opt Options) {
+	const segments = 12
+	nx, ny := unitNormal(a, b)
+	amp := opt.BondLineWidth * 2.2
+
+	dc.SetHexColor(opt.BondColor)
+	dc.SetLineWidth(opt.BondLineWidth)
+	dc.MoveTo(a.X, a.Y)
+	for i := 1; i <= segments; i++ {
+		t := float64(i) / segments
+		sign := -1.0
+		if i%2 == 0 {
+			sign = 1
+		}
+		x := a.X + (b.X-a.X)*t + nx*amp*sign
+		y := a.Y + (b.Y-a.Y)*t + ny*amp*sign
+		dc.LineTo(x, y)
+	}
+	dc.Stroke()
 }
 
 // DrawPNG writes a PNG depiction to the writer.
@@ -88,7 +213,7 @@ func SaveJPEG(filename string, mol *molecule.Molecule, quality int, options ...O
 func drawRasterBond(img *image.RGBA, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options) {
 	bond := mol.Bonds[bondIdx]
 	order := bondOrder(mol, bondIdx)
-	a, b = shorten(a, b, opt.AtomRadius*0.6)
+	a, b = shortenAsymmetric(a, b, atomClearance(mol, bond.Beg, opt), atomClearance(mol, bond.End, opt))
 	col := parseHexColor(opt.BondColor)
 	width := int(math.Max(1, math.Round(opt.BondLineWidth)))
 
@@ -107,7 +232,7 @@ func drawRasterBond(img *image.RGBA, mol *molecule.Molecule, bondIdx int, a, b P
 	case molecule.BOND_TRIPLE:
 		drawParallelRasterLines(img, a, b, opt, 3, col)
 	case molecule.BOND_AROMATIC:
-		drawDashedRasterLine(img, a, b, parseHexColor(opt.AromaticBondColor), width)
+		drawRasterLine(img, a, b, parseHexColor(opt.AromaticBondColor), width)
 	default:
 		drawRasterLine(img, a, b, col, width)
 	}
@@ -115,7 +240,7 @@ func drawRasterBond(img *image.RGBA, mol *molecule.Molecule, bondIdx int, a, b P
 
 func drawParallelRasterLines(img *image.RGBA, a, b Point, opt Options, count int, col color.RGBA) {
 	nx, ny := unitNormal(a, b)
-	spacing := opt.BondLineWidth * 2.2
+	spacing := opt.BondSpacing
 	width := int(math.Max(1, math.Round(opt.BondLineWidth)))
 	for i := 0; i < count; i++ {
 		offset := (float64(i) - float64(count-1)/2) * spacing
@@ -185,6 +310,14 @@ func drawFilledCircle(img *image.RGBA, cx, cy, r int, col color.RGBA) {
 	drawDisk(img, cx, cy, r, col)
 }
 
+func drawFilledRect(img *image.RGBA, x, y, w, h int, col color.RGBA) {
+	for yy := y; yy < y+h; yy++ {
+		for xx := x; xx < x+w; xx++ {
+			setPixel(img, xx, yy, col)
+		}
+	}
+}
+
 func drawCircle(img *image.RGBA, cx, cy, r int, col color.RGBA) {
 	for y := -r; y <= r; y++ {
 		for x := -r; x <= r; x++ {
@@ -198,7 +331,7 @@ func drawCircle(img *image.RGBA, cx, cy, r int, col color.RGBA) {
 
 func drawFilledTriangle(img *image.RGBA, a, b Point, opt Options, col color.RGBA) {
 	nx, ny := unitNormal(a, b)
-	halfWidth := opt.BondLineWidth * 3
+	halfWidth := opt.BondLineWidth * 3.2
 	p1 := Point{X: b.X + nx*halfWidth, Y: b.Y + ny*halfWidth}
 	p2 := Point{X: b.X - nx*halfWidth, Y: b.Y - ny*halfWidth}
 	minX := int(math.Floor(math.Min(a.X, math.Min(p1.X, p2.X))))
@@ -220,7 +353,7 @@ func drawHashedWedge(img *image.RGBA, a, b Point, opt Options, col color.RGBA) {
 	for i := 1; i <= 7; i++ {
 		t := float64(i) / 7
 		c := Point{X: a.X + (b.X-a.X)*t, Y: a.Y + (b.Y-a.Y)*t}
-		halfWidth := opt.BondLineWidth * 3 * t
+		halfWidth := opt.BondLineWidth * 3.2 * t
 		p1 := Point{X: c.X + nx*halfWidth, Y: c.Y + ny*halfWidth}
 		p2 := Point{X: c.X - nx*halfWidth, Y: c.Y - ny*halfWidth}
 		drawRasterLine(img, p1, p2, col, int(math.Max(1, math.Round(opt.BondLineWidth))))
