@@ -18,8 +18,11 @@
 
 package reaction
 
+import chem "github.com/cx-luo/go-chem/molecule"
+
 // BaseMolecule represents a base molecule structure
 type BaseMolecule struct {
+	Structure                  *chem.Molecule
 	ReactionAtomMapping        []int
 	ReactionBondReactingCenter []int
 	ReactionAtomInversion      []int
@@ -30,6 +33,7 @@ type BaseMolecule struct {
 // NewBaseMolecule creates a new BaseMolecule
 func NewBaseMolecule() *BaseMolecule {
 	return &BaseMolecule{
+		Structure:                  chem.NewMolecule(),
 		ReactionAtomMapping:        make([]int, 0),
 		ReactionBondReactingCenter: make([]int, 0),
 		ReactionAtomInversion:      make([]int, 0),
@@ -40,6 +44,12 @@ func NewBaseMolecule() *BaseMolecule {
 
 // Clone creates a copy of the molecule
 func (m *BaseMolecule) Clone(other *BaseMolecule, mapping, invMapping *[]int) {
+	if other.Structure != nil {
+		m.Structure = other.Structure.Clone()
+	} else {
+		m.Structure = chem.NewMolecule()
+	}
+
 	m.ReactionAtomMapping = make([]int, len(other.ReactionAtomMapping))
 	copy(m.ReactionAtomMapping, other.ReactionAtomMapping)
 
@@ -103,4 +113,15 @@ func (m *BaseMolecule) HasSelection() bool {
 // Neu creates a new instance of the molecule
 func (m *BaseMolecule) Neu() *BaseMolecule {
 	return NewBaseMolecule()
+}
+
+// SetStructure replaces the chemical structure carried by this reaction component.
+func (m *BaseMolecule) SetStructure(structure *chem.Molecule) {
+	if structure == nil {
+		m.Structure = chem.NewMolecule()
+		m.HaveXYZ = false
+		return
+	}
+	m.Structure = structure
+	m.HaveXYZ = structure.HaveXYZ
 }
