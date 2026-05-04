@@ -1,3 +1,6 @@
+//go:build cgo
+// +build cgo
+
 // Package main provides examples of using InChI with CGO bindings
 //
 // This example demonstrates how to use the CGO-based InChI generator
@@ -21,19 +24,17 @@ import (
 )
 
 func main() {
-	fmt.Println("=== InChI CGO Examples ===\n")
+	fmt.Println("=== InChI CGO Examples ===")
+	fmt.Println()
 
 	// Example 1: Generate InChI from SMILES using CGO
 	example1()
 
-	// Example 2: Compare CGO vs Pure Go implementation
+	// Example 2: Generate InChIKey using CGO
 	example2()
 
-	// Example 3: Generate InChIKey using CGO
+	// Example 3: Advanced molecules
 	example3()
-
-	// Example 4: Advanced molecules
-	example4()
 }
 
 // Example 1: Simple InChI generation using CGO
@@ -82,46 +83,9 @@ func example1() {
 	}
 }
 
-// Example 2: Compare CGO vs Pure Go
+// Example 2: Generate InChIKey from InChI
 func example2() {
-	fmt.Println("\nExample 2: Compare CGO vs Pure Go")
-	fmt.Println("----------------------------------")
-
-	smiles := "CCO" // Ethanol
-
-	// Parse SMILES
-	loader := molecule.SmilesLoader{}
-	mol, err := loader.Parse(smiles)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Generate using CGO
-	generatorCGO := molecule.NewInChIGeneratorCGO()
-	resultCGO, err := generatorCGO.GenerateInChI(mol)
-	if err != nil {
-		log.Printf("CGO error: %v\n", err)
-	} else {
-		fmt.Printf("CGO InChI:    %s\n", resultCGO.InChI)
-		fmt.Printf("CGO InChIKey: %s\n", resultCGO.InChIKey)
-	}
-
-	// Generate using Pure Go
-	generatorGo := molecule.NewInChIGenerator()
-	resultGo, err := generatorGo.GenerateInChI(mol)
-	if err != nil {
-		log.Printf("Pure Go error: %v\n", err)
-	} else {
-		fmt.Printf("Go InChI:     %s\n", resultGo.InChI)
-		fmt.Printf("Go InChIKey:  %s\n", resultGo.InChIKey)
-	}
-
-	fmt.Println()
-}
-
-// Example 3: Generate InChIKey from InChI
-func example3() {
-	fmt.Println("\nExample 3: Generate InChIKey using CGO")
+	fmt.Println("\nExample 2: Generate InChIKey using CGO")
 	fmt.Println("---------------------------------------")
 
 	inchis := []string{
@@ -142,9 +106,9 @@ func example3() {
 	}
 }
 
-// Example 4: Advanced molecules
-func example4() {
-	fmt.Println("\nExample 4: Advanced Molecules")
+// Example 3: Advanced molecules
+func example3() {
+	fmt.Println("\nExample 3: Advanced Molecules")
 	fmt.Println("------------------------------")
 
 	molecules := []struct {

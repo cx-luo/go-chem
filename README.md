@@ -68,16 +68,12 @@
 - ✅ 总分子式生成 (`src/gross_formula.go`)
 - ✅ 分子哈希 (`src/molecule_hash.go`)
 
-### InChI支持 (`molecule/molecule_inchi.go`) ⭐ **新功能**
-- ✅ InChI (IUPAC International Chemical Identifier) 生成
-- ✅ InChIKey 生成和验证
-- ✅ 分子式层 (Hill系统排序)
-- ✅ 连接层 (规范化原子编号)
-- ✅ 氢原子层
-- ✅ SMILES 到 InChI 转换
-- ✅ InChI 验证和比较
-- ✅ Base64 编码/解码
-- ⏳ 立体化学层 (待完善)
+### InChI支持 (`molecule/molecule_inchi_cgo.go`) ⭐ **新功能**
+- ✅ 通过官方 InChI 动态库生成 InChI
+- ✅ 通过官方 InChI 动态库生成 InChIKey
+- ✅ 支持标准 InChI 选项
+- ✅ 支持立体化学信息传递
+- ⚠️ 需要启用 CGO 并提供 `3rd/libinchi.dll` 或 `3rd/libinchi.so`
 
 ### SMILES支持
 - ✅ SMILES加载器 (`src/smiles_loader.go`)
@@ -134,7 +130,8 @@ go-chem/
 │   ├── molecule.go               # 核心分子结构
 │   ├── molecule_stereocenters.go # 立体中心
 │   ├── molecule_cis_trans.go     # 顺反异构
-│   ├── molecule_inchi.go         # InChI和InChIKey ⭐新增
+│   ├── molecule_inchi_cgo.go     # InChI CGO绑定 ⭐新增
+│   ├── molecule_inchi_result.go  # InChI结果类型
 │   ├── molfile_loader.go         # MOL文件加载
 │   ├── molfile_saver.go          # MOL文件保存
 │   ├── sdf_loader.go             # SDF文件加载
@@ -151,15 +148,14 @@ go-chem/
 │   ├── molecule_test.go          # 分子测试
 │   ├── molfile_test.go           # MOL文件测试
 │   ├── stereochemistry_test.go   # 立体化学测试
-│   ├── inchi_test.go             # InChI测试 ⭐新增
+│   ├── inchi_cgo_test.go         # InChI CGO测试 ⭐新增
 │   └── ...                       # 其他测试
 ├── examples/                     # 示例代码
-│   └── inchi_example.go          # InChI使用示例 ⭐新增
+│   └── inchi_cgo_example.go      # InChI CGO使用示例 ⭐新增
 ├── indigo-core/                  # C++原始代码（参考）
 │   ├── molecule/                 # 分子处理模块
 │   └── ...                       # 其他模块
-├── INCHI_IMPLEMENTATION.md       # InChI实现文档 ⭐新增
-├── INCHI_SUMMARY.md              # InChI实现总结 ⭐新增
+├── docs/INCHI_CGO_GUIDE.md       # InChI CGO集成指南 ⭐新增
 └── go.mod                        # Go模块定义
 ```
 
@@ -266,34 +262,28 @@ if stereo.Exists(atomIdx) {
 ```go
 import "github.com/cx-luo/go-chem/molecule"
 
-// 从 SMILES 生成 InChI
-result, err := molecule.GetInChIFromSMILES("CC(=O)O")
+// 从 SMILES 生成 InChI（需要启用 CGO，并配置官方 InChI 动态库）
+loader := molecule.SmilesLoader{}
+mol, err := loader.Parse("CC(=O)O")
+if err != nil {
+    panic(err)
+}
+
+generator := molecule.NewInChIGeneratorCGO()
+result, err := generator.GenerateInChI(mol)
 if err != nil {
     panic(err)
 }
 
 fmt.Println("InChI:", result.InChI)
-// 输出: InChI=1S/C2H4O2/c1-3-4-2
 fmt.Println("InChIKey:", result.InChIKey)
-// 输出: GCGLMSKSGYPLBP-UHFFFAOYSA-SA
 
 // 直接从 InChI 生成 InChIKey
-key, err := molecule.GenerateInChIKey("InChI=1S/CH4/h1H4")
+key, err := molecule.GenerateInChIKeyCGO("InChI=1S/CH4/h1H4")
 fmt.Println("InChIKey:", key)
-
-// 验证 InChI
-valid := molecule.ValidateInChI("InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H")
-fmt.Println("Valid:", valid) // true
-
-// 比较两个分子
-result1, _ := molecule.GetInChIFromSMILES("CC")
-result2, _ := molecule.GetInChIFromSMILES("CC")
-if result1.InChIKey == result2.InChIKey {
-    fmt.Println("Same molecule!")
-}
 ```
 
-更多示例请参考 `examples/inchi_example.go`
+更多示例请参考 `examples/inchi_cgo_example.go`
 
 ## 运行测试
 
@@ -339,15 +329,12 @@ go test -v ./test/...
 - ✅ S-Group层次结构管理
 - ✅ 原子和化学键移除时的更新
 
-### InChI 测试 (`test/inchi_test.go`)
-- ✅ InChI 生成测试（8个分子案例）
+### InChI CGO 测试 (`test/inchi_cgo_test.go`)
+- ✅ InChI 生成测试
 - ✅ InChIKey 生成测试
-- ✅ InChIKey 唯一性测试
-- ✅ InChI 验证测试
-- ✅ InChI 比较测试
-- ✅ SMILES 转换测试
-- ✅ Base64 编码测试
-- ✅ 分子式层测试
+- ✅ 选项测试
+- ✅ 空分子处理测试
+- ✅ 立体化学测试
 - ✅ 性能基准测试
 
 ## 待实现功能（未来计划）

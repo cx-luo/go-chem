@@ -21,7 +21,7 @@
 
 **结构体**:
 - `InChIGeneratorCGO`: CGO 生成器
-- `InChIResult`: 结果结构（与 Pure Go 兼容）
+- `InChIResult`: 结果结构
 
 **核心函数**:
 - `NewInChIGeneratorCGO()`: 创建生成器
@@ -79,7 +79,6 @@ void set_stereo_data(...);
 - ✅ 基本 InChI 生成
 - ✅ InChIKey 生成
 - ✅ 选项设置
-- ✅ CGO vs Pure Go 对比
 - ✅ 立体化学处理
 - ✅ 批量处理
 - ✅ 错误处理
@@ -106,8 +105,6 @@ go run examples/inchi_cgo_example.go
 - `TestInChICGO_Options`: 选项测试
 - `TestInChICGO_EmptyMolecule`: 边界情况测试
 - `TestInChICGO_Stereochemistry`: 立体化学测试
-- `TestInChICGO_Compare`: CGO vs Pure Go 对比
-
 **基准测试**:
 - `BenchmarkInChICGO_Simple`: 简单分子性能
 - `BenchmarkInChICGO_Complex`: 复杂分子性能
@@ -133,7 +130,6 @@ go test -bench=BenchmarkInChICGO -benchmem ./test
 
 #### README_INCHI.md (总览文档)
 
-- ✅ Pure Go vs CGO 对比表
 - ✅ 快速开始指南
 - ✅ 详细文档索引
 - ✅ 使用示例
@@ -177,7 +173,7 @@ C 库经过高度优化：
 - ✅ 符合 Go 命名规范
 - ✅ 错误处理使用 Go 惯用法
 - ✅ 内存自动管理
-- ✅ 与 Pure Go 版本 API 兼容
+- ✅ 符合 Go 语言习惯
 
 ### 5. 跨平台支持
 
@@ -207,7 +203,7 @@ InChI 算法实现
 1. **C 辅助函数**: 简化 Go 到 C 的数据转换
 2. **内存管理**: 明确的所有权和自动释放
 3. **错误处理**: C 错误码转换为 Go error
-4. **API 兼容**: 与 Pure Go 版本保持一致
+4. **API 设计**: 保持简洁的 Go 接口
 
 ## 使用建议
 
@@ -224,19 +220,6 @@ InChI 算法实现
 - 跨平台编译频繁
 - 不想处理外部依赖
 - 部署环境限制
-
-### 何时使用 Pure Go 版本？
-
-✅ **推荐场景**:
-- 快速原型开发
-- 简单部署需求
-- 跨平台编译
-- 基本 InChI 功能足够
-
-❌ **不推荐场景**:
-- 需要 100% 标准兼容
-- 复杂立体化学处理
-- 高性能要求
 
 ## 部署建议
 
@@ -289,20 +272,18 @@ RUN ldconfig
 ENTRYPOINT ["/myapp"]
 ```
 
-## 性能对比
+## 性能说明
 
 ### 简单分子 (CCO - 乙醇)
 
 | 实现 | 时间 | 内存 |
 |------|------|------|
-| Pure Go | ~500 μs | ~2 KB |
 | CGO | ~200 μs | ~1 KB |
 
 ### 复杂分子 (葡萄糖)
 
 | 实现 | 时间 | 内存 |
 |------|------|------|
-| Pure Go | ~2 ms | ~5 KB |
 | CGO | ~800 μs | ~3 KB |
 
 **注意**: 实际性能取决于具体分子和系统配置。
@@ -341,7 +322,7 @@ ENTRYPOINT ["/myapp"]
 ### 实现参考
 
 - Indigo C++: `indigo-core/molecule/src/inchi_wrapper.cpp`
-- 本项目文档: `INCHI_IMPLEMENTATION.md`, `INCHI_CGO_GUIDE.md`
+- 本项目文档: `README_INCHI.md`, `INCHI_CGO_GUIDE.md`
 
 ### Go 资源
 
@@ -378,5 +359,5 @@ Apache License 2.0 - 与 Indigo 和 InChI 库保持一致
 - ✅ **文档完善**: 详细的使用和部署指南
 - ✅ **可生产使用**: 经过测试，性能优秀
 
-选择合适的版本（Pure Go 或 CGO）取决于您的具体需求！
+需要 InChI 功能时，请使用 CGO 版本和官方 InChI 动态库。
 

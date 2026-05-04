@@ -115,7 +115,7 @@ func TestInChICGO_InChIKey(t *testing.T) {
 				t.Fatalf("Failed to generate InChIKey: %v", err)
 			}
 
-			// Check format: 14 chars - 9 chars - 2 chars
+			// Check format: 14 chars - 10 chars - 1 char
 			parts := strings.Split(key, "-")
 			if len(parts) != 3 {
 				t.Errorf("InChIKey should have 3 parts, got %d", len(parts))
@@ -129,8 +129,8 @@ func TestInChICGO_InChIKey(t *testing.T) {
 				t.Errorf("Second part should be 10 chars, got %d", len(parts[1]))
 			}
 
-			if len(parts[2]) != 2 {
-				t.Errorf("Third part should be 2 chars, got %d", len(parts[2]))
+			if len(parts[2]) != 1 {
+				t.Errorf("Third part should be 1 char, got %d", len(parts[2]))
 			}
 
 			t.Logf("InChI:    %s", tt.inchi)
@@ -260,42 +260,5 @@ func BenchmarkInChICGO_Complex(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = generator.GenerateInChI(mol)
-	}
-}
-
-// TestInChICGO_Compare tests if CGO and Pure Go produce similar results
-func TestInChICGO_Compare(t *testing.T) {
-	smiles := "CCO"
-	loader := molecule.SmilesLoader{}
-	mol, _ := loader.Parse(smiles)
-
-	// CGO version
-	generatorCGO := molecule.NewInChIGeneratorCGO()
-	resultCGO, errCGO := generatorCGO.GenerateInChI(mol)
-
-	// Pure Go version
-	generatorGo := molecule.NewInChIGenerator()
-	resultGo, errGo := generatorGo.GenerateInChI(mol)
-
-	if errCGO != nil {
-		t.Logf("CGO error: %v", errCGO)
-	}
-	if errGo != nil {
-		t.Logf("Pure Go error: %v", errGo)
-	}
-
-	if errCGO == nil && errGo == nil {
-		t.Logf("CGO InChI:    %s", resultCGO.InChI)
-		t.Logf("Go InChI:     %s", resultGo.InChI)
-		t.Logf("CGO InChIKey: %s", resultCGO.InChIKey)
-		t.Logf("Go InChIKey:  %s", resultGo.InChIKey)
-
-		// Both should produce valid InChI (format may differ)
-		if !strings.HasPrefix(resultCGO.InChI, "InChI=") {
-			t.Errorf("CGO InChI should start with 'InChI='")
-		}
-		if !strings.HasPrefix(resultGo.InChI, "InChI=") {
-			t.Errorf("Go InChI should start with 'InChI='")
-		}
 	}
 }

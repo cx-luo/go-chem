@@ -94,7 +94,6 @@ static void set_stereo_data(inchi_Stereo0D* stereo, int index,
 import "C"
 import (
 	"fmt"
-	"runtime"
 	"unsafe"
 )
 
@@ -222,9 +221,6 @@ func (g *InChIGeneratorCGO) createInChIInput(mol *Molecule) (*C.inchi_Input, err
 	// Set options
 	if g.options != "" {
 		inp.szOptions = C.CString(g.options)
-		runtime.SetFinalizer(&inp.szOptions, func(p **C.char) {
-			C.free(unsafe.Pointer(*p))
-		})
 	}
 
 	// Convert atoms

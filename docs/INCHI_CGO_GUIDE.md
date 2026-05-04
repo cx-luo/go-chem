@@ -4,10 +4,7 @@
 
 ## 概述
 
-本项目提供两种 InChI 生成方式：
-
-1. **Pure Go 实现** (`molecule_inchi.go`): 纯 Go 语言实现，无需外部依赖
-2. **CGO 绑定** (`molecule_inchi_cgo.go`): 调用官方 InChI 库，保证标准兼容性和性能
+本项目只保留 **CGO 绑定** (`molecule_inchi_cgo.go`): 调用官方 InChI 库，保证标准兼容性和性能。
 
 ## CGO 版本的优势
 
@@ -18,16 +15,7 @@
 3. **完整功能**: 支持所有 InChI 选项和特性
 4. **可靠性**: 经过广泛测试和验证的库
 
-### 对比
-
-| 特性 | Pure Go | CGO |
-|------|---------|-----|
-| 外部依赖 | 无 | 需要 InChI 库 |
-| 性能 | 中等 | 高 |
-| 标准兼容性 | 部分 | 100% |
-| 跨平台编译 | 简单 | 需要库文件 |
-| 功能完整性 | 基本功能 | 完整功能 |
-| 部署 | 简单 | 需要动态库 |
+原 pure Go InChI 生成器已移除，避免继续暴露不完整或不兼容的 InChI 结果。
 
 ## 项目结构
 
@@ -38,11 +26,10 @@ go-chem/
 │   ├── libinchi.dll           # Windows 动态库
 │   └── libinchi.so            # Linux 动态库
 ├── molecule/
-│   ├── molecule_inchi.go      # Pure Go 实现
-│   └── molecule_inchi_cgo.go  # CGO 绑定实现
+│   ├── molecule_inchi_cgo.go      # CGO 绑定实现
+│   └── molecule_inchi_result.go   # InChI 结果类型
 └── examples/
-    ├── inchi_example.go       # Pure Go 示例
-    └── inchi_cgo_example.go   # CGO 示例
+    └── inchi_cgo_example.go       # CGO 示例
 ```
 
 ## 安装和配置
@@ -89,13 +76,6 @@ CGO_ENABLED=1 go build examples/inchi_cgo_example.go
 
 # Windows 静态链接（可选）
 go build -ldflags="-extldflags=-static" examples/inchi_cgo_example.go
-```
-
-#### 不使用 CGO 构建（Pure Go）
-
-```bash
-# 禁用 CGO
-CGO_ENABLED=0 go build examples/inchi_example.go
 ```
 
 ### 4. 运行示例
@@ -298,8 +278,8 @@ go test -v ./test -run TestInChICGO_Basic
 ### 基准测试
 
 ```bash
-# 对比 CGO vs Pure Go 性能
-go test -bench=BenchmarkInChI -benchmem ./test
+# 运行 CGO InChI 基准测试
+CGO_ENABLED=1 go test -bench=BenchmarkInChICGO -benchmem ./test
 ```
 
 ### 验证结果
@@ -505,7 +485,7 @@ close(results)
 ### 实现参考
 
 - **Indigo C++ 源码**: `indigo-core/molecule/src/inchi_wrapper.cpp`
-- **本项目文档**: `INCHI_IMPLEMENTATION.md`
+- **本项目文档**: `README_INCHI.md`
 
 ### CGO 文档
 
@@ -527,13 +507,5 @@ close(results)
 - 跨平台编译困难
 - 不需要完整功能
 
-### 何时使用 Pure Go 版本？
-
-✅ **推荐使用 Pure Go**:
-- 简单部署
-- 跨平台编译
-- 基本 InChI 功能足够
-- 不想依赖外部库
-
-选择适合您需求的版本！
+需要 InChI 功能时，请使用 CGO 版本和官方 InChI 动态库。
 
