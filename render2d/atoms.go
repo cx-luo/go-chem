@@ -8,6 +8,22 @@ import (
 )
 
 func atomLabel(mol *molecule.Molecule, atomIdx int, opt Options) string {
+	label := atomBaseLabel(mol, atomIdx, opt)
+	if label == "" {
+		return ""
+	}
+	return atomLabelWithImplicitHydrogen(mol, atomIdx, label, false)
+}
+
+func atomLabelAt(mol *molecule.Molecule, atomIdx int, opt Options, points []Point) string {
+	label := atomBaseLabel(mol, atomIdx, opt)
+	if label == "" {
+		return ""
+	}
+	return atomLabelWithImplicitHydrogen(mol, atomIdx, label, shouldPrefixImplicitHydrogen(mol, atomIdx, points))
+}
+
+func atomBaseLabel(mol *molecule.Molecule, atomIdx int, opt Options) string {
 	if atomIdx < 0 || atomIdx >= mol.AtomCount() {
 		return ""
 	}
@@ -20,6 +36,53 @@ func atomLabel(mol *molecule.Molecule, atomIdx int, opt Options) string {
 	}
 
 	return mol.GetAtomDescription(atomIdx)
+}
+
+func atomLabelWithImplicitHydrogen(mol *molecule.Molecule, atomIdx int, label string, prefix bool) string {
+	if !shouldShowImplicitHydrogen(mol, atomIdx) {
+		return label
+	}
+	h := mol.GetImplicitH(atomIdx)
+	hLabel := "H"
+	if h > 1 {
+		hLabel += strconv.Itoa(h)
+	}
+	if prefix {
+		return hLabel + label
+	}
+	return label + hLabel
+}
+
+func shouldShowImplicitHydrogen(mol *molecule.Molecule, atomIdx int) bool {
+	if atomIdx < 0 || atomIdx >= mol.AtomCount() {
+		return false
+	}
+	atom := mol.Atoms[atomIdx]
+	if atom.Charge != 0 || atom.Isotope != 0 || atom.Radical != 0 ||
+		atom.PseudoAtomValue != "" || atom.TemplateName != "" {
+		return false
+	}
+	switch atom.Number {
+	case molecule.ELEM_N, molecule.ELEM_O, molecule.ELEM_S, molecule.ELEM_P:
+	default:
+		return false
+	}
+	return mol.GetImplicitH(atomIdx) > 0
+}
+
+func shouldPrefixImplicitHydrogen(mol *molecule.Molecule, atomIdx int, points []Point) bool {
+	if atomIdx < 0 || atomIdx >= mol.AtomCount() || atomIdx >= len(points) {
+		return false
+	}
+	origin := points[atomIdx]
+	dx := 0.0
+	for _, neighbor := range mol.GetNeighbors(atomIdx) {
+		if neighbor < 0 || neighbor >= len(points) {
+			continue
+		}
+		dx += points[neighbor].X - origin.X
+	}
+	return dx > 0
 }
 
 func atomColor(mol *molecule.Molecule, atomIdx int, opt Options) string {

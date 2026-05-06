@@ -45,17 +45,18 @@ func DrawSVG(w io.Writer, mol *molecule.Molecule, options ...Options) error {
 		return err
 	}
 
+	bondStyle := newBondStyleContext(mol, points)
 	for i, bond := range mol.Bonds {
 		if bond.Beg < 0 || bond.Beg >= len(points) || bond.End < 0 || bond.End >= len(points) {
 			continue
 		}
-		if err := drawSVGBond(w, mol, i, points[bond.Beg], points[bond.End], opt); err != nil {
+		if err := drawSVGBond(w, mol, i, points[bond.Beg], points[bond.End], opt, bondStyle); err != nil {
 			return err
 		}
 	}
 
 	for i := range mol.Atoms {
-		label := atomLabel(mol, i, opt)
+		label := atomLabelAt(mol, i, opt, points)
 		if label == "" {
 			continue
 		}
@@ -76,7 +77,7 @@ func DrawSVG(w io.Writer, mol *molecule.Molecule, options ...Options) error {
 	return err
 }
 
-func drawSVGBond(w io.Writer, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options) error {
+func drawSVGBond(w io.Writer, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options, bondStyle *bondStyleContext) error {
 	bond := mol.Bonds[bondIdx]
 	order := bondOrder(mol, bondIdx)
 	a, b = shortenAsymmetric(a, b, atomClearance(mol, bond.Beg, opt), atomClearance(mol, bond.End, opt))
@@ -93,10 +94,23 @@ func drawSVGBond(w io.Writer, mol *molecule.Molecule, bondIdx int, a, b Point, o
 
 	switch order {
 	case molecule.BOND_DOUBLE:
-		return drawSVGParallelLines(w, a, b, opt, 2, opt.BondColor, "")
+		for _, segment := range bondStyle.doubleBondSegments(bondIdx, a, b, opt) {
+			if err := drawSVGLine(w, segment.A, segment.B, opt.BondColor, opt.BondLineWidth, ""); err != nil {
+				return err
+			}
+		}
+		return nil
 	case molecule.BOND_TRIPLE:
 		return drawSVGParallelLines(w, a, b, opt, 3, opt.BondColor, "")
 	case molecule.BOND_AROMATIC:
+		if bondStyle.aromaticBondAsDouble(bondIdx) {
+			for _, segment := range bondStyle.doubleBondSegments(bondIdx, a, b, opt) {
+				if err := drawSVGLine(w, segment.A, segment.B, opt.AromaticBondColor, opt.BondLineWidth, ""); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 		return drawSVGLine(w, a, b, opt.AromaticBondColor, opt.BondLineWidth, "")
 	default:
 		return drawSVGLine(w, a, b, opt.BondColor, opt.BondLineWidth, "")

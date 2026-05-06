@@ -31,16 +31,17 @@ func RenderImage(mol *molecule.Molecule, options ...Options) (*image.RGBA, error
 	}
 
 	points := Layout(mol, opt)
+	bondStyle := newBondStyleContext(mol, points)
 
 	for i, bond := range mol.Bonds {
 		if bond.Beg < 0 || bond.Beg >= len(points) || bond.End < 0 || bond.End >= len(points) {
 			continue
 		}
-		drawGGBond(dc, mol, i, points[bond.Beg], points[bond.End], opt)
+		drawGGBond(dc, mol, i, points[bond.Beg], points[bond.End], opt, bondStyle)
 	}
 
 	for i := range mol.Atoms {
-		label := atomLabel(mol, i, opt)
+		label := atomLabelAt(mol, i, opt, points)
 		if label == "" {
 			continue
 		}
@@ -71,7 +72,7 @@ func goFontFace(size float64) (font.Face, error) {
 	})
 }
 
-func drawGGBond(dc *gg.Context, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options) {
+func drawGGBond(dc *gg.Context, mol *molecule.Molecule, bondIdx int, a, b Point, opt Options, bondStyle *bondStyleContext) {
 	bond := mol.Bonds[bondIdx]
 	order := bondOrder(mol, bondIdx)
 	a, b = shortenAsymmetric(a, b, atomClearance(mol, bond.Beg, opt), atomClearance(mol, bond.End, opt))
@@ -91,10 +92,18 @@ func drawGGBond(dc *gg.Context, mol *molecule.Molecule, bondIdx int, a, b Point,
 
 	switch order {
 	case molecule.BOND_DOUBLE:
-		drawGGParallelLines(dc, a, b, opt, 2, opt.BondColor)
+		for _, segment := range bondStyle.doubleBondSegments(bondIdx, a, b, opt) {
+			drawGGLine(dc, segment.A, segment.B, opt.BondColor, opt.BondLineWidth)
+		}
 	case molecule.BOND_TRIPLE:
 		drawGGParallelLines(dc, a, b, opt, 3, opt.BondColor)
 	case molecule.BOND_AROMATIC:
+		if bondStyle.aromaticBondAsDouble(bondIdx) {
+			for _, segment := range bondStyle.doubleBondSegments(bondIdx, a, b, opt) {
+				drawGGLine(dc, segment.A, segment.B, opt.AromaticBondColor, opt.BondLineWidth)
+			}
+			return
+		}
 		drawGGLine(dc, a, b, opt.AromaticBondColor, opt.BondLineWidth)
 	default:
 		drawGGLine(dc, a, b, opt.BondColor, opt.BondLineWidth)
