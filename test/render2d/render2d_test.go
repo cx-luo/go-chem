@@ -1,4 +1,4 @@
-package render2d
+package render2d_test
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cx-luo/go-chem/molecule"
+	"github.com/cx-luo/go-chem/render2d"
 )
 
 func TestRenderSVGUsesCoordinatesAndBondOrder(t *testing.T) {
@@ -18,7 +19,7 @@ func TestRenderSVGUsesCoordinatesAndBondOrder(t *testing.T) {
 	mol.SetAtomXY(c, 0, 0)
 	mol.SetAtomXY(o, 2, 0)
 
-	svg, err := RenderSVG(mol, Options{Width: 200, Height: 100})
+	svg, err := render2d.RenderSVG(mol, render2d.Options{Width: 200, Height: 100})
 	if err != nil {
 		t.Fatalf("RenderSVG returned error: %v", err)
 	}
@@ -40,7 +41,7 @@ func TestRenderSVGStereoWedge(t *testing.T) {
 	bond := mol.AddBond(c1, c2, molecule.BOND_SINGLE)
 	mol.SetBondDirection(bond, molecule.BOND_UP)
 
-	svg, err := RenderSVG(mol, Options{Width: 120, Height: 120})
+	svg, err := render2d.RenderSVG(mol, render2d.Options{Width: 120, Height: 120})
 	if err != nil {
 		t.Fatalf("RenderSVG returned error: %v", err)
 	}
@@ -56,7 +57,7 @@ func TestDrawPNG(t *testing.T) {
 	mol.AddBond(c, n, molecule.BOND_SINGLE)
 
 	var buf bytes.Buffer
-	if err := DrawPNG(&buf, mol, Options{Width: 80, Height: 60}); err != nil {
+	if err := render2d.DrawPNG(&buf, mol, render2d.Options{Width: 80, Height: 60}); err != nil {
 		t.Fatalf("DrawPNG returned error: %v", err)
 	}
 	img, err := png.Decode(&buf)
@@ -76,7 +77,7 @@ func TestLayoutGeneratesChainForMissingCoordinates(t *testing.T) {
 	mol.AddBond(0, 1, molecule.BOND_SINGLE)
 	mol.AddBond(1, 2, molecule.BOND_SINGLE)
 
-	points := Layout(mol, Options{Width: 120, Height: 120})
+	points := render2d.Layout(mol, render2d.Options{Width: 120, Height: 120})
 	if len(points) != 3 {
 		t.Fatalf("expected 3 points, got %d", len(points))
 	}
@@ -94,12 +95,12 @@ func TestLayoutPlacesRingSubstituentOutside(t *testing.T) {
 		t.Fatalf("parse phenol: %v", err)
 	}
 
-	points := Layout(mol, Options{Width: 220, Height: 160})
+	points := render2d.Layout(mol, render2d.Options{Width: 220, Height: 160})
 	if len(points) != 7 {
 		t.Fatalf("expected 7 points, got %d", len(points))
 	}
 
-	center := Point{}
+	center := render2d.Point{}
 	for i := 0; i < 6; i++ {
 		center.X += points[i].X
 		center.Y += points[i].Y
@@ -124,7 +125,7 @@ func TestLayoutSeparatesCarbonylBranches(t *testing.T) {
 		t.Fatalf("parse acetic acid: %v", err)
 	}
 
-	points := Layout(mol, Options{Width: 180, Height: 140})
+	points := render2d.Layout(mol, render2d.Options{Width: 180, Height: 140})
 	if len(points) != 4 {
 		t.Fatalf("expected 4 points, got %d", len(points))
 	}
@@ -144,6 +145,6 @@ func TestLayoutSeparatesCarbonylBranches(t *testing.T) {
 	}
 }
 
-func distance(a, b Point) float64 {
+func distance(a, b render2d.Point) float64 {
 	return math.Hypot(a.X-b.X, a.Y-b.Y)
 }
